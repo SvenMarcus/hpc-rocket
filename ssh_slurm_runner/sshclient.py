@@ -27,10 +27,10 @@ class RemoteCommand(RunningCommand):
         return self._stdout.channel.exit_status
 
     def stdout(self) -> str:
-        return self._stdout_lines
+        return "\n".join(self._stdout_lines)
 
     def stderr(self) -> str:
-        return self._stderr_lines
+        return "\n".join(self._stderr_lines)
 
 
 class SSHClient(CommandExecutor):
