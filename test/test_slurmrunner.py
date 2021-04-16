@@ -1,7 +1,7 @@
 from ssh_slurm_runner.executor import CommandExecutor, RunningCommand
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from ssh_slurm_runner.slurmrunner import SlurmError, SlurmJob, SlurmRunner
+from ssh_slurm_runner.slurmrunner import SlurmError, SlurmJob, SlurmRunner, SlurmTask
 
 
 @pytest.fixture
@@ -97,9 +97,27 @@ def test__when_polling_status__should_return_job_status(executor_spy: Mock):
 
     actual = sut.poll_status("1603353")
 
-    assert actual == SlurmJob(id="1603353",
-                              name="PyFluidsTest",
-                              state="COMPLETED")
+    assert actual.id == "1603353"
+    assert actual.name == "PyFluidsTest"
+    assert actual.state == "COMPLETED"
+
+
+def test__when_polling_status_job_status_should_contain_all_tasks(executor_spy: Mock):
+    cmd = make_command_with_output_from_file()
+    executor_spy.exec_command.return_value = cmd
+    sut = make_sut(executor_spy)
+
+    actual = sut.poll_status("1603353")
+
+    assert actual.tasks == [
+        SlurmTask("1603353", "PyFluidsTest", "COMPLETED"),
+        SlurmTask("1603353.bat+", "batch", "COMPLETED"),
+        SlurmTask("1603353.ext+",  "extern", "COMPLETED"),
+        SlurmTask("1603353.0", "singularity", "COMPLETED"),
+        SlurmTask("1603353.1", "singularity", "COMPLETED"),
+        SlurmTask("1603353.2", "singularity", "COMPLETED"),
+        SlurmTask("1603353.3", "singularity", "COMPLETED")
+    ]
 
 
 def make_running_command_stub():
