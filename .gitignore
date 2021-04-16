@@ -5,5 +5,10 @@ __pycache__/
 # pytest
 .pytest_cache/
 
+# setuptools
+*.egg-info
+*.whl
+dist/
+
 # VS Code
 .vscode/

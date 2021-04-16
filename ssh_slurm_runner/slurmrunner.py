@@ -11,13 +11,6 @@ class SlurmError(RuntimeError):
         super().__init__(*args)
 
 
-class JobState(Enum):
-    RUNNING = "RUNNING"
-    COMPLETED = "COMPLETED"
-    CANCELED = "CANCELED"
-    FAILED = "FAILED"
-
-
 @dataclass
 class SlurmTask:
     id: str
@@ -28,6 +21,24 @@ class SlurmTask:
 @dataclass
 class SlurmJob(SlurmTask):
     tasks: List[SlurmTask]
+
+    @property
+    def is_pending(self) -> bool:
+        return self.state == "PENDING"
+
+    @property
+    def is_running(self) -> bool:
+        return self.state == "RUNNING"
+
+    @property
+    def is_completed(self) -> bool:
+        return self.state == "COMPLETED"
+
+    @property
+    def success(self) -> bool:
+        return (self.state == "COMPLETED" and
+                all(task.state == "COMPLETED"
+                    for task in self.tasks))
 
 
 class SlurmRunner:
