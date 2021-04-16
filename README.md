@@ -19,11 +19,8 @@ SSH Slurm Runner does not support password authentication yet. You must point it
 #### sbatch
 
 Currently all `sbatch` configuration must currently happen in the job file.
-
 SSH Slurm Runner does not offer any other way of configuring your batch jobs.
-
 Please note that the job file must be present on the remote machine. SSH Slurm Runner will not copy it by itself.
-
 
 #### CLI Usage
 
