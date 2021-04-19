@@ -125,7 +125,7 @@ def make_running_command_stub():
 
     def stdout():
         if cmd_stub.wait_until_exit.called:
-            return "Submitted batch job 123456"
+            return ["Submitted batch job 123456"]
         raise RuntimeError("Did not wait for exit")
 
     cmd_stub.configure_mock(stdout=stdout, exit_status=0)
@@ -154,7 +154,7 @@ def make_command_with_output_from_file():
         if not cmd.wait_until_exit.called:
             raise RuntimeError("Did not wait for exit")
         with open("test/slurmoutput/sacct_completed.txt") as f:
-            return "\n".join(f.readlines())
+            return f.readlines()
 
     cmd.configure_mock(
         exit_status=0,
