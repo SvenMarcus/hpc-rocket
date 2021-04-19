@@ -2,7 +2,7 @@ from ssh_slurm_runner.executor import CommandExecutor
 from typing import List, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
-import ssh_slurm_runner.sshclient as ssh
+import ssh_slurm_runner.sshexecutor as ssh
 
 
 class SlurmError(RuntimeError):
@@ -50,8 +50,7 @@ class SlurmRunner:
     def sbatch(self, filename: str) -> str:
         cmd = self._executor.exec_command("sbatch " + filename)
         self._wait_for_success_or_raise(cmd)
-
-        out = cmd.stdout()
+        out = cmd.stdout()[0]
         job_id = out.split()[-1]
         self._active_jobs.append(job_id)
         return job_id
@@ -70,8 +69,7 @@ class SlurmRunner:
         cmd = self._executor.exec_command(
             f"sacct -j {jobid} -o jobid,jobname%30,state --noheader")
         cmd.wait_until_exit()
-        output = cmd.stdout()
-        main_task, tasks = self._collect_slurm_tasks(output)
+        main_task, tasks = self._collect_slurm_tasks(cmd.stdout())
 
         return SlurmJob(id=main_task.id,
                         name=main_task.name,
@@ -87,11 +85,10 @@ class SlurmRunner:
         if cmd.exit_status != 0:
             raise SlurmError(cmd.stderr())
 
-    def _collect_slurm_tasks(self, output: str) -> Tuple[SlurmTask, List[SlurmTask]]:
+    def _collect_slurm_tasks(self, output: List[str]) -> Tuple[SlurmTask, List[SlurmTask]]:
         main_task: SlurmTask
         tasks: List[SlurmTask] = []
-        splitlines = output.splitlines()
-        for index, line in enumerate(splitlines):
+        for index, line in enumerate(output):
             if not line:
                 continue
 

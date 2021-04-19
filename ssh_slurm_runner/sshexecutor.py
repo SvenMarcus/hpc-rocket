@@ -1,9 +1,14 @@
+from typing import List
 from ssh_slurm_runner.executor import CommandExecutor, RunningCommand
 import paramiko as pm
+from paramiko.channel import ChannelStdinFile, ChannelStderrFile, ChannelFile
 
 
 class RemoteCommand(RunningCommand):
-    def __init__(self, stdin, stdout, stderr) -> None:
+    def __init__(self,
+                 stdin: ChannelStdinFile,
+                 stdout: ChannelFile,
+                 stderr: ChannelStderrFile) -> None:
         self._stdin = stdin
         self._stdout = stdout
         self._stderr = stderr
@@ -19,35 +24,33 @@ class RemoteCommand(RunningCommand):
 
         return self._stdout.channel.exit_status
 
-    def is_done(self) -> bool:
-        return self._stdout.channel.exit_status_ready()
-
     @property
     def exit_status(self) -> int:
         return self._stdout.channel.exit_status
 
-    def stdout(self) -> str:
-        return "\n".join(self._stdout_lines)
+    def stdout(self) -> List[str]:
+        return self._stdout_lines
 
-    def stderr(self) -> str:
-        return "\n".join(self._stderr_lines)
+    def stderr(self) -> List[str]:
+        return self._stderr_lines
 
 
-class SSHClient(CommandExecutor):
+class SSHExecutor(CommandExecutor):
     def __init__(self, hostname: str) -> None:
         self._hostname: str = hostname
         self._client: pm.SSHClient = pm.SSHClient()
-        self._client_connected = False
 
     @property
     def is_connected(self) -> bool:
         transport = self._client.get_transport()
         return transport is not None and transport.is_active()
 
-    def connect(self, username: str, keyfile: str, known_hosts_file: str = None) -> None:
-        self._client.load_host_keys(known_hosts_file)
-        self._client.connect(
-            self._hostname, username=username, key_filename=keyfile)
+    def load_host_keys_from_file(self, hostfile: str) -> None:
+        self._client.load_host_keys(hostfile)
+
+    def connect(self, username: str, keyfile: str = None, password: str = None) -> None:
+        self._client.connect(self._hostname, username=username,
+                             password=password, key_filename=keyfile)
 
     def disconnect(self) -> None:
         self._client.close()

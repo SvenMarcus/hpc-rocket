@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List
 
 
 class RunningCommand(ABC):
@@ -12,11 +13,11 @@ class RunningCommand(ABC):
         pass
 
     @abstractmethod
-    def stdout(self) -> str:
+    def stdout(self) -> List[str]:
         pass
 
     @abstractmethod
-    def stderr(self) -> str:
+    def stderr(self) -> List[str]:
         pass
 
 

@@ -11,13 +11,13 @@ from ssh_slurm_runner.cli import parse_cli_args
 from ssh_slurm_runner.output import make_table
 from ssh_slurm_runner.slurmrunner import SlurmError, SlurmJob, SlurmRunner
 
-from .sshclient import SSHClient
+from .sshexecutor import SSHExecutor
 
 cli_args = parse_cli_args(sys.argv[1:])
 
-client = SSHClient(cli_args.host)
-client.connect(cli_args.user, cli_args.keyfile,
-               f"{os.environ['HOME']}/.ssh/known_hosts")
+client = SSHExecutor(cli_args.host)
+client.load_host_keys_from_file(f"{os.environ['HOME']}/.ssh/known_hosts")
+client.connect(cli_args.user, keyfile=cli_args.keyfile)
 
 runner = SlurmRunner(client)
 jobid = runner.sbatch(cli_args.jobfile)
