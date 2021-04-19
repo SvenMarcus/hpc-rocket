@@ -1,5 +1,6 @@
 import os
 import signal
+from ssh_slurm_runner.jobwatcher import JobWatcher
 import sys
 import threading
 
@@ -33,23 +34,23 @@ def handle_sigint(live: Live):
         print(err.args)
 
 
+watcher_ctx = {"job": None}
+watcher = JobWatcher(runner)
+
 with Live(Spinner("bouncingBar", "Launching job"), refresh_per_second=8) as live:
     signal.signal(signal.SIGINT, lambda _, __: handle_sigint(live))
 
-    job: SlurmJob
-    ticker = threading.Event()
-    while not ticker.wait(5):
-        job = runner.poll_status(jobid)
+    def watcher_callback(job: SlurmJob):
+        watcher_ctx["job"] = job
         live.update(make_table(job))
 
-        if job.is_completed:
-            break
+    watcher.watch(jobid, watcher_callback, poll_interval=5)
+
+    while not watcher.is_done():
+        continue
 
     client.disconnect()
-    live.update(RenderGroup(
-        make_table(job),
-        f"Job {'Completed' if job.success else 'Failed'}"
-    ))
 
+    job = watcher_ctx["job"]
     if job is None or not job.success:
         sys.exit(1)
