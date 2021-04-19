@@ -5,7 +5,7 @@ import pytest
 
 from unittest.mock import MagicMock, Mock, patch
 from ssh_slurm_runner.sshexecutor import RemoteCommand, SSHExecutor
-from test.paramiko_sshclient_mockutil import make_get_transport, make_close
+from test.paramiko_sshclient_mockutil import make_get_transport, make_close, get_blocking_channel_exit_status_ready_func
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def pm_sshclient_fake():
 def stdout():
     stdout = MagicMock("paramiko.channel.ChannelFile")
 
-    exit_status_ready = get_blocking_exit_status_ready_func(stdout)
+    exit_status_ready = get_blocking_channel_exit_status_ready_func(stdout)
     stdout.configure_mock(
         channel=MagicMock(
             exit_status_ready=exit_status_ready,
