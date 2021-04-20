@@ -40,7 +40,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-         pytest --cov=ssh_slurm_runner --cov-report=xml test/
+         pytest --cov=. --cov-report=xml test/
 
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
