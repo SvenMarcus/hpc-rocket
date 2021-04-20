@@ -1,8 +1,7 @@
 import os
 import signal
-from ssh_slurm_runner.jobwatcher import JobWatcher
+from ssh_slurm_runner.watcher.jobwatcher import JobWatcher
 import sys
-import threading
 
 from rich.console import RenderGroup
 from rich.live import Live
