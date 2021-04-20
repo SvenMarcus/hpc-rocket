@@ -1,5 +1,7 @@
 ### SSH Slurm Runner
 
+[![Python application](https://github.com/SvenMarcus/ssh-slurm-runner/actions/workflows/python-app.yml/badge.svg)](https://github.com/SvenMarcus/ssh-slurm-runner/actions/workflows/python-app.yml)
+
 SSH Slurm Runner utilizes [`paramiko`](http://www.paramiko.org) to send slurm commands to a remote machine and monitor the job progress. It was primarily written to launch slurm jobs from a CI pipeline.
 
 #### Installation
