@@ -1,5 +1,6 @@
 import os
 import signal
+import threading
 from ssh_slurm_runner.watcher.jobwatcher import JobWatcher
 import sys
 
@@ -45,9 +46,11 @@ with Live(Spinner("bouncingBar", "Launching job"), refresh_per_second=8) as live
         live.update(make_table(job))
 
     watcher.watch(jobid, watcher_callback, poll_interval=5)
-
-    while not watcher.is_done():
-        continue
+    status_check = threading.Event()
+    while not status_check.wait(5):
+        if watcher.is_done():
+            status_check.set()
+            break
 
     watcher.stop()
     client.disconnect()
