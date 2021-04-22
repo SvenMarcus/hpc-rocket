@@ -70,9 +70,25 @@ def test__given_watched_job__when_stopping__should_stop_and_join_watch_thread(ma
     assert calls == ["stop", "join"]
 
 
+def test__given_watched_job__when_waiting_until_done__should_call_join(make_watcherthread_stub: Mock, runner_dummy: Mock):
+    sut = JobWatcher(runner_dummy)
+    sut.watch("123456", lambda _: None, poll_interval=1)
+
+    sut.wait_until_done()
+
+    watcherthread_mock: Mock = make_watcherthread_stub.return_value
+    watcherthread_mock.join.assert_called_once()
+
+
+def test__when_calling_wait_until_done_before_watching__should_raise_not_watching_error(runner_dummy: Mock):
+    sut = JobWatcher(runner_dummy)
+
+    with pytest.raises(NotWatchingError):
+        sut.wait_until_done()
+
+
 def test__when_calling_stop_before_watching__should_raise_not_watching_error(runner_dummy: Mock):
     sut = JobWatcher(runner_dummy)
 
     with pytest.raises(NotWatchingError):
         sut.stop()
-

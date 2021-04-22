@@ -24,13 +24,13 @@ class WatcherThread(threading.Thread):
         last_job = None
         while not self.stop_event.wait(self.interval):
             job = self.runner.poll_status(self.jobid)
-            self._done = job.is_completed
+            self._done = not (job.is_running or job.is_pending)
 
             if job != last_job:
                 self.callback(job)
                 last_job = job
 
-            if job.is_completed:
+            if self._done:
                 break
 
     def stop(self):

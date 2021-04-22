@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Tuple
 from unittest.mock import Mock
 
 import pytest
@@ -18,7 +19,10 @@ def test__given_completed_job__when_polling__should_trigger_callback():
 
 
 def test__given_running_job__when_polling_and_job_completes_after_second_poll__should_trigger_callback_twice():
-    runner = runner_with_changing_job_state(completed_after_calls=2)
+    runner = runner_with_job_change_after_calls(calls=2,
+                                                initial_job=running_job(),
+                                                next_job=completed_job())
+
     callback, call_capture = callback_and_capture()
 
     sut = WatcherThread(runner, "123456", callback, interval=0)
@@ -29,9 +33,24 @@ def test__given_running_job__when_polling_and_job_completes_after_second_poll__s
 
 
 def test__given_running_job__when_polling_and_job_completes_after_third__should_trigger_callback_only_twice():
-    runner = runner_with_changing_job_state(completed_after_calls=3)
-    callback, call_capture = callback_and_capture()
+    runner = runner_with_job_change_after_calls(calls=3,
+                                                initial_job=running_job(),
+                                                next_job=completed_job())
 
+    callback, call_capture = callback_and_capture()
+    sut = WatcherThread(runner, "123456", callback, interval=0)
+
+    sut.poll()
+
+    assert call_capture['calls'] == 2
+
+
+def test__given_pending_job__when_polling_and_job_completes_after_second_poll__should_trigger_callback_twice():
+    runner = runner_with_job_change_after_calls(calls=2,
+                                                initial_job=pending_job(),
+                                                next_job=completed_job())
+
+    callback, call_capture = callback_and_capture()
     sut = WatcherThread(runner, "123456", callback, interval=0)
 
     sut.poll()
@@ -40,7 +59,10 @@ def test__given_running_job__when_polling_and_job_completes_after_third__should_
 
 
 def test__when_stopping_then_polling__should_not_trigger_callback():
-    runner = runner_with_changing_job_state(completed_after_calls=1)
+    runner = runner_with_job_change_after_calls(calls=1,
+                                                initial_job=running_job(),
+                                                next_job=completed_job())
+
     callback, call_capture = callback_and_capture()
 
     sut = WatcherThread(runner, "123456", callback, interval=0)
@@ -62,7 +84,28 @@ def test__after_polling_completed_job__is_done_should_be_true():
 
 
 def test__given_running_job__when_checking_is_done_until_completion__should_be_false_then_true():
-    runner = runner_with_changing_job_state(completed_after_calls=2)
+    runner = runner_with_job_change_after_calls(calls=2,
+                                                initial_job=running_job(),
+                                                next_job=completed_job())
+
+    context = {'done': []}
+
+    def callback(job):
+        sut = context['sut']
+        context['done'].append(sut.is_done())
+
+    sut = WatcherThread(runner, "123456", callback, interval=0)
+    context['sut'] = sut
+
+    sut.poll()
+
+    assert context['done'] == [False, True]
+
+
+def test__given_running_job__when_checking_is_done_until_canceled__should_be_false_then_true():
+    runner = runner_with_job_change_after_calls(calls=2,
+                                                initial_job=running_job(),
+                                                next_job=canceled_job())
 
     context = {'done': []}
 
@@ -81,8 +124,8 @@ def test__given_running_job__when_checking_is_done_until_completion__should_be_f
 @pytest.mark.timeout(2)
 def test__given_running_job__when_polling__should_only_poll_in_given_interval():
     call_times = []
-    poll_status = make_poll_status_for_changing_job(
-        {'calls': 0}, completed_after_calls=2)
+    poll_status = make_poll_status_with_job_change_after_calls(
+        call_count=2, next_job=completed_job())
 
     def timerecording_wrapper(jobid):
         call_times.append(datetime.now())
@@ -107,7 +150,7 @@ def callback_and_capture():
 
 
 def make_poll_status(state: str):
-    def poll_status(jobid: str):
+    def poll_status(_: str):
         return SlurmJob(id="123456", name="MyJob", state=state, tasks=[])
 
     return poll_status
@@ -119,30 +162,25 @@ def runner_returning_job_with_state(state):
     return runner_mock
 
 
-def runner_with_changing_job_state(completed_after_calls: int):
+def runner_with_job_change_after_calls(calls: int, initial_job: SlurmJob, next_job: SlurmJob):
     runner_mock = Mock(spec=SlurmRunner)
-    call_capture = {'calls': 0}
-
-    def poll_status(jobid):
-        calls = call_capture['calls'] + 1
-        call_capture['calls'] = calls
-        if calls == completed_after_calls:
-            return completed_job()
-
-        return running_job()
+    poll_status = make_poll_status_with_job_change_after_calls(
+        calls, initial_job=initial_job, next_job=next_job)
 
     runner_mock.configure_mock(poll_status=poll_status)
     return runner_mock
 
 
-def make_poll_status_for_changing_job(call_capture, completed_after_calls: int):
+def make_poll_status_with_job_change_after_calls(call_count: int, next_job: SlurmJob, initial_job=None):
+    call_capture = {'calls': 0}
+
     def poll_status(jobid):
         calls = call_capture['calls'] + 1
         call_capture['calls'] = calls
-        if calls == completed_after_calls:
-            return completed_job()
+        if calls == call_count:
+            return next_job
 
-        return running_job()
+        return initial_job or running_job()
 
     return poll_status
 
@@ -151,5 +189,13 @@ def completed_job():
     return SlurmJob(id="123456", name="MyJob", state="COMPLETED", tasks=[])
 
 
+def canceled_job():
+    return SlurmJob(id="123456", name="MyJob", state="CANCELED", tasks=[])
+
+
 def running_job():
     return SlurmJob(id="123456", name="MyJob", state="RUNNING", tasks=[])
+
+
+def pending_job():
+    return SlurmJob(id="123456", name="MyJob", state="PENDING", tasks=[])
