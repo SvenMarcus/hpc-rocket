@@ -1,8 +1,6 @@
 from ssh_slurm_runner.executor import CommandExecutor
 from typing import List, Tuple
-from dataclasses import dataclass, field
-from enum import Enum
-import ssh_slurm_runner.sshexecutor as ssh
+from dataclasses import dataclass
 
 
 class SlurmError(RuntimeError):

@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable
 
 import ssh_slurm_runner.watcher.watcherthread as wt
 
