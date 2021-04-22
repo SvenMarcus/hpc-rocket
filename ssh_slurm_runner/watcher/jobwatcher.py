@@ -29,6 +29,12 @@ class JobWatcher:
 
         return self.watching_thread.is_done()
 
+    def wait_until_done(self) -> None:
+        if self.watching_thread is None:
+            raise NotWatchingError()
+
+        self.watching_thread.join()
+
     def stop(self) -> None:
         if self.watching_thread is None:
             raise NotWatchingError()
