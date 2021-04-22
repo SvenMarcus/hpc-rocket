@@ -1,4 +1,5 @@
 from typing import Union
+from rich.spinner import Spinner
 from rich.table import Table
 from ssh_slurm_runner.slurmrunner import SlurmJob
 
@@ -17,6 +18,9 @@ def make_table(job_or_title: Union[SlurmJob, str] = None) -> Table:
         return table
 
     for task in job_or_title.tasks:
-        table.add_row(str(task.id), task.name, task.state)
+        last_column = task.state
+        if task.state == "RUNNING":
+            last_column = Spinner("bouncingBar", task.state)
+        table.add_row(str(task.id), task.name, last_column)
 
     return table
