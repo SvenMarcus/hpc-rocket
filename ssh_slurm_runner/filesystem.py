@@ -1,11 +1,13 @@
-from abc import ABC,abstractmethod
+from abc import ABC, abstractmethod
+from typing import List
+
 
 class Filesystem(ABC):
 
     @abstractmethod
-    def copy(source: str, target: str) -> None:
+    def copy(self, source: str, target: str, filesystem: 'Filesystem' = None) -> None:
         pass
 
     @abstractmethod
-    def delete(path: str) -> None:
+    def delete(self, path: str) -> None:
         pass
