@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
+
 import fs.base
 import fs.copy as fscp
+from fs.enums import ResourceType
 import fs.sshfs as sshfs
+
 from ssh_slurm_runner.filesystem import Filesystem
 
 
@@ -62,6 +65,10 @@ class SSHFilesystem(PyFilesystemBased):
         if not self.exists(path):
             raise FileNotFoundError(path)
 
+        if self.internal_fs.gettype(path) is ResourceType.directory:
+            self.internal_fs.removetree(path)
+            return
+
         self.internal_fs.remove(path)
 
     def exists(self, path: str) -> None:
@@ -76,4 +83,8 @@ class SSHFilesystem(PyFilesystemBased):
                        filesystem.internal_fs, target)
 
     def _try_copy(self, source, target):
+        if self.internal_fs.gettype(source) is ResourceType.directory:
+            self.internal_fs.copydir(source, target, create=True)
+            return
+
         self.internal_fs.copy(source, target)
