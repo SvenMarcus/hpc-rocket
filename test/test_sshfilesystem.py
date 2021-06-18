@@ -1,3 +1,4 @@
+from typing import List, Tuple
 from unittest.mock import MagicMock, Mock, patch
 
 import fs.base
@@ -9,10 +10,11 @@ from ssh_slurm_runner.sshfilesystem import PyFilesystemBased, SSHFilesystem
 
 class MockFilesystem(PyFilesystemBased):
 
-    def __init__(self) -> None:
-        self._internal_fs = MagicMock(spec="fs.base.FS").return_value
+    def __init__(self, internal_fs = None) -> None:
+        self._internal_fs = internal_fs or MagicMock(spec="fs.base.FS").return_value
         self.existing_files = set()
 
+    @property
     def internal_fs(self) -> fs.base.FS:
         return self._internal_fs
 
@@ -41,6 +43,42 @@ class NonPyFilesystemBasedFilesystem(Filesystem):
         pass
 
 
+class VerifyDirsCreatedAndCopyPyFSMock:
+
+    def __init__(self, expected_dirs: List[str],
+                 expected_copies: List[Tuple[str, str]],
+                 existing_files: List[str] = None,
+                 expected_calls: List[str] = None) -> None:
+
+        self.expected_dirs = expected_dirs
+        self.expected_copies = expected_copies
+        self.expected_calls = expected_calls
+        self.existing_files = existing_files or list()
+        self.dirs_created = []
+        self.copy_calls = list()
+        self.calls = []
+
+    def isdir(self, path: str) -> bool:
+        return False
+
+    def exists(self, path: str) -> bool:
+        return path in self.existing_files
+
+    def makedirs(self, path: str):
+        self.calls.append("makedirs")
+        self.dirs_created.append(path)
+        return MagicMock(spec="fs.subfs.SubFS")
+
+    def copy(self, src: str, dst: str):
+        self.calls.append("copy")
+        self.copy_calls.append((src, dst))
+
+    def verify(self):
+        assert self.expected_calls == self.calls
+        assert self.expected_dirs == self.dirs_created
+        assert self.expected_copies == self.copy_calls
+
+
 SOURCE = "~/file.txt"
 TARGET = "~/another/folder/copy.txt"
 
@@ -52,7 +90,10 @@ def sshfs_type_mock():
     patcher2 = patch("fs.sshfs.SSHFS")
     patcher1.start()
     mock = patcher2.start()
-    mock.return_value.configure_mock(exists=exists_with_files(SOURCE))
+    mock.return_value.configure_mock(
+        exists=exists_with_files(SOURCE),
+        isdir=lambda _: False
+    )
 
     yield mock
 
@@ -83,6 +124,24 @@ def test__when_copying_file__should_call_copy_on_sshfs(sshfs_type_mock):
     sshfs_mock = sshfs_type_mock.return_value
     sshfs_mock.copy.assert_called_with(SOURCE, TARGET)
 
+
+def test__when_copying_file__but_parent_dir_missing__should_create_missing_dirs(sshfs_type_mock):
+    target_parent_dir = "~/another/folder"
+    mock = VerifyDirsCreatedAndCopyPyFSMock(
+        expected_copies=[(SOURCE, TARGET)],
+        expected_dirs=[target_parent_dir],
+        existing_files=[SOURCE],
+        expected_calls=["makedirs", "copy"]
+    )
+
+    sshfs_type_mock.return_value = mock
+    sut = SSHFilesystem('user', 'host', 'privatekey')
+
+    sut.copy(SOURCE, TARGET)
+
+    mock.verify()
+
+
 def test__when_copying_directory__should_call_copydir_on_sshfs(sshfs_type_mock):
     src_dir = "~/mydir"
     copy_dir = "~/copydir"
@@ -94,12 +153,35 @@ def test__when_copying_directory__should_call_copydir_on_sshfs(sshfs_type_mock):
 
     sshfs_mock.copydir.assert_called_with(src_dir, copy_dir, create=True)
 
+
 def test__when_copying_file_to_other_filesystem__should_call_copy_file(sshfs_type_mock, copy_file):
     fs_mock = MockFilesystem()
     sut = SSHFilesystem('user', 'host', 'privatekey')
 
     sut.copy(SOURCE, TARGET, filesystem=fs_mock)
 
+    sshfs_mock = sshfs_type_mock.return_value
+    copy_file.assert_called_with(
+        sshfs_mock, SOURCE, fs_mock.internal_fs, TARGET)
+
+
+def test__when_copying_file_to_other_filesystem__but_parent_dir_missing__should_create_missing_dirs(sshfs_type_mock, copy_file):
+    target_parent_dir = "~/another/folder"
+    missing_dirs_mock = VerifyDirsCreatedAndCopyPyFSMock(
+        expected_dirs=[target_parent_dir],
+        expected_copies=[],
+        expected_calls=["makedirs"]
+    )
+
+    fs_mock = MockFilesystem(missing_dirs_mock)
+    fs_mock.existing_files = [SOURCE]
+
+    sshfs_type_mock.return_value = fs_mock
+    sut = SSHFilesystem('user', 'host', 'privatekey')
+
+    sut.copy(SOURCE, TARGET, filesystem=fs_mock)
+
+    missing_dirs_mock.verify()
     sshfs_mock = sshfs_type_mock.return_value
     copy_file.assert_called_with(
         sshfs_mock, SOURCE, fs_mock.internal_fs, TARGET)
@@ -151,7 +233,8 @@ def test__when_deleting_file__should_call_sshfs_remove(sshfs_type_mock):
 
 def test__when_deleting_directory__should_call_sshfs_removetree(sshfs_type_mock):
     dir_path = "~/mydir"
-    sshfs_mock = sshfs_mock_remove_expecting_directory(sshfs_type_mock, dir_path)
+    sshfs_mock = sshfs_mock_remove_expecting_directory(
+        sshfs_type_mock, dir_path)
 
     sut = SSHFilesystem('user', 'host', 'privatekey')
 
@@ -178,9 +261,10 @@ def sshfs_mock_copy_expecting_directory(sshfs_type_mock, src_dir):
     sshfs_mock.configure_mock(
         exists=exists_with_files(src_dir),
         gettype=lambda _: ResourceType.directory,
+        isdir=lambda _: True,
         copy=copy
     )
-    
+
     return sshfs_mock
 
 
@@ -194,6 +278,7 @@ def sshfs_mock_remove_expecting_directory(sshfs_type_mock, dir_path):
     sshfs_mock.configure_mock(
         exists=exists_with_files(dir_path),
         gettype=lambda _: ResourceType.directory,
+        isdir=lambda _: True,
         remove=remove
     )
 
