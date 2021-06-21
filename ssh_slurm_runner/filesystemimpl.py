@@ -11,6 +11,10 @@ class LocalFilesystem(PyFilesystemBased):
     """
 
     def __init__(self, rootpath: str) -> None:
+        """
+        Args:
+            rootpath (str): The path the filesystem should be opened in
+        """
         self._internal_fs = fs.osfs.OSFS(rootpath)
 
     @property
@@ -28,7 +32,8 @@ class SSHFilesystem(PyFilesystemBased):
         Args:
             user (str): The user on the remote machine
             host (str): The address of the remote machine
-            private_key (str): The user's private SSH key. Needed for authentication.
+            password (str): The user's password on the remote machine. Alternative to `private_key`.
+            private_key (str): The user's private SSH key. Alternative to `password`.
         """
         self._internal_fs = sshfs.SSHFS(
             host, user=user, passwd=password, pkey=private_key)
