@@ -1,11 +1,7 @@
-from typing import List, Tuple
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import patch
 
-import fs.base
 import pytest
-from fs import ResourceType
-from ssh_slurm_runner.filesystem import Filesystem
-from ssh_slurm_runner.sshfilesystem import PyFilesystemBased, SSHFilesystem
+from ssh_slurm_runner.filesystemimpl import SSHFilesystem
 
 
 @pytest.fixture

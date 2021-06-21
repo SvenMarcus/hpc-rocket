@@ -1,7 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 
-import fs
+import fs.base
 import fs.copy as fscp
 
 from ssh_slurm_runner.filesystem import Filesystem

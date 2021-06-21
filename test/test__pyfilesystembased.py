@@ -5,7 +5,7 @@ import fs
 import pytest
 from fs import ResourceType
 from ssh_slurm_runner.filesystem import Filesystem
-from ssh_slurm_runner.sshfilesystem import PyFilesystemBased
+from ssh_slurm_runner.pyfilesystem import PyFilesystemBased
 
 
 # This class name starts with an underscore because pytest tries to collect it as test otherwise
