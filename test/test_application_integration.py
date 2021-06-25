@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from ssh_slurm_runner.application import Application
 from ssh_slurm_runner.launchoptions import LaunchOptions
-from test.sshclient_testdoubles import ChannelFileStub, DelayedChannelSpy, ChannelStub, CmdSpecificSSHClientStub, IteratingChannelFileStub, SSHClientMock
+from test.sshclient_testdoubles import ChannelFileStub, DelayedChannelSpy, CmdSpecificSSHClientStub, SSHClientMock
 
 
 @pytest.fixture
