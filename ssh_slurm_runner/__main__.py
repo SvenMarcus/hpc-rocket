@@ -1,53 +1,16 @@
-import os
-import signal
-from ssh_slurm_runner.watcher.jobwatcher import JobWatcher
 import sys
+import signal
 
-from rich.live import Live
-from rich.spinner import Spinner
-
+from ssh_slurm_runner.application import Application
 from ssh_slurm_runner.cli import parse_cli_args
-from ssh_slurm_runner.output import make_table
-from ssh_slurm_runner.slurmrunner import SlurmError, SlurmJob, SlurmRunner
-
-from .sshexecutor import SSHExecutor
+from ssh_slurm_runner.ui import RichUI
 
 cli_args = parse_cli_args(sys.argv[1:])
+with RichUI() as ui:
+    app = Application(cli_args, ui)
 
-client = SSHExecutor(cli_args.host)
-client.load_host_keys_from_file(f"{os.environ['HOME']}/.ssh/known_hosts")
-client.connect(cli_args.user, keyfile=cli_args.keyfile)
+    def on_cancel(*args, **kwargs):
+        sys.exit(app.cancel())
 
-runner = SlurmRunner(client)
-jobid = runner.sbatch(cli_args.jobfile)
-
-watcher_ctx = {"job": None}
-watcher = JobWatcher(runner)
-
-
-def handle_sigint(live: Live):
-    try:
-        print(f"Canceling job {jobid}")
-        runner.scancel(jobid)
-        job = runner.poll_status(jobid)
-        watcher.stop()
-        live.update(make_table(job))
-    except SlurmError as err:
-        print(err.args)
-    sys.exit(1)
-
-
-with Live(Spinner("bouncingBar", "Launching job"), refresh_per_second=8) as live:
-    signal.signal(signal.SIGINT, lambda _, __: handle_sigint(live))
-
-    def watcher_callback(job: SlurmJob):
-        watcher_ctx["job"] = job
-        live.update(make_table(job))
-
-    watcher.watch(jobid, watcher_callback, poll_interval=5)
-    watcher.wait_until_done()
-    client.disconnect()
-
-    job = watcher_ctx["job"]
-    if job is None or not job.success:
-        sys.exit(1)
+    signal.signal(signal.SIGINT, on_cancel)
+    sys.exit(app.run())

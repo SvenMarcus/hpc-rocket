@@ -112,3 +112,5 @@ class SSHClientMock(CmdSpecificSSHClientStub):
     def verify(self):
         assert self.commands["sbatch"] == f"sbatch {self._options.sbatch}", "Expected: " + \
             f"sbatch {self._options.sbatch}" + f"\nbut was: {self.command}"
+
+        assert not self.connected
