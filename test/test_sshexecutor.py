@@ -1,5 +1,3 @@
-from typing import Callable
-from paramiko.channel import ChannelStdinFile
 import paramiko
 import pytest
 
@@ -56,7 +54,7 @@ def test__when_connecting_with_user_and_keyfile__should_connect_with_username_an
     sut.connect("myuser", keyfile="/home/myuser/.ssh/keyfile")
 
     pm_sshclient_fake.connect.assert_called_with(
-        'cluster.example.com', username='myuser', key_filename='/home/myuser/.ssh/keyfile', password=None)
+        'cluster.example.com', username='myuser', key_filename='/home/myuser/.ssh/keyfile', password=None, pkey=None)
 
 
 def test__when_connecting_with_user_and_password__should_call_connect_with_username_and_password(pm_sshclient_fake: Mock):
@@ -64,7 +62,15 @@ def test__when_connecting_with_user_and_password__should_call_connect_with_usern
     sut.connect("myuser", password="12345")
 
     pm_sshclient_fake.connect.assert_called_with(
-        'cluster.example.com', username='myuser', password='12345', key_filename=None)
+        'cluster.example.com', username='myuser', password='12345', key_filename=None, pkey=None)
+
+
+def test__when_connecting_with_user_and_private_key__should_call_connect_with_username_and_key(pm_sshclient_fake: Mock):
+    sut = SSHExecutor("cluster.example.com")
+    sut.connect("myuser", private_key="12345")
+
+    pm_sshclient_fake.connect.assert_called_with(
+        'cluster.example.com', username='myuser', pkey="12345", password=None, key_filename=None)
 
 
 def test__when_connecting__is_connected_should_be_true(pm_sshclient_fake: Mock):

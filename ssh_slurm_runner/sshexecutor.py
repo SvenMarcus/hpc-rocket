@@ -48,9 +48,10 @@ class SSHExecutor(CommandExecutor):
     def load_host_keys_from_file(self, hostfile: str) -> None:
         self._client.load_host_keys(hostfile)
 
-    def connect(self, username: str, keyfile: str = None, password: str = None) -> None:
-        self._client.connect(self._hostname, username=username,
-                             password=password, key_filename=keyfile)
+    def connect(self, username: str, keyfile: str = None, password: str = None, private_key: str = None) -> None:
+        self._client.connect(self._hostname,
+                             username=username, password=password,
+                             key_filename=keyfile, pkey=private_key)
 
     def disconnect(self) -> None:
         self._client.close()
