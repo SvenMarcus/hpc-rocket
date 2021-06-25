@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from ssh_slurm_runner.application import Application
 from ssh_slurm_runner.launchoptions import LaunchOptions
-from test.sshclient_testdoubles import ChannelFileStub, ChannelSpy, ChannelStub, CmdSpecificSSHClientStub, IteratingChannelFileStub, SSHClientMock
+from test.sshclient_testdoubles import ChannelFileStub, DelayedChannelSpy, ChannelStub, CmdSpecificSSHClientStub, IteratingChannelFileStub, SSHClientMock
 
 
 @pytest.fixture
@@ -79,11 +79,11 @@ def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one
     sut = Application(valid_options)
 
     with open("test/slurmoutput/sacct_completed_failed.txt", "r") as file:
-        lines = file.readlines()
+        error_lines = file.readlines()
 
         sshclient_type_mock.return_value = CmdSpecificSSHClientStub({
             "sbatch": ChannelFileStub(lines=["1234"]),
-            "sacct": ChannelFileStub(lines=lines)
+            "sacct": ChannelFileStub(lines=error_lines)
         })
 
         actual = sut.run()
@@ -95,22 +95,18 @@ def test__given_valid_config__when_running_long_running_job__should_wait_for_com
                                                                                         valid_options: LaunchOptions,
                                                                                         success_lines: List[str]):
 
-    with open("test/slurmoutput/sacct_running.txt", "r") as file:
-        running_lines = file.readlines()
+    sut = Application(valid_options)
 
-        sut = Application(valid_options)
+    channel_spy = DelayedChannelSpy(exit_code=1, calls_until_exit=2)
+    sshclient_type_mock.return_value = CmdSpecificSSHClientStub({
+        "sbatch": ChannelFileStub(lines=["1234"]),
+        "sacct": ChannelFileStub(
+            lines=success_lines,
+            channel=channel_spy
+        )
+    })
 
-        sshclient_type_mock.return_value = CmdSpecificSSHClientStub({
-            "sbatch": ChannelFileStub(lines=["1234"]),
-            "sacct": IteratingChannelFileStub(
-                lines_list=[running_lines, success_lines],
-                channels_list=[
-                    ChannelStub(exit_code=1, exit_code_ready=False),
-                    ChannelStub()
-                ]
-            )
-        })
+    actual = sut.run()
 
-        actual = sut.run()
-
-        assert actual == 0
+    assert actual == 0
+    assert channel_spy.times_called == 2

@@ -1,0 +1,19 @@
+host: example.com
+user: myuser
+
+copy:
+  - from: myfile.txt
+    to: mycopy.txt
+
+  - from: funny.gif
+    to: copy.gif
+
+  - from: slurm.job
+    to: slurm.job
+
+clean:
+  clean-copied-files: true
+  files:
+    - anotherfile.txt
+
+sbatch: slurm.job

@@ -25,7 +25,7 @@ class ChannelStub:
         return self._code_ready
 
 
-class ChannelSpy(ChannelStub):
+class DelayedChannelSpy(ChannelStub):
 
     def __init__(self, exit_code: int = 0, calls_until_exit: int = 0):
         super().__init__(exit_code)
@@ -49,21 +49,6 @@ class ChannelFileStub:
 
     def readlines(self):
         return self._lines
-
-
-class IteratingChannelFileStub:
-
-    def __init__(self, lines_list: Iterable[List[str]], channels_list: Iterable[ChannelStub]):
-        self._lines_iterator = iter(lines_list)
-        self._channels_iterator = iter(channels_list)
-        self._last_channel = channels_list[-1]
-
-    @property
-    def channel(self):
-        return next(self._channels_iterator, self._last_channel)
-
-    def readlines(self):
-        return next(self._lines_iterator)
 
 
 class CmdSpecificSSHClientStub:
