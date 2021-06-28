@@ -1,5 +1,7 @@
 import os
 
+from ssh_slurm_runner.environmentpreparation import EnvironmentPreparation
+from ssh_slurm_runner.filesystemimpl import LocalFilesystem, SSHFilesystem
 from ssh_slurm_runner.launchoptions import LaunchOptions
 from ssh_slurm_runner.sshexecutor import SSHExecutor
 from ssh_slurm_runner.slurmrunner import SlurmError, SlurmJob, SlurmRunner
@@ -18,9 +20,36 @@ class Application:
         self.jobid = 0
 
     def run(self) -> int:
+        self._prepare_remote_environment()
+
         executor = self._create_sshexecutor()
         self.runner = SlurmRunner(executor)
         self.jobid = self.runner.sbatch(self._options.sbatch)
+        self._wait_for_job_completion()
+
+        executor.disconnect()
+        if self._latest_job_update.success:
+            return 0
+
+        return 1
+
+    def _prepare_remote_environment(self) -> EnvironmentPreparation:
+        env_prep = EnvironmentPreparation(
+            LocalFilesystem("."),
+            self._make_ssh_filesystem())
+
+        env_prep.files_to_copy(self._options.copy_files)
+        env_prep.prepare()
+
+        return env_prep
+
+    def _make_ssh_filesystem(self):
+        return SSHFilesystem(self._options.user,
+                             self._options.host,
+                             self._options.password,
+                             self._options.private_key)
+
+    def _wait_for_job_completion(self):
         self.watcher = JobWatcher(self.runner)
 
         self.watcher.watch(self.jobid,
@@ -28,12 +57,6 @@ class Application:
                            self._options.poll_interval)
 
         self.watcher.wait_until_done()
-
-        executor.disconnect()
-        if self._latest_job_update.success:
-            return 0
-
-        return 1
 
     def _poll_callback(self, job: SlurmJob) -> None:
         self._latest_job_update = job

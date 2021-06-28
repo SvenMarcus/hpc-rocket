@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from test.pyfilesystem_testdoubles import VerifyDirsCreatedAndCopyPyFSMock
 from unittest.mock import MagicMock, patch
 
 import fs
@@ -56,49 +56,12 @@ class NonPyFilesystemBasedFilesystem(Filesystem):
         pass
 
 
-class VerifyDirsCreatedAndCopyPyFSMock:
-
-    def __init__(self, expected_dirs: List[str],
-                 expected_copies: List[Tuple[str, str]],
-                 existing_files: List[str] = None,
-                 expected_calls: List[str] = None) -> None:
-
-        self.expected_dirs = expected_dirs
-        self.expected_copies = expected_copies
-        self.expected_calls = expected_calls
-        self.existing_files = existing_files or list()
-        self.dirs_created = []
-        self.copy_calls = list()
-        self.calls = []
-
-    def isdir(self, path: str) -> bool:
-        return False
-
-    def exists(self, path: str) -> bool:
-        return path in self.existing_files
-
-    def makedirs(self, path: str):
-        self.calls.append("makedirs")
-        self.dirs_created.append(path)
-        return MagicMock(spec="fs.subfs.SubFS")
-
-    def copy(self, src: str, dst: str):
-        self.calls.append("copy")
-        self.copy_calls.append((src, dst))
-
-    def verify(self):
-        assert self.expected_calls == self.calls
-        assert self.expected_dirs == self.dirs_created
-        assert self.expected_copies == self.copy_calls
-
-
 SOURCE = "~/file.txt"
 TARGET = "~/another/folder/copy.txt"
 
 
 @pytest.fixture
 def fs_type_mock():
-    # The mocking does not work for some reason if only one of the paths is mocked
     patcher = patch("fs.base.FS")
     type_mock = patcher.start()
     type_mock.return_value.configure_mock(
