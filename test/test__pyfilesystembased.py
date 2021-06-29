@@ -1,7 +1,8 @@
-from test.pyfilesystem_testdoubles import VerifyDirsCreatedAndCopyPyFSMock
+from test.pyfilesystem_testdoubles import PyFilesystemStub, VerifyDirsCreatedAndCopyPyFSMock
 from unittest.mock import MagicMock, patch
 
 import fs
+import fs.base
 import pytest
 from fs import ResourceType
 from ssh_slurm_runner.filesystem import Filesystem
@@ -23,9 +24,9 @@ class _TestFilesystemImpl(PyFilesystemBased):
 class FilesystemStub(PyFilesystemBased):
 
     def __init__(self, internal_fs=None) -> None:
-        self._internal_fs = internal_fs or MagicMock(
-            spec="fs.base.FS").return_value
+        self._internal_fs = internal_fs or MagicMock(spec=fs.base.FS).return_value
         self.existing_files = set()
+        self.existing_dirs = set()
 
     @property
     def internal_fs(self) -> fs.base.FS:
@@ -38,7 +39,7 @@ class FilesystemStub(PyFilesystemBased):
         pass
 
     def exists(self, path: str) -> None:
-        return path in self.existing_files
+        return path in self.existing_files or path in self.existing_dirs
 
 
 class NonPyFilesystemBasedFilesystem(Filesystem):
@@ -152,6 +153,22 @@ def test__when_copying_file_to_other_filesystem__but_parent_dir_missing__should_
     sshfs_mock = fs_type_mock.return_value
     copy_file.assert_called_with(
         sshfs_mock, SOURCE, fs_mock.internal_fs, TARGET)
+
+
+@pytest.mark.usefixtures("copy_file")
+def test__when_copying_file_to_other_filesystem__and_parent_dir_exists__should_not_try_to_create_dirs(fs_type_mock):
+    target_parent_dir = "~/another/folder"
+
+    filesystem_stub = FilesystemStub()
+    filesystem_stub.existing_files = [SOURCE]
+    filesystem_stub.existing_dirs = [target_parent_dir]
+
+    fs_type_mock.return_value = filesystem_stub
+    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+
+    sut.copy(SOURCE, TARGET, filesystem=filesystem_stub)
+
+    filesystem_stub.internal_fs.makedirs.assert_not_called()
 
 
 def test__when_copying__but_source_does_not_exist__should_raise_file_not_found_error(fs_type_mock):

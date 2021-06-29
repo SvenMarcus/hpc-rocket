@@ -14,7 +14,7 @@ class PyFilesystemStub:
         return path in self.existing_dirs
 
     def exists(self, path: str) -> bool:
-        print(path, path in self.existing_files)
+        print(f"Get called with {path}")
         return path in self.existing_files or path in self.existing_dirs
 
     def makedirs(self, path: str) -> None:
@@ -82,5 +82,4 @@ def copy_file_between_filesystems_fake(origin_fs: PyFilesystemStub, origin_path:
     assert origin_path in origin_fs.existing_files
     assert dest_path not in dest_fs.existing_files
 
-    print("Copy between FS", dest_path)
     dest_fs.existing_files.append(dest_path)

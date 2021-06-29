@@ -37,7 +37,8 @@ class PyFilesystemBased(Filesystem, ABC):
     def _create_missing_target_dirs(self, target, filesystem):
         target_fs = filesystem or self
         target_parent_dir = os.path.dirname(target)
-        target_fs.internal_fs.makedirs(target_parent_dir)
+        if not target_fs.exists(target_parent_dir):
+            target_fs.internal_fs.makedirs(target_parent_dir)
 
     def delete(self, path: str) -> None:
         if not self.exists(path):
