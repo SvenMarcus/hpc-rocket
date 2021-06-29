@@ -3,10 +3,10 @@ import os
 from ssh_slurm_runner.environmentpreparation import EnvironmentPreparation
 from ssh_slurm_runner.filesystemimpl import LocalFilesystem, SSHFilesystem
 from ssh_slurm_runner.launchoptions import LaunchOptions
-from ssh_slurm_runner.sshexecutor import SSHExecutor
 from ssh_slurm_runner.slurmrunner import SlurmError, SlurmJob, SlurmRunner
-from ssh_slurm_runner.watcher.jobwatcher import JobWatcher
+from ssh_slurm_runner.sshexecutor import SSHExecutor
 from ssh_slurm_runner.ui import UI
+from ssh_slurm_runner.watcher.jobwatcher import JobWatcher
 
 
 class Application:
@@ -20,13 +20,13 @@ class Application:
         self.jobid = 0
 
     def run(self) -> int:
-        self._prepare_remote_environment()
-
+        env_prep = self._prepare_remote_environment()
         executor = self._create_sshexecutor()
         self.runner = SlurmRunner(executor)
         self.jobid = self.runner.sbatch(self._options.sbatch)
         self._wait_for_job_completion()
-
+        
+        env_prep.clean()
         executor.disconnect()
         if self._latest_job_update.success:
             return 0
@@ -39,6 +39,7 @@ class Application:
             self._make_ssh_filesystem())
 
         env_prep.files_to_copy(self._options.copy_files)
+        env_prep.files_to_clean(self._options.clean_files)
         env_prep.prepare()
 
         return env_prep

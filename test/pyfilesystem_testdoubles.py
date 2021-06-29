@@ -14,6 +14,7 @@ class PyFilesystemStub:
         return path in self.existing_dirs
 
     def exists(self, path: str) -> bool:
+        print(path, path in self.existing_files)
         return path in self.existing_files or path in self.existing_dirs
 
     def makedirs(self, path: str) -> None:
@@ -21,6 +22,26 @@ class PyFilesystemStub:
 
     def remove(self, path: str) -> None:
         pass
+
+
+class PyFilesystemFake(PyFilesystemStub):
+
+    def __init__(self, existing_files: List[str] = None, existing_dirs: List[str] = None) -> None:
+        super().__init__(existing_files=existing_files, existing_dirs=existing_dirs)
+
+    def makedirs(self, path: str) -> None:
+        return self.existing_dirs.append(path)
+
+    def remove(self, path: str) -> None:
+        self.existing_files.remove(path)
+
+    def removetree(self, path: str) -> None:
+        self.existing_dirs.remove(path)
+        filtered = filter(lambda file: file.startswith(path),
+                          self.existing_files)
+
+        for file in filtered:
+            self.existing_files.remove(file)
 
 
 class VerifyDirsCreatedAndCopyPyFSMock(PyFilesystemStub):
@@ -55,3 +76,11 @@ class VerifyDirsCreatedAndCopyPyFSMock(PyFilesystemStub):
         assert self.expected_calls == self.calls
         assert self.expected_dirs == self.dirs_created
         assert self.expected_copies == self.copy_calls
+
+
+def copy_file_between_filesystems_fake(origin_fs: PyFilesystemStub, origin_path: str, dest_fs: PyFilesystemStub, dest_path: str):
+    assert origin_path in origin_fs.existing_files
+    assert dest_path not in dest_fs.existing_files
+
+    print("Copy between FS", dest_path)
+    dest_fs.existing_files.append(dest_path)
