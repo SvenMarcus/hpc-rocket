@@ -71,16 +71,11 @@ def osfs_type_mock():
 
 @pytest.fixture(autouse=True)
 def sshfs_type_mock():
-    # The mocking does not work for some reason if only one of the paths is mocked
-    patcher1 = patch("fs.sshfs.sshfs.SSHFS")
-    patcher2 = patch("fs.sshfs.SSHFS")
-    patcher1.start()
-    mock = patcher2.start()
+    patcher = patch("fs.sshfs.SSHFS")
 
-    yield mock
+    yield patcher.start()
 
-    patcher1.stop()
-    patcher2.stop()
+    patcher.stop()
 
 
 @pytest.fixture
@@ -163,6 +158,25 @@ def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_c
 
     sshfs_type_mock.assert_called_with(
         valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=valid_options.private_key)
+
+
+@pytest.mark.usefixtures("successful_sshclient_stub")
+def test__given_config_with_only_private_keyfile__when_running__should_login_to_sshfs_with_correct_credentials(sshfs_type_mock):
+    """
+    FIXME: This test takes a long time for some reason. If we replace the custom options with the default valid options then it's fast again
+    Why is that?
+    """
+    valid_options = LaunchOptions(host="cluster.example.com",
+                                  user="the_user",
+                                  private_keyfile="path/to/keyfile",
+                                  sbatch="slurm.job")
+
+    sut = Application(valid_options, Mock())
+
+    sut.run()
+
+    sshfs_type_mock.assert_called_with(
+        valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=valid_options.private_keyfile)
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")

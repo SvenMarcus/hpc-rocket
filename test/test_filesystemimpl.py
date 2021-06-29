@@ -21,20 +21,22 @@ def test_local_filesystem__when_creating_new_instance__should_open_fs_in_folder(
 
 @pytest.fixture
 def sshfs_type_mock():
-    # The mocking does not work for some reason if only one of the paths is mocked
-    patcher1 = patch("fs.sshfs.sshfs.SSHFS")
-    patcher2 = patch("fs.sshfs.SSHFS")
-    patcher1.start()
-    mock = patcher2.start()
+    patcher = patch("fs.sshfs.SSHFS")
 
-    yield mock
+    yield patcher.start()
 
-    patcher1.stop()
-    patcher2.stop()
+    patcher.stop()
 
 
 def test__given_sshfilesystem__when_creating_new_instance__should_create_sshfs_with_connection_data(sshfs_type_mock):
-    sut = SSHFilesystem('user', 'host', "password", 'privatekey')
+    sut = SSHFilesystem('user', 'host', "password", private_key='privatekey')
 
     sshfs_type_mock.assert_called_with(
         'host', user='user', passwd='password', pkey='privatekey')
+
+
+def test__given_sshfilesystem__when_creating_new_instance_with_keyfile__should_create_sshfs_with_connection_data(sshfs_type_mock):
+    sut = SSHFilesystem('user', 'host', private_keyfile='~/path/to/keyfile')
+
+    sshfs_type_mock.assert_called_with(
+        'host', user='user', passwd=None, pkey='~/path/to/keyfile')

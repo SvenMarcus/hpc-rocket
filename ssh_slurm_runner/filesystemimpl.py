@@ -27,7 +27,7 @@ class SSHFilesystem(PyFilesystemBased):
     A PyFilesystem2 based Filesystem that connects to a remote machine via SSH
     """
 
-    def __init__(self, user: str, host: str, password: str = None, private_key: str = None) -> None:
+    def __init__(self, user: str, host: str, password: str = None, private_key: str = None, private_keyfile: str = None) -> None:
         """
         Args:
             user (str): The user on the remote machine
@@ -36,7 +36,7 @@ class SSHFilesystem(PyFilesystemBased):
             private_key (str): The user's private SSH key. Alternative to `password`.
         """
         self._internal_fs = sshfs.SSHFS(
-            host, user=user, passwd=password, pkey=private_key)
+            host, user=user, passwd=password, pkey=private_key or private_keyfile)
 
     @property
     def internal_fs(self) -> fs.base.FS:

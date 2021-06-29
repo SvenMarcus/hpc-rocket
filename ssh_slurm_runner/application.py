@@ -25,7 +25,7 @@ class Application:
         self.runner = SlurmRunner(executor)
         self.jobid = self.runner.sbatch(self._options.sbatch)
         self._wait_for_job_completion()
-        
+
         env_prep.clean()
         executor.disconnect()
         if self._latest_job_update.success:
@@ -48,7 +48,8 @@ class Application:
         return SSHFilesystem(self._options.user,
                              self._options.host,
                              self._options.password,
-                             self._options.private_key)
+                             self._options.private_key,
+                             self._options.private_keyfile)
 
     def _wait_for_job_completion(self):
         self.watcher = JobWatcher(self.runner)
