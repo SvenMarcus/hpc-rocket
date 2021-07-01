@@ -1,2 +1,5 @@
 paramiko>=2.7.2
+fs>=2.4.13
+fs.sshfs>=1.0.0
 rich>=10.1.0
+PyYAML>=5.4.1

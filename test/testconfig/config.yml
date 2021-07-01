@@ -1,0 +1,16 @@
+host: cluster.example.com
+user: the_user
+private_keyfile: /home/user/.ssh/keyfile
+
+copy:
+  - from: myfile.txt
+    to: mycopy.txt
+
+  - from: slurm.job
+    to: slurm.job
+
+clean:
+  - mycopy.txt
+  - slurm.job
+
+sbatch: slurm.job
