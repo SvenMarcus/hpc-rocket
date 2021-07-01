@@ -9,15 +9,15 @@ def parse_cli_args(args) -> LaunchOptions:
     parser = argparse.ArgumentParser("ssh_slurm_runner")
     subparsers = parser.add_subparsers()
 
-    run_parser = subparsers.add_parser("run")
-    run_parser.add_argument("jobfile", type=str)
-    run_parser.add_argument("--host", type=str, required=True)
-    run_parser.add_argument("--user", type=str, required=True)
-    run_parser.add_argument("--password", type=str)
-    run_parser.add_argument("--private-key", type=str)
-    run_parser.add_argument("--keyfile", type=str)
+    run_parser = subparsers.add_parser("run", help="Configure SSH Slurm Runner from the command line")
+    run_parser.add_argument("jobfile", type=str, help="The name of the job file to run with sbatch")
+    run_parser.add_argument("--host", type=str, required=True, help="Address of the remote machine")
+    run_parser.add_argument("--user", type=str, required=True, help="User on the remote machine")
+    run_parser.add_argument("--password", type=str, help="The password for the given user")
+    run_parser.add_argument("--private-key", type=str, help="A private SSH key")
+    run_parser.add_argument("--keyfile", type=str, help="The path to a file containing a private SSH key")
 
-    yaml_parser = subparsers.add_parser("from-config")
+    yaml_parser = subparsers.add_parser("from-config", help="Configure SSH Slurm Runner from a configuration file")
     yaml_parser.add_argument("configfile", type=str)
 
     config = parser.parse_args(args)
