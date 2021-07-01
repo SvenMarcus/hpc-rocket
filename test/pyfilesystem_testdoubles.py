@@ -23,6 +23,8 @@ class PyFilesystemStub:
     def remove(self, path: str) -> None:
         pass
 
+    def opendir(self, path: str, factory=None) -> 'PyFilesystemStub':
+        return self
 
 class PyFilesystemFake(PyFilesystemStub):
 

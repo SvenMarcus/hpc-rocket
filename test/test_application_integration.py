@@ -1,4 +1,5 @@
 import os
+from dataclasses import replace
 from test.pyfilesystem_testdoubles import (PyFilesystemFake, PyFilesystemStub,
                                            copy_file_between_filesystems_fake)
 from test.sshclient_testdoubles import (ChannelFileStub,
@@ -37,11 +38,6 @@ def valid_options():
     )
 
 
-@pytest.fixture
-def success_lines():
-    return get_success_lines()
-
-
 def get_success_lines():
     with open("test/slurmoutput/sacct_completed.txt", "r") as file:
         lines = file.readlines()
@@ -49,10 +45,10 @@ def get_success_lines():
 
 
 @pytest.fixture
-def successful_sshclient_stub(sshclient_type_mock, success_lines):
+def successful_sshclient_stub(sshclient_type_mock):
     ssh_stub = CmdSpecificSSHClientStub({
         "sbatch": ChannelFileStub(lines=["1234"]),
-        "sacct": ChannelFileStub(lines=success_lines)
+        "sacct": ChannelFileStub(lines=get_success_lines())
     })
 
     wrapper_mock = Mock(wraps=ssh_stub)
@@ -117,17 +113,33 @@ def make_options_with_files_to_copy_and_clean(files_to_copy, files_to_clean):
     return options
 
 
+HOME_DIR = "/home/myuser"
+
+
+@pytest.mark.parametrize(
+    ["input_keyfile", "expected_keyfile"],
+    [
+        ("my_private_keyfile", "my_private_keyfile"),
+        ("~/.ssh/private_keyfile", f"{HOME_DIR}/.ssh/private_keyfile"),
+        ("~/~folder~/private_keyfile", f"{HOME_DIR}/~folder~/private_keyfile"),
+        ("~folder~/private_keyfile", f"~folder~/private_keyfile")
+    ])
 def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient_type_mock,
                                                                        valid_options: LaunchOptions,
-                                                                       success_lines: List[str]):
-    os.environ['HOME'] = "/home/user"
+                                                                       input_keyfile: str,
+                                                                       expected_keyfile: str):
+    os.environ['HOME'] = HOME_DIR
+    valid_options = replace(
+        valid_options, private_keyfile=input_keyfile)
+
     sshclient_mock = SSHClientMock(
         cmd_to_channels={
             "sbatch": ChannelFileStub(lines=["1234"]),
-            "sacct": ChannelFileStub(lines=success_lines)
+            "sacct": ChannelFileStub(lines=get_success_lines())
         },
         launch_options=valid_options,
-        host_key_file="/home/user/.ssh/known_hosts")
+        host_key_file=f"{HOME_DIR}/.ssh/known_hosts",
+        private_keyfile_abspath=expected_keyfile)
 
     sshclient_type_mock.return_value = sshclient_mock
     sut = Application(valid_options, Mock())
@@ -187,7 +199,8 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
         ("otherfile.gif", "copy.gif")
     ])
 
-    osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt", "otherfile.gif"])
+    osfs_type_mock.return_value = PyFilesystemStub(
+        ["myfile.txt", "otherfile.gif"])
 
     filesystem_fake = PyFilesystemFake()
     sshfs_type_mock.return_value = filesystem_fake
@@ -213,7 +226,8 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
 
     call_order, call_logger = make_call_logger_with_capture()
     fs_copy_file_mock.side_effect = call_logger("copy_file")
-    successful_sshclient_stub.exec_command.side_effect = call_logger("exec_command")
+    successful_sshclient_stub.exec_command.side_effect = call_logger(
+        "exec_command")
 
     sut = Application(options, Mock())
 
@@ -259,16 +273,18 @@ def test__given_config_with_files_to_clean__when_running__should_clean_files_to_
     osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
 
     pyfilesystem_wrapper_mock = MagicMock(wraps=PyFilesystemFake())
+    pyfilesystem_wrapper_mock.opendir.return_value = pyfilesystem_wrapper_mock
     pyfilesystem_wrapper_mock.remove.side_effect = call_logger("remove")
     sshfs_type_mock.return_value = pyfilesystem_wrapper_mock
 
     fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
-    successful_sshclient_stub.exec_command.side_effect = call_logger("exec_command")
+    successful_sshclient_stub.exec_command.side_effect = call_logger(
+        "exec_command")
 
     sut = Application(options, Mock())
 
     sut.run()
-
+    print(call_order)
     assert call_order == ["exec_command", "exec_command", "remove"]
 
 
@@ -300,8 +316,7 @@ def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one
 
 
 def test__given_valid_config__when_running_long_running_job__should_wait_for_completion(sshclient_type_mock,
-                                                                                        valid_options: LaunchOptions,
-                                                                                        success_lines: List[str]):
+                                                                                        valid_options: LaunchOptions):
 
     sut = Application(valid_options, Mock())
 
@@ -309,7 +324,7 @@ def test__given_valid_config__when_running_long_running_job__should_wait_for_com
     sshclient_type_mock.return_value = CmdSpecificSSHClientStub({
         "sbatch": ChannelFileStub(lines=["1234"]),
         "sacct": ChannelFileStub(
-            lines=success_lines,
+            lines=get_success_lines(),
             channel=channel_spy
         )
     })

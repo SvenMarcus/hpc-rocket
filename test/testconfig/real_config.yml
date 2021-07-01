@@ -1,12 +1,12 @@
 host: phoenix.hlr.rz.tu-bs.de
 user: y0054816
-private_keyfile: "/home/marcus/.ssh/id_ed25519"
+private_keyfile: "~/.ssh/id_ed25519"
 
 copy:
   - from: test/testconfig/slurm.job
-    to: /home/y0054816/slurm.job
+    to: slurm.job
 
 clean:
-  - /home/y0054816/slurm.job
+  - slurm.job
 
-sbatch: /home/y0054816/slurm.job
+sbatch: slurm.job

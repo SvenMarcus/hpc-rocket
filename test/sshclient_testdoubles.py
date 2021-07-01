@@ -76,9 +76,10 @@ class CmdSpecificSSHClientStub:
 
 class SSHClientMock(CmdSpecificSSHClientStub):
 
-    def __init__(self, cmd_to_channels: Dict[str, ChannelFileStub], launch_options: LaunchOptions, host_key_file: str):
+    def __init__(self, cmd_to_channels: Dict[str, ChannelFileStub], launch_options: LaunchOptions, host_key_file: str, private_keyfile_abspath: str = None):
         super().__init__(cmd_to_channels)
         self._options = launch_options
+        self._private_keyfile_abspath = private_keyfile_abspath or launch_options.private_keyfile
         self._host_key_file = host_key_file
         self.connected = False
         self.loaded_keys = False
@@ -86,12 +87,13 @@ class SSHClientMock(CmdSpecificSSHClientStub):
 
     def connect(self, hostname, port=None, username=None, password=None, pkey=None, key_filename=None, *args, **kwargs):
         assert self.loaded_keys, "Tried to connect without loading known_hosts"
+        print(key_filename)
         self.connected = (
             self._options.host == hostname and
             self._options.password == password and
             self._options.user == username and
             self._options.private_key == pkey and
-            self._options.private_keyfile == key_filename
+            self._private_keyfile_abspath == key_filename
         )
 
     def load_host_keys(self, filename):

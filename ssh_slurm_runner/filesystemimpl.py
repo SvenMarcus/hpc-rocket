@@ -1,6 +1,7 @@
 import fs.base
 import fs.osfs
 import fs.sshfs as sshfs
+from fs.subfs import ClosingSubFS
 
 from ssh_slurm_runner.pyfilesystem import PyFilesystemBased
 
@@ -36,7 +37,7 @@ class SSHFilesystem(PyFilesystemBased):
             private_key (str): The user's private SSH key. Alternative to `password`.
         """
         self._internal_fs = sshfs.SSHFS(
-            host, user=user, passwd=password, pkey=private_key or private_keyfile)
+            host, user=user, passwd=password, pkey=private_key or private_keyfile).opendir(f"/home/{user}", factory=ClosingSubFS)
 
     @property
     def internal_fs(self) -> fs.base.FS:

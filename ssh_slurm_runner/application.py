@@ -65,15 +65,26 @@ class Application:
         self._ui.update(job)
 
     def _create_sshexecutor(self) -> SSHExecutor:
+        home_dir = os.environ['HOME']
+
         executor = SSHExecutor(self._options.host)
-        executor.load_host_keys_from_file(
-            f"{os.environ['HOME']}/.ssh/known_hosts")
+        executor.load_host_keys_from_file(f"{home_dir}/.ssh/known_hosts")
+
+        keyfile = self._resolve_home_dir(home_dir)
+
         executor.connect(self._options.user,
-                         self._options.private_keyfile,
+                         keyfile,
                          self._options.password,
                          self._options.private_key)
 
         return executor
+
+    def _resolve_home_dir(self, home_dir):
+        keyfile = self._options.private_keyfile
+        if keyfile.startswith("~/"):
+            keyfile = keyfile.replace("~/", home_dir + "/", 1)
+
+        return keyfile
 
     def cancel(self):
         try:
