@@ -114,16 +114,15 @@ def make_options_with_files_to_copy_and_clean(files_to_copy, files_to_clean):
 
 
 HOME_DIR = "/home/myuser"
+INPUT_AND_EXPECTED_KEYFILE_PATHS = [
+    ("my_private_keyfile", "my_private_keyfile"),
+    ("~/.ssh/private_keyfile", f"{HOME_DIR}/.ssh/private_keyfile"),
+    ("~/~folder~/private_keyfile", f"{HOME_DIR}/~folder~/private_keyfile"),
+    ("~folder~/private_keyfile", f"~folder~/private_keyfile")
+]
 
 
-@pytest.mark.parametrize(
-    ["input_keyfile", "expected_keyfile"],
-    [
-        ("my_private_keyfile", "my_private_keyfile"),
-        ("~/.ssh/private_keyfile", f"{HOME_DIR}/.ssh/private_keyfile"),
-        ("~/~folder~/private_keyfile", f"{HOME_DIR}/~folder~/private_keyfile"),
-        ("~folder~/private_keyfile", f"~folder~/private_keyfile")
-    ])
+@pytest.mark.parametrize(["input_keyfile", "expected_keyfile"],    INPUT_AND_EXPECTED_KEYFILE_PATHS)
 def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient_type_mock,
                                                                        valid_options: LaunchOptions,
                                                                        input_keyfile: str,
@@ -173,11 +172,14 @@ def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_c
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
-def test__given_config_with_only_private_keyfile__when_running__should_login_to_sshfs_with_correct_credentials(sshfs_type_mock):
+@pytest.mark.parametrize(["input_keyfile", "expected_keyfile"], INPUT_AND_EXPECTED_KEYFILE_PATHS)
+def test__given_config_with_only_private_keyfile__when_running__should_login_to_sshfs_with_correct_credentials(sshfs_type_mock,
+                                                                                                               input_keyfile,
+                                                                                                               expected_keyfile):
     valid_options = LaunchOptions(
         host="example.com",
         user="myuser",
-        private_keyfile="my_private_keyfile",
+        private_keyfile=input_keyfile,
         sbatch="test.job",
         poll_interval=0
     )
@@ -187,7 +189,7 @@ def test__given_config_with_only_private_keyfile__when_running__should_login_to_
     sut.run()
 
     sshfs_type_mock.assert_called_with(
-        valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=valid_options.private_keyfile)
+        valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=expected_keyfile)
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
