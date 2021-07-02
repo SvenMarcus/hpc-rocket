@@ -42,12 +42,25 @@ copy:
   - from: jobs/slurm.job
     to: slurm.job
 
+  - from: bin/myexecutable
+    to: myexecutable
+
 clean:
   - slurm.job
+  - myexecutable
 
 sbatch: slurm.job
 ```
 
+### Requirements for binaries
+
+When binaries are copied to the remote machine they lack the proper permissions to be executable.
+Therefore this missing permission needs to be added in the slurm job file before executing them.
+```
+chmod +x myexutable
+
+srun myexecutable
+```
 
 #### CLI Usage
 
