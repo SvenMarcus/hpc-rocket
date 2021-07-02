@@ -45,11 +45,14 @@ class Application:
         return env_prep
 
     def _make_ssh_filesystem(self):
+        home_dir = os.environ['HOME']
+        keyfile = self._resolve_home_dir(home_dir)
+
         return SSHFilesystem(self._options.user,
                              self._options.host,
                              self._options.password,
                              self._options.private_key,
-                             self._options.private_keyfile)
+                             keyfile)
 
     def _wait_for_job_completion(self):
         self.watcher = JobWatcher(self.runner)
