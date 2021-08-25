@@ -1,5 +1,7 @@
 from typing import Collection, IO, List, Optional, Text, Tuple, Iterator
+from fs import errors
 import fs.base
+import fs.wrapfs
 from fs.info import Info
 from fs.permissions import Permissions
 import fs.sshfs as sshfs
@@ -13,12 +15,13 @@ class PermissionChangingSSHFSDecorator(fs.base.FS):
     """
 
     def __init__(self, *args, **kwargs):
+        super().__init__()
         self._internal_fs = sshfs.SSHFS(*args, **kwargs)
 
     def upload(self, path: str, file: IO, *args, **kwargs):
         self._internal_fs.upload(path, file, *args, **kwargs)
         self._internal_fs._sftp.chmod(
-            path, stat.S_IEXEC | stat.S_IREAD | stat.S_IWRITE)
+            path, stat.ST_MODE | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
     
     def download(self, path: Text, file: IO) -> None:
         self._internal_fs.download(path, file)
@@ -33,7 +36,7 @@ class PermissionChangingSSHFSDecorator(fs.base.FS):
         return self._internal_fs.openbin(path, mode)
 
     def opendir(self, path: Text, factory = None) -> fs.subfs.SubFS[fs.base.FS]:
-        return self._internal_fs.opendir(path, factory=factory)
+        return super().opendir(path, factory)
 
     def remove(self, path: Text) -> None:
         self._internal_fs.remove(path)

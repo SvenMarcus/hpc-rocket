@@ -1,7 +1,9 @@
 from typing import List, Tuple
 from unittest.mock import MagicMock
+from fs.info import Info
 
 import fs.subfs
+from fs.wrapfs import WrapFS
 
 
 class PyFilesystemStub:
@@ -44,6 +46,18 @@ class PyFilesystemFake(PyFilesystemStub):
 
         for file in filtered:
             self.existing_files.remove(file)
+
+    def getinfo(self, path: str, namespaces) -> dict:
+        if not self.exists(path):
+            raise fs.errors.ResourceNotFound(path)
+
+        return Info({
+            "basic": {
+                "name": path,
+                "is_dir": path in self.existing_dirs,
+                "is_file": path in self.existing_files,
+            }
+        })
 
 
 class VerifyDirsCreatedAndCopyPyFSMock(PyFilesystemStub):

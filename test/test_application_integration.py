@@ -67,7 +67,8 @@ def osfs_type_mock():
 
 @pytest.fixture(autouse=True)
 def sshfs_type_mock():
-    patcher = patch("fs.sshfs.SSHFS")
+    patcher = patch(
+        "ssh_slurm_runner.chmodsshfs.PermissionChangingSSHFSDecorator")
 
     yield patcher.start()
 
@@ -122,7 +123,7 @@ INPUT_AND_EXPECTED_KEYFILE_PATHS = [
 ]
 
 
-@pytest.mark.parametrize(["input_keyfile", "expected_keyfile"],    INPUT_AND_EXPECTED_KEYFILE_PATHS)
+@pytest.mark.parametrize(["input_keyfile", "expected_keyfile"], INPUT_AND_EXPECTED_KEYFILE_PATHS)
 def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient_type_mock,
                                                                        valid_options: LaunchOptions,
                                                                        input_keyfile: str,
@@ -190,6 +191,18 @@ def test__given_config_with_only_private_keyfile__when_running__should_login_to_
 
     sshfs_type_mock.assert_called_with(
         valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=expected_keyfile)
+
+
+@pytest.mark.usefixtures("successful_sshclient_stub")
+def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_mock: MagicMock,
+                                                                    valid_options: LaunchOptions,):
+    sut = Application(valid_options, Mock())
+
+    sut.run()
+
+    mock: MagicMock = sshfs_type_mock.return_value
+    first_call = mock.mock_calls[0]
+    assert HOME_DIR in first_call.args or HOME_DIR in first_call.kwargs.values()
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
