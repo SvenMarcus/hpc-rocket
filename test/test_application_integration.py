@@ -7,7 +7,7 @@ from test.sshclient_testdoubles import (ChannelFileStub,
                                         DelayedChannelSpy, SSHClientMock)
 from typing import List
 from unittest import mock
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from ssh_slurm_runner.application import Application
@@ -200,10 +200,11 @@ def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_m
 
     sut.run()
 
-    mock: MagicMock = sshfs_type_mock.return_value
-    first_call = mock.mock_calls[0]
-    assert HOME_DIR in first_call.args
+    sshfs_mock: MagicMock = sshfs_type_mock.return_value
+    method_name, args, _ = sshfs_mock.mock_calls[0]
 
+    assert method_name == "opendir"
+    assert args == (HOME_DIR,)
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem(osfs_type_mock,
