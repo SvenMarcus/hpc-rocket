@@ -202,7 +202,7 @@ def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_m
 
     mock: MagicMock = sshfs_type_mock.return_value
     first_call = mock.mock_calls[0]
-    assert HOME_DIR in first_call.args or HOME_DIR in first_call.kwargs.values()
+    assert HOME_DIR in first_call.args
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
@@ -299,7 +299,7 @@ def test__given_config_with_files_to_clean__when_running__should_clean_files_to_
     sut = Application(options, Mock())
 
     sut.run()
-    print(call_order)
+
     assert call_order == ["exec_command", "exec_command", "remove"]
 
 
