@@ -7,7 +7,7 @@ from test.sshclient_testdoubles import (ChannelFileStub,
                                         DelayedChannelSpy, SSHClientMock)
 from typing import List
 from unittest import mock
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from ssh_slurm_runner.application import Application
@@ -67,7 +67,8 @@ def osfs_type_mock():
 
 @pytest.fixture(autouse=True)
 def sshfs_type_mock():
-    patcher = patch("fs.sshfs.SSHFS")
+    patcher = patch(
+        "ssh_slurm_runner.chmodsshfs.PermissionChangingSSHFSDecorator")
 
     yield patcher.start()
 
@@ -122,7 +123,7 @@ INPUT_AND_EXPECTED_KEYFILE_PATHS = [
 ]
 
 
-@pytest.mark.parametrize(["input_keyfile", "expected_keyfile"],    INPUT_AND_EXPECTED_KEYFILE_PATHS)
+@pytest.mark.parametrize(["input_keyfile", "expected_keyfile"], INPUT_AND_EXPECTED_KEYFILE_PATHS)
 def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient_type_mock,
                                                                        valid_options: LaunchOptions,
                                                                        input_keyfile: str,
@@ -191,6 +192,19 @@ def test__given_config_with_only_private_keyfile__when_running__should_login_to_
     sshfs_type_mock.assert_called_with(
         valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=expected_keyfile)
 
+
+@pytest.mark.usefixtures("successful_sshclient_stub")
+def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_mock: MagicMock,
+                                                                    valid_options: LaunchOptions,):
+    sut = Application(valid_options, Mock())
+
+    sut.run()
+
+    sshfs_mock: MagicMock = sshfs_type_mock.return_value
+    method_name, args, _ = sshfs_mock.mock_calls[0]
+
+    assert method_name == "opendir"
+    assert args == (HOME_DIR,)
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem(osfs_type_mock,
@@ -286,7 +300,7 @@ def test__given_config_with_files_to_clean__when_running__should_clean_files_to_
     sut = Application(options, Mock())
 
     sut.run()
-    print(call_order)
+
     assert call_order == ["exec_command", "exec_command", "remove"]
 
 

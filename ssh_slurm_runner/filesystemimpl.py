@@ -1,8 +1,8 @@
 import fs.base
 import fs.osfs
-import fs.sshfs as sshfs
 from fs.subfs import ClosingSubFS
 
+import ssh_slurm_runner.chmodsshfs as sshfs
 from ssh_slurm_runner.pyfilesystem import PyFilesystemBased
 
 
@@ -36,7 +36,7 @@ class SSHFilesystem(PyFilesystemBased):
             password (str): The user's password on the remote machine. Alternative to `private_key`.
             private_key (str): The user's private SSH key. Alternative to `password`.
         """
-        self._internal_fs = sshfs.SSHFS(
+        self._internal_fs = sshfs.PermissionChangingSSHFSDecorator(
             host, user=user, passwd=password, pkey=private_key or private_keyfile).opendir(f"/home/{user}", factory=ClosingSubFS)
 
     @property
