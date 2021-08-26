@@ -26,6 +26,7 @@ class Application:
         self.jobid = self.runner.sbatch(self._options.sbatch)
         self._wait_for_job_completion()
 
+        env_prep.collect()
         env_prep.clean()
         executor.disconnect()
         if self._latest_job_update.success:
@@ -40,6 +41,7 @@ class Application:
 
         env_prep.files_to_copy(self._options.copy_files)
         env_prep.files_to_clean(self._options.clean_files)
+        env_prep.files_to_collect(self._options.collect_files)
         env_prep.prepare()
 
         return env_prep

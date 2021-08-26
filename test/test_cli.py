@@ -41,5 +41,6 @@ def test__given_valid_args_for_yaml__should_return_matching_config():
         user="the_user",
         private_keyfile="/home/user/.ssh/keyfile",
         copy_files=[("myfile.txt", "mycopy.txt"), ("slurm.job", "slurm.job")],
-        clean_files=["mycopy.txt", "slurm.job"]
+        clean_files=["mycopy.txt", "slurm.job"],
+        collect_files=["result.txt"]
     )

@@ -14,3 +14,4 @@ class LaunchOptions:
     poll_interval: Optional[int] = 5
     copy_files: List[Tuple[str, str]] = field(default_factory=lambda: [])
     clean_files: List[str] = field(default_factory=lambda: [])
+    collect_files: List[str] = field(default_factory=lambda: [])
