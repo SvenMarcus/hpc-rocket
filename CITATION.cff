@@ -1,0 +1,78 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+abstract: "A commandline tool to run Slurm sbatch commands over SSH"
+authors:
+  - family-names: Marcus
+    given-names: Sven
+    orcid: https://orcid.org/0000-0003-3689-2162
+title: SSH Slurm Runner
+url: https://github.com/SvenMarcus/ssh-slurm-runner
+repository-code: https://github.com/SvenMarcus/ssh-slurm-runner
+references:
+  - title: rich
+    authors:
+      - family-names: McGugan
+        given-names: Will
+    type: software
+    license: MIT
+    url: https://github.com/willmcgugan/rich
+
+  - title: pyfilesystem2
+    authors:
+      - family-names: McGugan
+        given-names: Will
+
+      - family-names: Larralde
+        given-names: Martin
+
+      - family-names: Cimino
+        given-names: Giampaolo
+
+      - family-names: Jukes
+        given-names: Geoff
+    type: software
+    license: MIT
+    url: https://github.com/PyFilesystem/pyfilesystem2
+
+  - title: fs.sshfs
+    authors:
+      - family-names: Larralde
+        given-names: Martin
+
+      - family-names: Bauer
+        given-names: Reimar
+
+      - family-names: Gessinger
+        given-names: Paul
+      
+      - family-names: Kryński
+        given-names: Mariusz
+
+      - family-names: McGugan
+        given-names: Will
+
+      - family-names: Nimmer
+        given-names: Jeremy
+
+      - family-names: Nyborg
+        given-names: Tim
+
+      - family-names: Sutherland
+        given-names: Danica J.
+      
+      - family-names: Vandenberg
+        given-names: John
+    type: software
+    license: LGPL
+    url: https://github.com/althonos/fs.sshfs
+
+  - title: Paramiko
+    authors:
+      - family-names: Pointer
+        given-names: Robey
+
+      - family-names: Forcier
+        given-names: Jeff
+    type: software
+    license: LGPL
+    url: https://github.com/paramiko/paramiko

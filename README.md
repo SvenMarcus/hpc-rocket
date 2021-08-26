@@ -1,12 +1,13 @@
-### SSH Slurm Runner
+## SSH Slurm Runner
 
 [![Python application](https://github.com/SvenMarcus/ssh-slurm-runner/actions/workflows/python-app.yml/badge.svg)](https://github.com/SvenMarcus/ssh-slurm-runner/actions/workflows/python-app.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SvenMarcus_ssh-slurm-runner&metric=alert_status)](https://sonarcloud.io/dashboard?id=SvenMarcus_ssh-slurm-runner)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=SvenMarcus_ssh-slurm-runner&metric=coverage)](https://sonarcloud.io/dashboard?id=SvenMarcus_ssh-slurm-runner)
+[![Python](pythonversions.svg)](https://python.org)
 
 SSH Slurm Runner utilizes [`paramiko`](http://www.paramiko.org) to send slurm commands to a remote machine and monitor the job progress. It was primarily written to launch slurm jobs from a CI pipeline.
 
-#### Installation
+### Installation
 
 Since this program is still in a very early stage it is currently not available on PyPi.
 
@@ -16,11 +17,11 @@ However you can still install it using the following command:
 pip3 install git+git://github.com/SvenMarcus/ssh-slurm-runner 
 ```
 
-#### Authentication
+### Authentication
 
 SSH Slurm Runner does support authentication via password and private key. Password authentication currently requires typing it in the command line directly or adding it to the config file. Therefore, authentication via private key is recommended. Interactive password input is planned for a future version.
 
-#### sbatch
+### sbatch
 
 Currently all `sbatch` configuration must happen in the job file.
 SSH Slurm Runner does not offer any other way of configuring your batch jobs.
@@ -52,17 +53,7 @@ clean:
 sbatch: slurm.job
 ```
 
-### Requirements for binaries
-
-When binaries are copied to the remote machine they lack the proper permissions to be executable.
-Therefore this missing permission needs to be added in the slurm job file before executing them.
-```
-chmod +x myexutable
-
-srun myexecutable
-```
-
-#### CLI Usage
+### CLI Usage
 
 With CLI configuration:
 
