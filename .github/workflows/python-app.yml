@@ -5,9 +5,9 @@ name: Python application
 
 on:
   push:
-    branches: [ master, develop, feature/*, release/* ]
+    branches: [ main, develop, feature/*, release/* ]
   pull_request:
-    branches: [ master, develop, feature/*, release/* ]
+    branches: [ main, develop, feature/*, release/* ]
     types: [opened, synchronize, reopened]
 
 jobs:
