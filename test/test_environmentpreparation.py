@@ -66,3 +66,22 @@ def test__given_files_to_clean__when_cleaning__should_delete_files():
         call("file.txt"),
         call("funny.gif")
     ])
+
+
+def test__given_files_to_collect__when_collect__should_copy_to_source_fs():
+    source_fs_spy: MagicMock = new_mock_filesystem()
+    target_fs = new_mock_filesystem()
+
+    sut = EnvironmentPreparation(source_fs_spy, target_fs)
+
+    sut.files_to_collect([
+        "file.txt",
+        "funny.gif",
+    ])
+
+    sut.collect()
+
+    target_fs.copy.assert_has_calls([
+        call("file.txt", "file.txt", source_fs_spy),
+        call("funny.gif", "funny.gif", source_fs_spy)
+    ])

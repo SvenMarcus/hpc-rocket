@@ -9,6 +9,9 @@ copy:
   - from: slurm.job
     to: slurm.job
 
+collect:
+  - result.txt
+
 clean:
   - mycopy.txt
   - slurm.job

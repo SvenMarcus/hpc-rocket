@@ -24,7 +24,8 @@ class _TestFilesystemImpl(PyFilesystemBased):
 class FilesystemStub(PyFilesystemBased):
 
     def __init__(self, internal_fs=None) -> None:
-        self._internal_fs = internal_fs or MagicMock(spec=fs.base.FS).return_value
+        self._internal_fs = internal_fs or MagicMock(
+            spec=fs.base.FS).return_value
         self.existing_files = set()
         self.existing_dirs = set()
 
@@ -78,6 +79,15 @@ def fs_type_mock():
 @pytest.fixture
 def copy_file():
     patcher = patch("fs.copy.copy_file")
+
+    yield patcher.start()
+
+    patcher.stop()
+
+
+@pytest.fixture
+def copy_dir():
+    patcher = patch("fs.copy.copy_dir")
 
     yield patcher.start()
 
@@ -144,7 +154,6 @@ def test__when_copying_file_to_other_filesystem__but_parent_dir_missing__should_
     fs_mock = FilesystemStub(missing_dirs_mock)
     fs_mock.existing_files = [SOURCE]
 
-    fs_type_mock.return_value = fs_mock
     sut = _TestFilesystemImpl(fs_type_mock.return_value)
 
     sut.copy(SOURCE, TARGET, filesystem=fs_mock)
@@ -163,7 +172,6 @@ def test__when_copying_file_to_other_filesystem__and_parent_dir_exists__should_n
     filesystem_stub.existing_files = [SOURCE]
     filesystem_stub.existing_dirs = [target_parent_dir]
 
-    fs_type_mock.return_value = filesystem_stub
     sut = _TestFilesystemImpl(fs_type_mock.return_value)
 
     sut.copy(SOURCE, TARGET, filesystem=filesystem_stub)
@@ -196,6 +204,25 @@ def test__when_copying_to_other_filesystem__but_file_exists__should_raise_file_e
 
     with pytest.raises(FileExistsError):
         sut.copy(SOURCE, TARGET, filesystem=fs_mock)
+
+
+def test__when_copying_directory_to_other_filesystem__should_call_copy_dir(fs_type_mock, copy_dir):
+    source_pyfs_mock = fs_type_mock.return_value
+    source_pyfs_mock.configure_mock(
+        isdir=lambda path: True,
+        exists=lambda path: True)
+
+    target_fs_mock = FilesystemStub()
+    sut = _TestFilesystemImpl(source_pyfs_mock)
+
+    source = "~/mydir"
+    target = "~/copydir"
+
+    sut.copy(source, target, filesystem=target_fs_mock)
+
+    copy_dir.assert_called_with(
+        source_pyfs_mock, source,
+        target_fs_mock.internal_fs, target)
 
 
 def test__when_copying_to_non_pyfilesystem__should_raise_runtime_error(fs_type_mock):

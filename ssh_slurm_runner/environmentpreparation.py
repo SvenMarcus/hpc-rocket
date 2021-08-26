@@ -9,6 +9,7 @@ class EnvironmentPreparation:
         self._target_filesystem = target_filesystem
         self._copy = list()
         self._delete = list()
+        self._collect = list()
 
     def files_to_copy(self, src_dest_tuples: List[Tuple[str, str]]) -> None:
         self._copy = list(src_dest_tuples)
@@ -23,3 +24,10 @@ class EnvironmentPreparation:
     def clean(self) -> None:
         for file in self._delete:
             self._target_filesystem.delete(file)
+
+    def files_to_collect(self, files: List[str]) -> None:
+        self._collect = list(files)
+
+    def collect(self) -> None:
+        for file in self._collect:
+            self._target_filesystem.copy(file, file, self._src_filesystem)

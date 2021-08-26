@@ -54,6 +54,11 @@ class PyFilesystemBased(Filesystem, ABC):
         return self.internal_fs.exists(path)
 
     def _try_copy_to_filesystem(self, source, target, filesystem):
+        if self.internal_fs.isdir(source):
+            fscp.copy_dir(self.internal_fs, source,
+                          filesystem.internal_fs, target)
+            return
+
         fscp.copy_file(self.internal_fs, source,
                        filesystem.internal_fs, target)
 

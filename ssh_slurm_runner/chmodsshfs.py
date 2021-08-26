@@ -1,13 +1,13 @@
-from typing import Collection, IO, List, Optional, Text, Tuple, Iterator
-from fs import errors
+import stat
+from typing import IO, Collection, Iterator, List, Optional, Text, Tuple
+
 import fs.base
+import fs.sshfs as sshfs
+import fs.subfs
 import fs.wrapfs
 from fs.info import Info
 from fs.permissions import Permissions
-import fs.sshfs as sshfs
-import stat
 
-import fs.subfs
 
 class PermissionChangingSSHFSDecorator(fs.base.FS):
     """
@@ -23,14 +23,11 @@ class PermissionChangingSSHFSDecorator(fs.base.FS):
         self._internal_fs._sftp.chmod(
             path, stat.ST_MODE | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
     
-    def download(self, path: Text, file: IO) -> None:
-        self._internal_fs.download(path, file)
+    def download(self, path: Text, file: IO, chunk_size = None, **options) -> None:
+        self._internal_fs.download(path, file, chunk_size, **options)
 
     def listdir(self, path: Text) -> List[Text]:
         return self._internal_fs.listdir(path)
-
-    def makedir(self, path: Text, permissions: int, exist_ok: bool = False) -> None:
-        self._internal_fs.makedir(path, permissions, exist_ok=exist_ok)
 
     def openbin(self, path: Text, mode: Text) -> IO:
         return self._internal_fs.openbin(path, mode)
@@ -59,7 +56,7 @@ class PermissionChangingSSHFSDecorator(fs.base.FS):
     def scandir(self, path: Text, namespaces: Optional[Collection[Text]], page: Optional[Tuple[int, int]] = None) -> Iterator[Info]:
         return self._internal_fs.scandir(path, namespaces, page)
 
-    def makedir(self, path: Text, permissions: Optional[Permissions], recreate: bool) -> fs.subfs.SubFS[fs.base.FS]:
+    def makedir(self, path: Text, permissions: Optional[Permissions], recreate: bool = False) -> fs.subfs.SubFS[fs.base.FS]:
         return self._internal_fs.makedir(path, permissions, recreate)
 
     def move(self, src_path: Text, dst_path: Text, overwrite: bool = False) -> None:
