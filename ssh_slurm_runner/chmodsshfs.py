@@ -1,13 +1,13 @@
-from typing import Collection, IO, List, Optional, Text, Tuple, Iterator
-from fs import errors
+import stat
+from typing import IO, Collection, Iterator, List, Optional, Text, Tuple
+
 import fs.base
+import fs.sshfs as sshfs
+import fs.subfs
 import fs.wrapfs
 from fs.info import Info
 from fs.permissions import Permissions
-import fs.sshfs as sshfs
-import stat
 
-import fs.subfs
 
 class PermissionChangingSSHFSDecorator(fs.base.FS):
     """
