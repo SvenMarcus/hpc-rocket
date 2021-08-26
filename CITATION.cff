@@ -1,6 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using these metadata."
 abstract: "A commandline tool to run Slurm sbatch commands over SSH"
+type: software
 authors:
   - family-names: Marcus
     given-names: Sven
@@ -76,3 +77,12 @@ references:
     type: software
     license: LGPL
     url: https://github.com/paramiko/paramiko
+
+  - title: PyYAML
+    authors:
+      - family-names: Simonov
+        given-names: Kirill
+
+    type: software
+    license: MIT
+    url: https://github.com/yaml/pyyaml
