@@ -1,6 +1,7 @@
 import dataclasses
 import os
 from dataclasses import replace
+from ssh_slurm_runner.errors import SSHError
 from test.pyfilesystem_testdoubles import (PyFilesystemFake, PyFilesystemStub,
                                            copy_file_between_filesystems_fake)
 from test.sshclient_testdoubles import (ChannelFileStub,
@@ -169,6 +170,19 @@ def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient
     sshclient_mock.verify()
 
 
+def test__given_ssh_connection_not_available_for_executor__when_running__should_log_error_and_exit(valid_options, sshclient_type_mock):
+    ssh_client_mock = sshclient_type_mock.return_value
+    ssh_client_mock.connect.side_effect = SSHError(valid_options.host)
+
+    ui_spy = Mock()
+    sut = Application(ui_spy)
+
+    sut.run(valid_options)
+
+    ssh_client_mock.exec_command.assert_not_called()
+    ui_spy.error.assert_called_once_with(f"SSHError: {valid_options.host}")
+
+
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_valid_config__when_running__should_open_local_fs_in_current_directory(
         valid_options: LaunchOptions, osfs_type_mock):
@@ -190,6 +204,17 @@ def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_c
 
     sshfs_type_mock.assert_called_with(
         valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=valid_options.private_key)
+
+@pytest.mark.usefixtures("successful_sshclient_stub")
+def test__given_ssh_connection_not_available_for_sshfs__when_running__should_log_error_and_exit(valid_options, sshfs_type_mock):
+    sshfs_type_mock.side_effect = SSHError(valid_options.host)
+
+    ui_spy = Mock()
+    sut = Application(ui_spy)
+
+    sut.run(valid_options)
+
+    ui_spy.error.assert_called_once_with(f"SSHError: {valid_options.host}")
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")

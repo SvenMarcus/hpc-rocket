@@ -1,3 +1,4 @@
+from ssh_slurm_runner.errors import SSHError
 from unittest.mock import patch
 
 import pytest
@@ -40,3 +41,10 @@ def test__given_sshfilesystem__when_creating_new_instance_with_keyfile__should_c
 
     sshfs_type_mock.assert_called_with(
         'host', user='user', passwd=None, pkey='~/path/to/keyfile')
+
+def test__when_ssh_connection_fails__should_raise_ssh_error(sshfs_type_mock):
+    from fs.errors import CreateFailed
+    sshfs_type_mock.side_effect = CreateFailed("Connection failed")
+
+    with pytest.raises(SSHError):
+        SSHFilesystem('user', 'host', "password", private_key='privatekey')

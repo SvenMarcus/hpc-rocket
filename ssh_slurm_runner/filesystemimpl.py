@@ -1,4 +1,6 @@
+from ssh_slurm_runner.errors import SSHError
 import fs.base
+from fs.errors import CreateFailed
 import fs.osfs
 from fs.subfs import ClosingSubFS
 
@@ -36,8 +38,15 @@ class SSHFilesystem(PyFilesystemBased):
             password (str): The user's password on the remote machine. Alternative to `private_key`.
             private_key (str): The user's private SSH key. Alternative to `password`.
         """
-        self._internal_fs = sshfs.PermissionChangingSSHFSDecorator(
-            host, user=user, passwd=password, pkey=private_key or private_keyfile).opendir(f"/home/{user}", factory=ClosingSubFS)
+        self._internal_fs = self._create_new_sshfilesystem(
+            user, host, password, private_key, private_keyfile)
+
+    def _create_new_sshfilesystem(self, user, host, password, private_key, private_keyfile):
+        try:
+            return sshfs.PermissionChangingSSHFSDecorator(
+                host, user=user, passwd=password, pkey=private_key or private_keyfile).opendir(f"/home/{user}", factory=ClosingSubFS)
+        except CreateFailed as err:
+            raise SSHError(f"Could not connect to {host}") from err
 
     @property
     def internal_fs(self) -> fs.base.FS:

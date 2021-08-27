@@ -1,4 +1,5 @@
 import os
+from ssh_slurm_runner.errors import SSHError
 from typing import Optional, Tuple
 
 from ssh_slurm_runner.environmentpreparation import EnvironmentPreparation
@@ -20,11 +21,17 @@ class Application:
         self._jobid = 0
 
     def run(self, options: LaunchOptions) -> int:
-        env_prep, success = self._prepare_environment(options)
+        try:
+            executor = self._create_sshexecutor(options)
+            env_prep = self._make_env_preparation(options)
+        except SSHError as err:
+            self._ui.error(self._get_error_message(err))
+            return 1
+
+        success = self._try_env_preparation(env_prep)
         if not success:
             return 1
 
-        executor = self._create_sshexecutor(options)
         self._runner = SlurmRunner(executor)
         self._launch_job(self._runner, options)
         self._wait_for_job_completion(options)
@@ -35,18 +42,11 @@ class Application:
 
         return self._get_exit_code_for_job(self._latest_job_update)
 
-    def _prepare_environment(self, options: LaunchOptions) -> Tuple[EnvironmentPreparation, bool]:
-        self._ui.info("Preparing remote environment")
-        env_prep = self._make_env_preparation(options)
-        success = self._try_env_preparation(env_prep)
-        if success:
-            self._ui.success("Done")
-
-        return env_prep, success
-
     def _try_env_preparation(self, env_prep: EnvironmentPreparation) -> bool:
         try:
+            self._ui.info("Preparing remote environment")
             env_prep.prepare()
+            self._ui.success("Done")
         except (FileNotFoundError, FileExistsError) as err:
             self._ui.error(self._get_error_message(err))
             self._ui.info("Performing rollback")

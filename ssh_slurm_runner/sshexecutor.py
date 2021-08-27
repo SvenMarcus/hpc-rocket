@@ -1,7 +1,11 @@
+import socket
 from typing import List
-from ssh_slurm_runner.executor import CommandExecutor, RunningCommand
+
 import paramiko as pm
-from paramiko.channel import ChannelStdinFile, ChannelStderrFile, ChannelFile
+from paramiko.channel import ChannelFile, ChannelStderrFile, ChannelStdinFile
+
+from ssh_slurm_runner.errors import SSHError
+from ssh_slurm_runner.executor import CommandExecutor, RunningCommand
 
 
 class RemoteCommand(RunningCommand):
@@ -49,16 +53,19 @@ class SSHExecutor(CommandExecutor):
         self._client.load_host_keys(hostfile)
 
     def connect(self, username: str, keyfile: str = None, password: str = None, private_key: str = None) -> None:
-        self._client.connect(self._hostname,
-                             username=username, password=password,
-                             key_filename=keyfile, pkey=private_key)
+        try:
+            self._client.connect(self._hostname,
+                                 username=username, password=password,
+                                 key_filename=keyfile, pkey=private_key)
+        except Exception as err:
+            raise SSHError(str(err))
 
     def disconnect(self) -> None:
         self._client.close()
 
     def exec_command(self, cmd: str) -> RemoteCommand:
         if not self.is_connected:
-            raise pm.SSHException("Client not connected")
+            raise SSHError("Client not connected")
 
         stdin, stdout, stderr = self._client.exec_command(cmd)
         return RemoteCommand(stdin, stdout, stderr)

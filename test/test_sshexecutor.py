@@ -1,4 +1,4 @@
-import paramiko
+from ssh_slurm_runner.errors import SSHError
 import pytest
 
 from unittest.mock import MagicMock, Mock, patch
@@ -117,7 +117,7 @@ def test__given_client_connected__when_executing_command__should_call_exec_comma
 def test__given_disconnected_client__when_executing_command__should_raise_ssh_exception(pm_sshclient_fake: Mock):
     sut = SSHExecutor("cluster.example.com")
 
-    with pytest.raises(paramiko.SSHException):
+    with pytest.raises(SSHError):
         sut.exec_command("echo 'Hello World'")
 
 
