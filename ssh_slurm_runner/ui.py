@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 from rich.live import Live
 from rich.spinner import Spinner
-from rich.style import Style
 from rich.table import Table
 
 from ssh_slurm_runner.slurmrunner import SlurmJob
@@ -50,7 +49,7 @@ class RichUI(UI):
         self._rich_live.console.print(":cross_mark:", text, style="bold red", emoji=True)
 
     def info(self, text: str) -> None:
-        self._rich_live.console.print(":grey_exclamation:", text, style="bold blue", emoji=True)
+        self._rich_live.console.print(":information_source:", text, style="bold blue", emoji=True)
 
     def success(self, text: str) -> None:
         self._rich_live.console.print(":heavy_check_mark: ", text, style="bold green", emoji=True)
