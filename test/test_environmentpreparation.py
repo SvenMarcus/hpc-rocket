@@ -164,6 +164,24 @@ def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_st
     target_fs.delete.assert_called_with("funny.gif")
 
 
+def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_log_error_to_ui():
+    source_fs_spy = new_mock_filesystem()
+    target_fs = new_mock_filesystem()
+    target_fs.delete.side_effect = raise_file_not_found_on_given_call(1)
+
+    ui_spy = MagicMock()
+    sut = EnvironmentPreparation(source_fs_spy, target_fs, ui_spy)
+    sut.files_to_clean([
+        "file.txt",
+        "funny.gif",
+    ])
+
+    sut.clean()
+
+    ui_spy.error.assert_called_with(
+        "FileNotFoundError: Cannot delete file 'file.txt'")
+
+
 def test__given_files_to_collect__when_collect__should_copy_to_source_fs():
     source_fs_spy = new_mock_filesystem()
     target_fs = new_mock_filesystem()
@@ -202,6 +220,25 @@ def test__given_files_to_collect_with_non_existing_file__when_collecting__should
     ])
 
 
+def test__given_files_to_collect_with_non_existing_file__when_collecting__should_log_error_to_ui():
+    source_fs_spy = new_mock_filesystem()
+    target_fs = new_mock_filesystem()
+    target_fs.copy.side_effect = raise_file_not_found_on_given_call(1)
+
+    ui_spy = MagicMock()
+    sut = EnvironmentPreparation(source_fs_spy, target_fs, ui_spy)
+
+    sut.files_to_collect([
+        "file.txt",
+        "funny.gif",
+    ])
+
+    sut.collect()
+
+    ui_spy.error.assert_called_with(
+        "FileNotFoundError: Cannot copy file 'file.txt'")
+
+
 def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_collecting__should_still_collect_remaining_files():
     source_fs_spy = new_mock_filesystem()
 
@@ -220,6 +257,25 @@ def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_c
     target_fs.copy.assert_has_calls([
         call("funny.gif", "funny.gif", source_fs_spy),
     ])
+
+
+def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_collecting__should_log_error_to_ui():
+    source_fs_spy = new_mock_filesystem()
+    target_fs = new_mock_filesystem()
+    target_fs.copy.side_effect = raise_file_exists_on_given_call(1)
+
+    ui_spy = MagicMock()
+    sut = EnvironmentPreparation(source_fs_spy, target_fs, ui_spy)
+
+    sut.files_to_collect([
+        "file.txt",
+        "funny.gif",
+    ])
+
+    sut.collect()
+
+    ui_spy.error.assert_called_with(
+        "FileExistsError: Cannot copy file 'file.txt'")
 
 
 def raise_file_not_found_on_given_call(call: int = 1):

@@ -49,7 +49,9 @@ class Application:
             env_prep.prepare()
         except (FileNotFoundError, FileExistsError) as err:
             self._ui.error(self._get_error_message(err))
+            self._ui.info("Performing rollback")
             env_prep.rollback()
+            self._ui.success("Done")
             return False
 
         return True
@@ -94,7 +96,8 @@ class Application:
     def _make_env_preparation(self, options) -> EnvironmentPreparation:
         env_prep = EnvironmentPreparation(
             LocalFilesystem("."),
-            self._make_ssh_filesystem(options))
+            self._make_ssh_filesystem(options),
+            self._ui)
 
         env_prep.files_to_copy(options.copy_files)
         env_prep.files_to_clean(options.clean_files)

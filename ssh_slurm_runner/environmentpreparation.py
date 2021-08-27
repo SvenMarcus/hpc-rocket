@@ -1,5 +1,7 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
+
 from ssh_slurm_runner.filesystem import Filesystem
+from ssh_slurm_runner.ui import UI, NullUI
 
 
 class EnvironmentPreparation:
@@ -7,9 +9,10 @@ class EnvironmentPreparation:
     This class is responsible for copying and deleting files from the source and target filesystems.
     """
 
-    def __init__(self, source_filesystem: Filesystem, target_filesystem: Filesystem = None) -> None:
+    def __init__(self, source_filesystem: Filesystem, target_filesystem: Filesystem, ui: Optional[UI] = None) -> None:
         self._src_filesystem = source_filesystem
         self._target_filesystem = target_filesystem
+        self._ui = ui or NullUI()
         self._copy = list()
         self._delete = list()
         self._collect = list()
@@ -76,7 +79,8 @@ class EnvironmentPreparation:
     def _try_delete(self, file) -> bool:
         try:
             self._target_filesystem.delete(file)
-        except FileNotFoundError:
+        except FileNotFoundError as err:
+            self._ui.error(f"{type(err).__name__}: Cannot delete file '{file}'")
             return False
 
         return True
@@ -106,8 +110,8 @@ class EnvironmentPreparation:
         for file in self._collect:
             try:
                 self._target_filesystem.copy(file, file, self._src_filesystem)
-            except (FileNotFoundError, FileExistsError):
-                pass
+            except (FileNotFoundError, FileExistsError) as err:
+                self._ui.error(f"{type(err).__name__}: Cannot copy file '{file}'")
 
     def rollback(self) -> None:
         """
