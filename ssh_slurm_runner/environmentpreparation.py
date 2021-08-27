@@ -102,9 +102,6 @@ class EnvironmentPreparation:
 
         Returns:
             None
-
-        Raises:
-            FileExistsError: If a file to collect already exists on the source filesystem            
         """
         for file in self._collect:
             try:
