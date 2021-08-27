@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from rich.live import Live
 from rich.spinner import Spinner
+from rich.style import Style
 from rich.table import Table
 
 from ssh_slurm_runner.slurmrunner import SlurmJob
@@ -13,6 +14,18 @@ class UI(ABC):
     def update(self, job: SlurmJob) -> None:
         pass
 
+    @abstractmethod
+    def error(self, text: str) -> None:
+        pass
+
+    @abstractmethod
+    def info(self, text: str) -> None:
+        pass
+
+    @abstractmethod
+    def success(self, text: str) -> None:
+        pass
+
 
 class RichUI(UI):
 
@@ -21,8 +34,8 @@ class RichUI(UI):
 
     def __enter__(self):
         self._rich_live = Live(
-            Spinner("bouncingBar", "Launching job"),
-            refresh_per_second=8)
+            Spinner("bouncingBar", ""),
+            refresh_per_second=16)
 
         self._rich_live.start()
         return self
@@ -33,10 +46,17 @@ class RichUI(UI):
     def update(self, job: SlurmJob) -> None:
         self._rich_live.update(self._make_table(job))
 
-    def _make_table(self, job: SlurmJob) -> Table:
-        title = f"Job {job.id}"
+    def error(self, text: str) -> None:
+        self._rich_live.console.print(":cross_mark:", text, style="bold red", emoji=True)
 
-        table = Table(title=title, style="bold")
+    def info(self, text: str) -> None:
+        self._rich_live.console.print(":grey_exclamation:", text, style="bold blue", emoji=True)
+
+    def success(self, text: str) -> None:
+        self._rich_live.console.print(":heavy_check_mark: ", text, style="bold green", emoji=True)
+
+    def _make_table(self, job: SlurmJob) -> Table:
+        table = Table(style="bold")
         table.add_column("ID")
         table.add_column("Name")
         table.add_column("State")

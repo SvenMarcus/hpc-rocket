@@ -45,11 +45,30 @@ def get_success_lines():
         return lines
 
 
+def get_error_lines():
+    with open("test/slurmoutput/sacct_completed_failed.txt", "r") as file:
+        error_lines = file.readlines()
+        return error_lines
+
+
 @pytest.fixture
 def successful_sshclient_stub(sshclient_type_mock):
     ssh_stub = CmdSpecificSSHClientStub({
         "sbatch": ChannelFileStub(lines=["1234"]),
         "sacct": ChannelFileStub(lines=get_success_lines())
+    })
+
+    wrapper_mock = Mock(wraps=ssh_stub)
+    sshclient_type_mock.return_value = wrapper_mock
+
+    return wrapper_mock
+
+
+@pytest.fixture
+def failing_sshclient_stub(sshclient_type_mock):
+    ssh_stub = CmdSpecificSSHClientStub({
+        "sbatch": ChannelFileStub(lines=["1234"]),
+        "sacct": ChannelFileStub(lines=get_error_lines())
     })
 
     wrapper_mock = Mock(wraps=ssh_stub)
@@ -143,9 +162,9 @@ def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient
         private_keyfile_abspath=expected_keyfile)
 
     sshclient_type_mock.return_value = sshclient_mock
-    sut = Application(valid_options, Mock())
+    sut = Application(Mock())
 
-    sut.run()
+    sut.run(valid_options)
 
     sshclient_mock.verify()
 
@@ -154,9 +173,9 @@ def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient
 def test__given_valid_config__when_running__should_open_local_fs_in_current_directory(
         valid_options: LaunchOptions, osfs_type_mock):
 
-    sut = Application(valid_options, Mock())
+    sut = Application(Mock())
 
-    sut.run()
+    sut.run(valid_options)
 
     osfs_type_mock.assert_called_with(".")
 
@@ -165,9 +184,9 @@ def test__given_valid_config__when_running__should_open_local_fs_in_current_dire
 def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_credentials(
         valid_options: LaunchOptions, sshfs_type_mock):
 
-    sut = Application(valid_options, Mock())
+    sut = Application(Mock())
 
-    sut.run()
+    sut.run(valid_options)
 
     sshfs_type_mock.assert_called_with(
         valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=valid_options.private_key)
@@ -186,9 +205,9 @@ def test__given_config_with_only_private_keyfile__when_running__should_login_to_
         poll_interval=0
     )
 
-    sut = Application(valid_options, Mock())
+    sut = Application(Mock())
 
-    sut.run()
+    sut.run(valid_options)
 
     sshfs_type_mock.assert_called_with(
         valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=expected_keyfile)
@@ -197,9 +216,9 @@ def test__given_config_with_only_private_keyfile__when_running__should_login_to_
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_mock: MagicMock,
                                                                     valid_options: LaunchOptions,):
-    sut = Application(valid_options, Mock())
+    sut = Application(Mock())
 
-    sut.run()
+    sut.run(valid_options)
 
     sshfs_mock: MagicMock = sshfs_type_mock.return_value
     method_name, args, _ = sshfs_mock.mock_calls[0]
@@ -225,9 +244,9 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
 
     fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
 
-    sut = Application(options, Mock())
+    sut = Application(Mock())
 
-    sut.run()
+    sut.run(options)
 
     assert "mycopy.txt" in filesystem_fake.existing_files
     assert "copy.gif" in filesystem_fake.existing_files
@@ -247,12 +266,79 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
     successful_sshclient_stub.exec_command.side_effect = call_logger(
         "exec_command")
 
-    sut = Application(options, Mock())
+    sut = Application(Mock())
 
-    sut.run()
+    sut.run(options)
 
     first_two_calls = call_order[:2]
     assert first_two_calls == ["copy_file", "exec_command"]
+
+
+@pytest.mark.usefixtures("sshclient_type_mock")
+def test__given_config_with_non_existing_file_to_copy__when_running__should_perform_rollback_and_exit(osfs_type_mock,
+                                                                                                      sshfs_type_mock,
+                                                                                                      fs_copy_file_mock):
+    options = make_options_with_files_to_copy([
+        ("myfile.txt", "mycopy.txt"),
+        ("otherfile.gif", "copy.gif")
+    ])
+    osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
+
+    sshfs_fake = PyFilesystemFake()
+    sshfs_type_mock.return_value = sshfs_fake
+    fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
+
+    sut = Application(Mock())
+
+    exit_code = sut.run(options)
+
+    assert "mycopy.txt" not in sshfs_fake.existing_files
+    assert exit_code == 1
+
+
+@pytest.mark.usefixtures("sshclient_type_mock", "fs_copy_file_mock")
+def test__given_config_with_non_existing_file_to_copy__when_running__should_print_to_ui(osfs_type_mock,
+                                                                                        sshfs_type_mock):
+    options = make_options_with_files_to_copy([
+        ("myfile.txt", "mycopy.txt"),
+        ("otherfile.gif", "copy.gif")
+    ])
+    osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
+
+    sshfs_fake = PyFilesystemFake()
+    sshfs_type_mock.return_value = sshfs_fake
+
+    ui_spy = Mock()
+    sut = Application(ui_spy)
+
+    sut.run(options)
+
+    assert call.error(
+        "FileNotFoundError: otherfile.gif") in ui_spy.method_calls
+
+
+@pytest.mark.usefixtures("sshclient_type_mock")
+def test__given_config_with_already_existing_file_to_copy__when_running__should_perform_rollback_and_exit(osfs_type_mock,
+                                                                                                          sshfs_type_mock,
+                                                                                                          fs_copy_file_mock):
+    options = make_options_with_files_to_copy([
+        ("myfile.txt", "mycopy.txt"),
+        ("otherfile.gif", "copy.gif")
+    ])
+    osfs_type_mock.return_value = PyFilesystemStub(
+        ["myfile.txt", "otherfile.gif"])
+
+    sshfs_fake = PyFilesystemFake(["copy.gif"])
+    sshfs_type_mock.return_value = sshfs_fake
+    fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
+
+    sut = Application(Mock())
+
+    exit_code = sut.run(options)
+
+    assert "mycopy.txt" not in sshfs_fake.existing_files
+    assert "copy.gif" in sshfs_fake.existing_files
+    assert exit_code == 1
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
@@ -270,9 +356,9 @@ def test__given_config_with_files_to_clean__when_running__should_remove_files_fr
     sshfs_type_mock.return_value = filesystem_fake
     fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
 
-    sut = Application(options, Mock())
+    sut = Application(Mock())
 
-    sut.run()
+    sut.run(options)
 
     assert "mycopy.txt" not in filesystem_fake.existing_files
 
@@ -299,9 +385,9 @@ def test__given_config_with_files_to_clean__when_running__should_clean_files_to_
     successful_sshclient_stub.exec_command.side_effect = call_logger(
         "exec_command")
 
-    sut = Application(options, Mock())
+    sut = Application(Mock())
 
-    sut.run()
+    sut.run(options)
 
     assert call_order == ["exec_command", "exec_command", "remove"]
 
@@ -322,9 +408,9 @@ def test__given_config_with_files_to_collect__when_running__should_collect_files
     sshfs_type_mock.return_value = ssh_fs_fake
     fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
 
-    sut = Application(options, Mock())
+    sut = Application(Mock())
 
-    sut.run()
+    sut.run(options)
 
     assert "mycopy.txt" in local_fs_fake.existing_files
     assert "mycopy.txt" not in ssh_fs_fake.existing_files
@@ -332,35 +418,27 @@ def test__given_config_with_files_to_collect__when_running__should_collect_files
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_zero(valid_options: LaunchOptions):
-    sut = Application(valid_options, Mock())
+    sut = Application(Mock())
 
-    actual = sut.run()
+    actual = sut.run(valid_options)
 
     assert actual == 0
 
 
-def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one(
-        valid_options: LaunchOptions, sshclient_type_mock):
+@pytest.mark.usefixtures("failing_sshclient_stub")
+def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one(valid_options: LaunchOptions):
 
-    sut = Application(valid_options, Mock())
+    sut = Application(Mock())
 
-    with open("test/slurmoutput/sacct_completed_failed.txt", "r") as file:
-        error_lines = file.readlines()
+    actual = sut.run(valid_options)
 
-        sshclient_type_mock.return_value = CmdSpecificSSHClientStub({
-            "sbatch": ChannelFileStub(lines=["1234"]),
-            "sacct": ChannelFileStub(lines=error_lines)
-        })
-
-        actual = sut.run()
-
-        assert actual == 1
+    assert actual == 1
 
 
 def test__given_valid_config__when_running_long_running_job__should_wait_for_completion(sshclient_type_mock,
                                                                                         valid_options: LaunchOptions):
 
-    sut = Application(valid_options, Mock())
+    sut = Application(Mock())
 
     channel_spy = DelayedChannelSpy(exit_code=1, calls_until_exit=2)
     sshclient_type_mock.return_value = CmdSpecificSSHClientStub({
@@ -371,7 +449,7 @@ def test__given_valid_config__when_running_long_running_job__should_wait_for_com
         )
     })
 
-    actual = sut.run()
+    actual = sut.run(valid_options)
 
     assert actual == 0
     assert channel_spy.times_called == 2
@@ -380,9 +458,9 @@ def test__given_valid_config__when_running_long_running_job__should_wait_for_com
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_ui__when_running__should_update_ui_after_polling(valid_options: LaunchOptions):
     ui_spy = Mock()
-    sut = Application(valid_options, ui_spy)
+    sut = Application(ui_spy)
 
-    _ = sut.run()
+    _ = sut.run(valid_options)
 
     ui_spy.update.assert_called_with(completed_slurm_job())
 

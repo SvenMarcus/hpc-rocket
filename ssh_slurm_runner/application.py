@@ -1,4 +1,5 @@
 import os
+from typing import Optional, Tuple
 
 from ssh_slurm_runner.environmentpreparation import EnvironmentPreparation
 from ssh_slurm_runner.filesystemimpl import LocalFilesystem, SSHFilesystem
@@ -11,92 +12,142 @@ from ssh_slurm_runner.watcher.jobwatcher import JobWatcher
 
 class Application:
 
-    def __init__(self, options: LaunchOptions, ui: UI) -> None:
-        self._options = options
-        self._latest_job_update: SlurmJob = None
+    def __init__(self, ui: UI) -> None:
         self._ui = ui
-        self.runner = None
-        self.watcher = None
-        self.jobid = 0
+        self._latest_job_update: Optional[SlurmJob] = None
+        self._runner: Optional[SlurmRunner] = None
+        self._watcher: Optional[JobWatcher] = None
+        self._jobid = 0
 
-    def run(self) -> int:
-        env_prep = self._prepare_remote_environment()
-        executor = self._create_sshexecutor()
-        self.runner = SlurmRunner(executor)
-        self.jobid = self.runner.sbatch(self._options.sbatch)
-        self._wait_for_job_completion()
+    def run(self, options: LaunchOptions) -> int:
+        env_prep, success = self._prepare_environment(options)
+        if not success:
+            return 1
 
-        env_prep.collect()
-        env_prep.clean()
+        executor = self._create_sshexecutor(options)
+        self._runner = SlurmRunner(executor)
+        self._launch_job(self._runner, options)
+        self._wait_for_job_completion(options)
+
+        self._collect_results(env_prep)
+        self._clean_remote_environment(env_prep)
         executor.disconnect()
+
+        return self._get_exit_code_for_job(self._latest_job_update)
+
+    def _prepare_environment(self, options: LaunchOptions) -> Tuple[EnvironmentPreparation, bool]:
+        self._ui.info("Preparing remote environment")
+        env_prep = self._make_env_preparation(options)
+        success = self._try_env_preparation(env_prep)
+        if success:
+            self._ui.success("Done")
+
+        return env_prep, success
+
+    def _try_env_preparation(self, env_prep: EnvironmentPreparation) -> bool:
+        try:
+            env_prep.prepare()
+        except (FileNotFoundError, FileExistsError) as err:
+            self._ui.error(self._get_error_message(err))
+            env_prep.rollback()
+            return False
+
+        return True
+
+    def _launch_job(self, runner: SlurmRunner, options: LaunchOptions) -> None:
+        self._ui.info("Launching job")
+        self._jobid = runner.sbatch(options.sbatch)
+        self._ui.success(f"Job {self._jobid} launched")
+
+    def _wait_for_job_completion(self, options: LaunchOptions) -> None:
+        self._watcher = JobWatcher(self._runner)
+
+        self._watcher.watch(self._jobid,
+                            self._poll_callback,
+                            options.poll_interval)
+
+        self._watcher.wait_until_done()
+        self._display_job_result()
+
+    def _display_job_result(self):
         if self._latest_job_update.success:
+            self._ui.success("Job completed successfully")
+        else:
+            self._ui.error("Job failed")
+
+    def _clean_remote_environment(self, env_prep):
+        self._ui.info("Cleaning up remote environment")
+        env_prep.clean()
+        self._ui.success("Done")
+
+    def _collect_results(self, env_prep):
+        self._ui.info("Collecting results")
+        env_prep.collect()
+        self._ui.success("Done")
+
+    def _get_exit_code_for_job(self, job: SlurmJob) -> int:
+        if job.success:
             return 0
 
         return 1
 
-    def _prepare_remote_environment(self) -> EnvironmentPreparation:
+    def _make_env_preparation(self, options) -> EnvironmentPreparation:
         env_prep = EnvironmentPreparation(
             LocalFilesystem("."),
-            self._make_ssh_filesystem())
+            self._make_ssh_filesystem(options))
 
-        env_prep.files_to_copy(self._options.copy_files)
-        env_prep.files_to_clean(self._options.clean_files)
-        env_prep.files_to_collect(self._options.collect_files)
-        env_prep.prepare()
+        env_prep.files_to_copy(options.copy_files)
+        env_prep.files_to_clean(options.clean_files)
+        env_prep.files_to_collect(options.collect_files)
 
         return env_prep
 
-    def _make_ssh_filesystem(self):
+    def _make_ssh_filesystem(self, options: LaunchOptions) -> SSHFilesystem:
         home_dir = os.environ['HOME']
-        keyfile = self._resolve_home_dir(home_dir)
+        keyfile = self._resolve_keyfile_from_home_dir(options, home_dir)
 
-        return SSHFilesystem(self._options.user,
-                             self._options.host,
-                             self._options.password,
-                             self._options.private_key,
+        return SSHFilesystem(options.user,
+                             options.host,
+                             options.password,
+                             options.private_key,
                              keyfile)
-
-    def _wait_for_job_completion(self):
-        self.watcher = JobWatcher(self.runner)
-
-        self.watcher.watch(self.jobid,
-                           self._poll_callback,
-                           self._options.poll_interval)
-
-        self.watcher.wait_until_done()
 
     def _poll_callback(self, job: SlurmJob) -> None:
         self._latest_job_update = job
         self._ui.update(job)
 
-    def _create_sshexecutor(self) -> SSHExecutor:
+    def _create_sshexecutor(self, options) -> SSHExecutor:
         home_dir = os.environ['HOME']
+        keyfile = self._resolve_keyfile_from_home_dir(options, home_dir)
 
-        executor = SSHExecutor(self._options.host)
+        executor = SSHExecutor(options.host)
         executor.load_host_keys_from_file(f"{home_dir}/.ssh/known_hosts")
 
-        keyfile = self._resolve_home_dir(home_dir)
-
-        executor.connect(self._options.user,
+        executor.connect(options.user,
                          keyfile,
-                         self._options.password,
-                         self._options.private_key)
+                         options.password,
+                         options.private_key)
 
         return executor
 
-    def _resolve_home_dir(self, home_dir):
-        keyfile = self._options.private_keyfile
+    def _resolve_keyfile_from_home_dir(self, options, home_dir: str) -> str:
+        keyfile = options.private_keyfile
         if keyfile.startswith("~/"):
             keyfile = keyfile.replace("~/", home_dir + "/", 1)
 
         return keyfile
 
-    def cancel(self):
+    def _get_error_message(self, err: Exception) -> str:
+        type_name = type(err).__name__
+        error_string = f"{type_name}: {err}"
+        return error_string
+
+    def cancel(self) -> int:
         try:
-            print(f"Canceling job {self.jobid}")
-            self.runner.scancel(self.jobid)
-            self.watcher.stop()
-            job = self.runner.poll_status(self.jobid)
+            print(f"Canceling job {self._jobid}")
+            self._runner.scancel(self._jobid)
+            self._watcher.stop()
+            job = self._runner.poll_status(self._jobid)
             self._ui.update(job)
         except SlurmError as err:
             print(err.args)
