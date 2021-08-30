@@ -21,7 +21,7 @@ class _TestFilesystemImpl(PyFilesystemBased):
         return self._internal_fs
 
 
-class FilesystemStub(PyFilesystemBased):
+class MockWrappingFilesystemStub(PyFilesystemBased):
 
     def __init__(self, internal_fs=None) -> None:
         self._internal_fs = internal_fs or MagicMock(
@@ -133,7 +133,7 @@ def test__when_copying_directory__should_call_copydir_on_fs(fs_type_mock):
 
 
 def test__when_copying_file_to_other_filesystem__should_call_copy_file(fs_type_mock, copy_file):
-    fs_mock = FilesystemStub()
+    fs_mock = MockWrappingFilesystemStub()
     sut = _TestFilesystemImpl(fs_type_mock.return_value)
 
     sut.copy(SOURCE, TARGET, filesystem=fs_mock)
@@ -151,7 +151,7 @@ def test__when_copying_file_to_other_filesystem__but_parent_dir_missing__should_
         expected_calls=["makedirs"]
     )
 
-    fs_mock = FilesystemStub(missing_dirs_mock)
+    fs_mock = MockWrappingFilesystemStub(missing_dirs_mock)
     fs_mock.existing_files = [SOURCE]
 
     sut = _TestFilesystemImpl(fs_type_mock.return_value)
@@ -168,7 +168,7 @@ def test__when_copying_file_to_other_filesystem__but_parent_dir_missing__should_
 def test__when_copying_file_to_other_filesystem__and_parent_dir_exists__should_not_try_to_create_dirs(fs_type_mock):
     target_parent_dir = "~/another/folder"
 
-    filesystem_stub = FilesystemStub()
+    filesystem_stub = MockWrappingFilesystemStub()
     filesystem_stub.existing_files = [SOURCE]
     filesystem_stub.existing_dirs = [target_parent_dir]
 
@@ -198,7 +198,7 @@ def test__when_copying__but_file_exists__should_raise_file_exists_error(fs_type_
 
 
 def test__when_copying_to_other_filesystem__but_file_exists__should_raise_file_exists_error(fs_type_mock, copy_file):
-    fs_mock = FilesystemStub(Mock(isdir=lambda _: False))
+    fs_mock = MockWrappingFilesystemStub(Mock(isdir=lambda _: False))
     fs_mock.existing_files.add(TARGET)
     sut = _TestFilesystemImpl(fs_type_mock.return_value)
 
@@ -212,7 +212,7 @@ def test__when_copying_directory_to_other_filesystem__should_call_copy_dir(fs_ty
         isdir=lambda path: True,
         exists=lambda path: True)
 
-    target_fs_mock = FilesystemStub()
+    target_fs_mock = MockWrappingFilesystemStub()
     sut = _TestFilesystemImpl(source_pyfs_mock)
 
     source = "~/mydir"
