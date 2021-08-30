@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 
 class Filesystem(ABC):
@@ -8,24 +7,24 @@ class Filesystem(ABC):
     """
 
     @abstractmethod
-    def copy(self, source: str, target: str, filesystem: 'Filesystem' = None) -> None:
+    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: 'Filesystem' = None) -> None:
         """Copies the `source` file to the `target` location. Can transfer between filesystems if `filesystem` argument is specified
 
         Args:
             source (str): The path to the file to be copied
             target (str): The path to the copy destination
             filesystem (Filesystem): An optional different filesystem to copy to
-        
+
         Raises:
             FileNotFoundError: The `source` file does not exist
-            FileExistsError: The `target` file already exists
+            FileExistsError: The `target` file already exists and overwrite is False
         """
         pass
 
     @abstractmethod
     def delete(self, path: str) -> None:
         """Deletes a file from the Filesystem
-        
+
         Args:
             path (str): The path to the file to be deleted
 

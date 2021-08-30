@@ -1,6 +1,7 @@
 import dataclasses
 import os
 from dataclasses import replace
+from ssh_slurm_runner.environmentpreparation import CopyInstruction
 from ssh_slurm_runner.errors import SSHError
 from test.pyfilesystem_testdoubles import (PyFilesystemFake, PyFilesystemStub,
                                            copy_file_between_filesystems_fake)
@@ -205,6 +206,7 @@ def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_c
     sshfs_type_mock.assert_called_with(
         valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=valid_options.private_key)
 
+
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_ssh_connection_not_available_for_sshfs__when_running__should_log_error_and_exit(valid_options, sshfs_type_mock):
     sshfs_type_mock.side_effect = SSHError(valid_options.host)
@@ -257,8 +259,8 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
                                                                                                 sshfs_type_mock,
                                                                                                 fs_copy_file_mock):
     options = make_options_with_files_to_copy([
-        ("myfile.txt", "mycopy.txt"),
-        ("otherfile.gif", "copy.gif")
+        CopyInstruction("myfile.txt", "mycopy.txt"),
+        CopyInstruction("otherfile.gif", "copy.gif")
     ])
 
     osfs_type_mock.return_value = PyFilesystemStub(
@@ -281,7 +283,8 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
                                                                                                                    sshfs_type_mock,
                                                                                                                    fs_copy_file_mock,
                                                                                                                    successful_sshclient_stub):
-    options = make_options_with_files_to_copy([("myfile.txt", "mycopy.txt")])
+    options = make_options_with_files_to_copy(
+        [CopyInstruction("myfile.txt", "mycopy.txt")])
 
     osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
     sshfs_type_mock.return_value = PyFilesystemFake()
@@ -304,8 +307,8 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_perf
                                                                                                       sshfs_type_mock,
                                                                                                       fs_copy_file_mock):
     options = make_options_with_files_to_copy([
-        ("myfile.txt", "mycopy.txt"),
-        ("otherfile.gif", "copy.gif")
+        CopyInstruction("myfile.txt", "mycopy.txt"),
+        CopyInstruction("otherfile.gif", "copy.gif")
     ])
     osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
 
@@ -325,8 +328,8 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_perf
 def test__given_config_with_non_existing_file_to_copy__when_running__should_print_to_ui(osfs_type_mock,
                                                                                         sshfs_type_mock):
     options = make_options_with_files_to_copy([
-        ("myfile.txt", "mycopy.txt"),
-        ("otherfile.gif", "copy.gif")
+        CopyInstruction("myfile.txt", "mycopy.txt"),
+        CopyInstruction("otherfile.gif", "copy.gif")
     ])
     osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
 
@@ -347,8 +350,8 @@ def test__given_config_with_already_existing_file_to_copy__when_running__should_
                                                                                                           sshfs_type_mock,
                                                                                                           fs_copy_file_mock):
     options = make_options_with_files_to_copy([
-        ("myfile.txt", "mycopy.txt"),
-        ("otherfile.gif", "copy.gif")
+        CopyInstruction("myfile.txt", "mycopy.txt"),
+        CopyInstruction("otherfile.gif", "copy.gif")
     ])
     osfs_type_mock.return_value = PyFilesystemStub(
         ["myfile.txt", "otherfile.gif"])
@@ -371,7 +374,7 @@ def test__given_config_with_files_to_clean__when_running__should_remove_files_fr
                                                                                                      sshfs_type_mock,
                                                                                                      fs_copy_file_mock):
     options = make_options_with_files_to_copy_and_clean(
-        [("myfile.txt", "mycopy.txt")],
+        [CopyInstruction("myfile.txt", "mycopy.txt")],
         ["mycopy.txt"]
     )
 
@@ -393,7 +396,7 @@ def test__given_config_with_files_to_clean__when_running__should_clean_files_to_
                                                                                                                        fs_copy_file_mock,
                                                                                                                        successful_sshclient_stub):
     options = make_options_with_files_to_copy_and_clean(
-        [("myfile.txt", "mycopy.txt")],
+        [CopyInstruction("myfile.txt", "mycopy.txt")],
         ["mycopy.txt"]
     )
 
@@ -422,7 +425,7 @@ def test__given_config_with_files_to_collect__when_running__should_collect_files
                                                                                                                                                  sshfs_type_mock,
                                                                                                                                                  fs_copy_file_mock):
     options = dataclasses.replace(make_options_with_files_to_copy_and_clean(
-        [("myfile.txt", "mycopy.txt")],
+        [CopyInstruction("myfile.txt", "mycopy.txt")],
         ["mycopy.txt"]
     ), collect_files=["mycopy.txt"])
 

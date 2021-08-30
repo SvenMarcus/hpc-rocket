@@ -1,5 +1,5 @@
 from ssh_slurm_runner.filesystem import Filesystem
-from ssh_slurm_runner.environmentpreparation import EnvironmentPreparation
+from ssh_slurm_runner.environmentpreparation import CopyInstruction, EnvironmentPreparation
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -16,7 +16,7 @@ def test__given_files_to_copy__but_not_preparing__should_not_do_anything():
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
     sut.files_to_copy([
-        ("file1.txt", "file2.txt")
+        CopyInstruction("file1.txt", "file2.txt")
     ])
 
     source_fs_spy.copy.assert_not_called()
@@ -29,15 +29,15 @@ def test__given_files_to_copy__when_preparing__should_copy_files():
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
 
     sut.files_to_copy([
-        ("file.txt", "filecopy.txt"),
-        ("funny.gif", "evenfunnier.gif")
+       CopyInstruction("file.txt", "filecopy.txt"),
+        CopyInstruction("funny.gif", "evenfunnier.gif")
     ])
 
     sut.prepare()
 
     source_fs_spy.copy.assert_has_calls([
-        call("file.txt", "filecopy.txt", target_fs),
-        call("funny.gif", "evenfunnier.gif", target_fs)
+        call("file.txt", "filecopy.txt", filesystem=target_fs),
+        call("funny.gif", "evenfunnier.gif", filesystem=target_fs)
     ])
 
 
@@ -49,8 +49,8 @@ def test__given_files_to_copy_with_non_existing_file__when_preparing_then_rollba
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
 
     sut.files_to_copy([
-        ("file.txt", "filecopy.txt"),
-        ("funny.gif", "evenfunnier.gif")
+        CopyInstruction("file.txt", "filecopy.txt"),
+        CopyInstruction("funny.gif", "evenfunnier.gif")
     ])
 
     with pytest.raises(FileNotFoundError):
@@ -68,8 +68,8 @@ def test__given_copied_file_not_on_target_fs__when_rolling_back__should_remove_r
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
     sut.files_to_copy([
-        ("file.txt", "filecopy.txt"),
-        ("funny.gif", "evenfunnier.gif")
+        CopyInstruction("file.txt", "filecopy.txt"),
+        CopyInstruction("funny.gif", "evenfunnier.gif")
     ])
 
     sut.prepare()
@@ -86,8 +86,8 @@ def test__given_rollback_done__when_rolling_back_again__should_not_do_anything()
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
     sut.files_to_copy([
-        ("file.txt", "filecopy.txt"),
-        ("funny.gif", "evenfunnier.gif")
+        CopyInstruction("file.txt", "filecopy.txt"),
+        CopyInstruction("funny.gif", "evenfunnier.gif")
     ])
     sut.prepare()
     sut.rollback()
@@ -105,8 +105,8 @@ def test__given_rollback_done_with_file_not_found__when_rolling_back_again__shou
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs_spy)
     sut.files_to_copy([
-        ("file.txt", "filecopy.txt"),
-        ("funny.gif", "evenfunnier.gif")
+        CopyInstruction("file.txt", "filecopy.txt"),
+        CopyInstruction("funny.gif", "evenfunnier.gif")
     ])
     sut.prepare()
     sut.rollback()
@@ -196,8 +196,8 @@ def test__given_files_to_collect__when_collect__should_copy_to_source_fs():
     sut.collect()
 
     target_fs.copy.assert_has_calls([
-        call("file.txt", "file.txt", source_fs_spy),
-        call("funny.gif", "funny.gif", source_fs_spy)
+        call("file.txt", "file.txt", filesystem=source_fs_spy),
+        call("funny.gif", "funny.gif", filesystem=source_fs_spy)
     ])
 
 
@@ -216,7 +216,7 @@ def test__given_files_to_collect_with_non_existing_file__when_collecting__should
     sut.collect()
 
     target_fs.copy.assert_has_calls([
-        call("funny.gif", "funny.gif", source_fs_spy),
+        call("funny.gif", "funny.gif", filesystem=source_fs_spy),
     ])
 
 
@@ -255,7 +255,7 @@ def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_c
     sut.collect()
 
     target_fs.copy.assert_has_calls([
-        call("funny.gif", "funny.gif", source_fs_spy),
+        call("funny.gif", "funny.gif", filesystem=source_fs_spy),
     ])
 
 
@@ -285,7 +285,7 @@ def raise_file_not_found_on_given_call(call: int = 1):
         nonlocal call_count
         call_count += 1
         if call_count == call:
-            raise FileNotFoundError(*args, **kwargs)
+            raise FileNotFoundError(*args)
 
     return raise_file_not_found
 
@@ -297,6 +297,6 @@ def raise_file_exists_on_given_call(call: int = 1):
         nonlocal call_count
         call_count += 1
         if call_count == call:
-            raise FileExistsError(*args, **kwargs)
+            raise FileExistsError(*args)
 
     return raise_file_exists

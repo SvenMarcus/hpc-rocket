@@ -22,9 +22,9 @@ class PyFilesystemBased(Filesystem, ABC):
         """
         pass
 
-    def copy(self, source: str, target: str, filesystem: 'Filesystem' = None) -> None:
+    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: 'Filesystem' = None) -> None:
         self._raise_if_source_does_not_exist(source)
-        self._raise_if_target_exists(target, filesystem)
+        self._raise_if_target_exists(target, overwrite, filesystem)
         self._raise_if_no_pyfilesystem(filesystem)
         self._create_missing_target_dirs(target, filesystem)
 
@@ -32,7 +32,7 @@ class PyFilesystemBased(Filesystem, ABC):
             self._try_copy_to_filesystem(source, target, filesystem)
             return
 
-        self._try_copy(source, target)
+        self._try_copy(source, target, overwrite)
 
     def _create_missing_target_dirs(self, target, filesystem):
         target_fs = filesystem or self
@@ -62,18 +62,20 @@ class PyFilesystemBased(Filesystem, ABC):
         fscp.copy_file(self.internal_fs, source,
                        filesystem.internal_fs, target)
 
-    def _try_copy(self, source, target):
+    def _try_copy(self, source, target, overwrite):
         if self.internal_fs.isdir(source):
             self.internal_fs.copydir(source, target, create=True)
             return
 
-        self.internal_fs.copy(source, target)
+        self.internal_fs.copy(source, target, overwrite=overwrite)
 
     def _raise_if_source_does_not_exist(self, source):
         if not self.exists(source):
             raise FileNotFoundError(source)
 
-    def _raise_if_target_exists(self, target, filesystem):
+    def _raise_if_target_exists(self, target, overwrite, filesystem):
+        if overwrite:
+            return
         target_filesystem = filesystem or self
         if target_filesystem.exists(target) and not target_filesystem.internal_fs.isdir(target):
             raise FileExistsError(target)
