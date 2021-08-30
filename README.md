@@ -26,13 +26,16 @@ SSH Slurm Runner does support authentication via password and private key. Passw
 Currently all `sbatch` configuration must happen in the job file.
 SSH Slurm Runner does not offer any other way of configuring your batch jobs.
 If you're not using a config file the job file must be present on the remote machine.
-The config file format allows specifying files to copy and clean.
+The config file format allows specifying files to copy, collect and clean.
 
 ### Configuration file
 
 SSH Slurm Runner can use a configuration file in YAML format. An example is given below.
+This configuration file allows copying files to the remote machine, copying results back to the local machine (collecting) and eventually cleaning up copied or produced files.
 Note that all paths in the configuration file must be relative paths.
 On the local machine paths are evaluated from the current working directory, on the remote machine from the user's home directory.
+Moreover SSH Slurm Runner currently does not allow you to overwrite existing files. Therefore make sure that files that need to be copied to the remote machine or back to your current machine do not exist already.
+
 
 ```yaml
 host: cluster.example.com
@@ -45,6 +48,9 @@ copy:
 
   - from: bin/myexecutable
     to: myexecutable
+
+collect:
+  - myslurmresult.out
 
 clean:
   - slurm.job
