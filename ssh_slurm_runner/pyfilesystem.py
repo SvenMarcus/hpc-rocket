@@ -75,7 +75,7 @@ class PyFilesystemBased(Filesystem, ABC):
 
     def _raise_if_target_exists(self, target, filesystem):
         target_filesystem = filesystem or self
-        if target_filesystem.exists(target):
+        if target_filesystem.exists(target) and not target_filesystem.internal_fs.isdir(target):
             raise FileExistsError(target)
 
     def _raise_if_no_pyfilesystem(self, filesystem):

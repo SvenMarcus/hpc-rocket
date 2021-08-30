@@ -1,5 +1,5 @@
 from test.pyfilesystem_testdoubles import PyFilesystemStub, VerifyDirsCreatedAndCopyPyFSMock
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import fs
 import fs.base
@@ -198,7 +198,7 @@ def test__when_copying__but_file_exists__should_raise_file_exists_error(fs_type_
 
 
 def test__when_copying_to_other_filesystem__but_file_exists__should_raise_file_exists_error(fs_type_mock, copy_file):
-    fs_mock = FilesystemStub()
+    fs_mock = FilesystemStub(Mock(isdir=lambda _: False))
     fs_mock.existing_files.add(TARGET)
     sut = _TestFilesystemImpl(fs_type_mock.return_value)
 
@@ -224,6 +224,18 @@ def test__when_copying_directory_to_other_filesystem__should_call_copy_dir(fs_ty
         source_pyfs_mock, source,
         target_fs_mock.internal_fs, target)
 
+
+def test__when_copying_directory__but_directory_exists__should_copy_into_existing_directory(fs_type_mock):
+    source_pyfs_mock = fs_type_mock.return_value
+    source_pyfs_mock.configure_mock(
+        isdir=lambda path: True,
+        exists=lambda path: True)
+
+    sut = _TestFilesystemImpl(source_pyfs_mock)
+    sut.copy("./sourcedir", "./targetdir")
+
+    source_pyfs_mock.copydir.assert_called_with(
+        "./sourcedir", "./targetdir", create=True)
 
 def test__when_copying_to_non_pyfilesystem__should_raise_runtime_error(fs_type_mock):
     fs_mock = NonPyFilesystemBasedFilesystem()
