@@ -45,5 +45,5 @@ def test__given_valid_args_for_yaml__should_return_matching_config():
             CopyInstruction("myfile.txt", "mycopy.txt"), 
             CopyInstruction("slurm.job", "slurm.job", True)],
         clean_files=["mycopy.txt", "slurm.job"],
-        collect_files=["result.txt"]
+        collect_files=[CopyInstruction("result.txt", "result.txt", True)],
     )

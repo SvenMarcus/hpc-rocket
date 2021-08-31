@@ -427,7 +427,7 @@ def test__given_config_with_files_to_collect__when_running__should_collect_files
     options = dataclasses.replace(make_options_with_files_to_copy_and_clean(
         [CopyInstruction("myfile.txt", "mycopy.txt")],
         ["mycopy.txt"]
-    ), collect_files=["mycopy.txt"])
+    ), collect_files=[CopyInstruction("mycopy.txt", "mycopy.txt")])
 
     local_fs_fake = PyFilesystemFake(["myfile.txt"])
     osfs_type_mock.return_value = local_fs_fake

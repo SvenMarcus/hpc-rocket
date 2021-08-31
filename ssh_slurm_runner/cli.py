@@ -56,7 +56,7 @@ def _parse_yaml_configuration(path: str) -> LaunchOptions:
             private_keyfile=config.get("private_keyfile"),
             copy_files=_collect_copy_instructions(config.get("copy", [])),
             clean_files=config.get("clean", []),
-            collect_files=config.get("collect", [])
+            collect_files=_collect_copy_instructions(config.get("collect", []))
         )
 
 

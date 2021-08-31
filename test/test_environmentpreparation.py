@@ -30,14 +30,14 @@ def test__given_files_to_copy__when_preparing__should_copy_files():
 
     sut.files_to_copy([
        CopyInstruction("file.txt", "filecopy.txt"),
-        CopyInstruction("funny.gif", "evenfunnier.gif")
+        CopyInstruction("funny.gif", "evenfunnier.gif", overwrite=True)
     ])
 
     sut.prepare()
 
     source_fs_spy.copy.assert_has_calls([
-        call("file.txt", "filecopy.txt", filesystem=target_fs),
-        call("funny.gif", "evenfunnier.gif", filesystem=target_fs)
+        call("file.txt", "filecopy.txt", False, filesystem=target_fs),
+        call("funny.gif", "evenfunnier.gif", True, filesystem=target_fs)
     ])
 
 
@@ -189,15 +189,15 @@ def test__given_files_to_collect__when_collect__should_copy_to_source_fs():
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
 
     sut.files_to_collect([
-        "file.txt",
-        "funny.gif",
+        CopyInstruction("file.txt", "copy_file.txt", True),
+        CopyInstruction("funny.gif", "copy_funny.gif", False),
     ])
 
     sut.collect()
 
     target_fs.copy.assert_has_calls([
-        call("file.txt", "file.txt", filesystem=source_fs_spy),
-        call("funny.gif", "funny.gif", filesystem=source_fs_spy)
+        call("file.txt", "copy_file.txt", True, filesystem=source_fs_spy),
+        call("funny.gif", "copy_funny.gif", False, filesystem=source_fs_spy)
     ])
 
 
@@ -209,14 +209,14 @@ def test__given_files_to_collect_with_non_existing_file__when_collecting__should
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
 
     sut.files_to_collect([
-        "file.txt",
-        "funny.gif",
+        CopyInstruction("file.txt", "copy_file.txt"),
+        CopyInstruction("funny.gif", "copy_funny.gif"),
     ])
 
     sut.collect()
 
     target_fs.copy.assert_has_calls([
-        call("funny.gif", "funny.gif", filesystem=source_fs_spy),
+        call("funny.gif", "copy_funny.gif", False, filesystem=source_fs_spy),
     ])
 
 
@@ -229,8 +229,8 @@ def test__given_files_to_collect_with_non_existing_file__when_collecting__should
     sut = EnvironmentPreparation(source_fs_spy, target_fs, ui_spy)
 
     sut.files_to_collect([
-        "file.txt",
-        "funny.gif",
+        CopyInstruction("file.txt", "copy_file.txt", True),
+        CopyInstruction("funny.gif", "copy_funny.gif", False),
     ])
 
     sut.collect()
@@ -248,14 +248,14 @@ def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_c
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
 
     sut.files_to_collect([
-        "file.txt",
-        "funny.gif",
+        CopyInstruction("file.txt", "copy_file.txt", False),
+        CopyInstruction("funny.gif", "copy_funny.gif", False),
     ])
 
     sut.collect()
 
     target_fs.copy.assert_has_calls([
-        call("funny.gif", "funny.gif", filesystem=source_fs_spy),
+        call("funny.gif", "copy_funny.gif", False, filesystem=source_fs_spy),
     ])
 
 
@@ -268,8 +268,8 @@ def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_c
     sut = EnvironmentPreparation(source_fs_spy, target_fs, ui_spy)
 
     sut.files_to_collect([
-        "file.txt",
-        "funny.gif",
+        CopyInstruction("file.txt", "copy_file.txt", False),
+        CopyInstruction("funny.gif", "copy_funny.gif", False),
     ])
 
     sut.collect()
