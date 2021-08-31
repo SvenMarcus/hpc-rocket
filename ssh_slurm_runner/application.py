@@ -1,6 +1,6 @@
 import os
 from ssh_slurm_runner.errors import SSHError
-from typing import Optional, Tuple
+from typing import Optional
 
 from ssh_slurm_runner.environmentpreparation import EnvironmentPreparation
 from ssh_slurm_runner.filesystemimpl import LocalFilesystem, SSHFilesystem

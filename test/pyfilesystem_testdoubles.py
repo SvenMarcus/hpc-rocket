@@ -12,6 +12,9 @@ class PyFilesystemStub:
         self.existing_files = existing_files or list()
         self.existing_dirs = existing_dirs or list()
 
+    # def copy(self, src: str, dst: str, overwrite: bool = False) -> None:
+    #     pass
+
     def isdir(self, path: str) -> bool:
         return path in self.existing_dirs
 
@@ -84,7 +87,7 @@ class VerifyDirsCreatedAndCopyPyFSMock(PyFilesystemStub):
         self.dirs_created.append(path)
         return MagicMock(spec=fs.subfs.SubFS)
 
-    def copy(self, src: str, dst: str):
+    def copy(self, src: str, dst: str, overwrite: bool = False):
         self.calls.append("copy")
         self.copy_calls.append((src, dst))
 

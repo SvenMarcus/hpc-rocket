@@ -34,8 +34,7 @@ SSH Slurm Runner can use a configuration file in YAML format. An example is give
 This configuration file allows copying files to the remote machine, copying results back to the local machine (collecting) and eventually cleaning up copied or produced files.
 Note that all paths in the configuration file must be relative paths.
 On the local machine paths are evaluated from the current working directory, on the remote machine from the user's home directory.
-Moreover SSH Slurm Runner currently does not allow you to overwrite existing files. Therefore make sure that files that need to be copied to the remote machine or back to your current machine do not exist already.
-
+If you want to overwrite existing files on the remote machine, make sure to specify the `overwrite` instruction for each file you would like to overwrite.
 
 ```yaml
 host: cluster.example.com
@@ -45,12 +44,15 @@ private_keyfile: ~/.ssh/id_rsa
 copy:
   - from: jobs/slurm.job
     to: slurm.job
+    overwrite: true
 
   - from: bin/myexecutable
     to: myexecutable
 
 collect:
-  - myslurmresult.out
+  - from: remote_slurmresult.out
+    to: local_slurmresult.out
+    overwrite: true
 
 clean:
   - slurm.job

@@ -8,9 +8,12 @@ copy:
 
   - from: slurm.job
     to: slurm.job
+    overwrite: true
 
 collect:
-  - result.txt
+  - from: result.txt
+    to: result.txt
+    overwrite: true
 
 clean:
   - mycopy.txt

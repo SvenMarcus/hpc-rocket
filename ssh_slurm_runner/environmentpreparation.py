@@ -1,7 +1,16 @@
-from typing import List, Optional, Tuple
+from typing import List, NamedTuple, Optional
 
 from ssh_slurm_runner.filesystem import Filesystem
 from ssh_slurm_runner.ui import UI, NullUI
+
+
+class CopyInstruction(NamedTuple):
+    """
+    Copy instruction for a file.
+    """
+    source: str
+    destination: str
+    overwrite: bool = False
 
 
 class EnvironmentPreparation:
@@ -18,17 +27,17 @@ class EnvironmentPreparation:
         self._collect = list()
         self._copied_files = list()
 
-    def files_to_copy(self, src_dest_tuples: List[Tuple[str, str]]) -> None:
+    def files_to_copy(self, copy_instructions: List[CopyInstruction]) -> None:
         """
         Sets the files to copy to the target filesystem.
 
         Args:
-            src_dest_tuples: A list of tuples of the form (src, dest)
+            copy_instructions: A list of copy instructions (essentially tuples) of the form (src, dest, overwrite)
 
         Returns:
             None        
         """
-        self._copy = list(src_dest_tuples)
+        self._copy = list(copy_instructions)
 
     def prepare(self) -> None:
         """
@@ -44,8 +53,10 @@ class EnvironmentPreparation:
             FileNotFoundError: If a file to copy is not found on the source filesystem
             FileExistsError: If a file to copy already exists on the target filesystem
         """
-        for src, dest in self._copy:
-            self._src_filesystem.copy(src, dest, self._target_filesystem)
+        for src, dest, overwrite in self._copy:
+            self._src_filesystem.copy(src, dest, overwrite,
+                                      filesystem=self._target_filesystem)
+
             self._copied_files.append(dest)
 
     def files_to_clean(self, files: List[str]) -> None:
@@ -80,22 +91,23 @@ class EnvironmentPreparation:
         try:
             self._target_filesystem.delete(file)
         except FileNotFoundError as err:
-            self._ui.error(f"{type(err).__name__}: Cannot delete file '{file}'")
+            self._ui.error(
+                f"{type(err).__name__}: Cannot delete file '{file}'")
             return False
 
         return True
 
-    def files_to_collect(self, files: List[str]) -> None:
+    def files_to_collect(self, copy_instructions: List[CopyInstruction]) -> None:
         """
         Sets the files to collect from the target filesystem.
 
         Args:
-            files: A list of files to collect
+            copy_instructions: A list of copy instructions (essentially tuples) of the form (src, dest, overwrite)
 
         Returns:
             None
         """
-        self._collect = list(files)
+        self._collect = list(copy_instructions)
 
     def collect(self) -> None:
         """
@@ -107,11 +119,13 @@ class EnvironmentPreparation:
         Returns:
             None
         """
-        for file in self._collect:
+        for src, dst, overwrite in self._collect:
             try:
-                self._target_filesystem.copy(file, file, self._src_filesystem)
+                self._target_filesystem.copy(src, dst, overwrite,
+                                             filesystem=self._src_filesystem)
             except (FileNotFoundError, FileExistsError) as err:
-                self._ui.error(f"{type(err).__name__}: Cannot copy file '{file}'")
+                self._ui.error(
+                    f"{type(err).__name__}: Cannot copy file '{src}'")
 
     def rollback(self) -> None:
         """
