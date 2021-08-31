@@ -1,4 +1,3 @@
-import socket
 from typing import List
 
 import paramiko as pm
