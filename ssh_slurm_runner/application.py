@@ -133,8 +133,11 @@ class Application:
 
         return executor
 
-    def _resolve_keyfile_from_home_dir(self, options, home_dir: str) -> str:
+    def _resolve_keyfile_from_home_dir(self, options, home_dir: str) -> Optional[str]:
         keyfile = options.private_keyfile
+        if not keyfile:
+            return None
+
         if keyfile.startswith("~/"):
             keyfile = keyfile.replace("~/", home_dir + "/", 1)
 

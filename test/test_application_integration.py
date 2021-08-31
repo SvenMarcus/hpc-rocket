@@ -241,6 +241,24 @@ def test__given_config_with_only_private_keyfile__when_running__should_login_to_
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
+def test__given_config_with_only_password__when_running__should_login_to_sshfs_with_correct_credentials(sshfs_type_mock):
+    valid_options = LaunchOptions(
+        host="example.com",
+        user="myuser",
+        password="mypassword",
+        sbatch="test.job",
+        poll_interval=0
+    )
+
+    sut = Application(Mock())
+
+    sut.run(valid_options)
+
+    sshfs_type_mock.assert_called_with(
+        valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=valid_options.private_key)
+
+
+@pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_mock: MagicMock,
                                                                     valid_options: LaunchOptions,):
     sut = Application(Mock())
