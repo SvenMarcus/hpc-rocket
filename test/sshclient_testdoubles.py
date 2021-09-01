@@ -34,7 +34,7 @@ class DelayedChannelSpy(ChannelStub):
 
     def exit_status_ready(self):
         self.times_called += 1
-        return self.times_called == self._calls_until_done
+        return self.times_called >= self._calls_until_done
 
 
 class ChannelFileStub:

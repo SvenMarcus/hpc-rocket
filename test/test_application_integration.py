@@ -5,10 +5,9 @@ from ssh_slurm_runner.environmentpreparation import CopyInstruction
 from ssh_slurm_runner.errors import SSHError
 from test.pyfilesystem_testdoubles import (PyFilesystemFake, PyFilesystemStub,
                                            copy_file_between_filesystems_fake)
-from test.sshclient_testdoubles import (ChannelFileStub,
+from test.sshclient_testdoubles import (ChannelFileStub, ChannelStub,
                                         CmdSpecificSSHClientStub,
                                         DelayedChannelSpy, SSHClientMock)
-from typing import List
 from unittest import mock
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -509,6 +508,48 @@ def test__given_ui__when_running__should_update_ui_after_polling(valid_options: 
     _ = sut.run(valid_options)
 
     ui_spy.update.assert_called_with(completed_slurm_job())
+
+
+def test__given_running_job__when_canceling__should_cancel_job(sshclient_type_mock, valid_options: LaunchOptions):
+    from threading import Thread
+
+    sut = Application(Mock())
+
+    long_running = 1e10
+    sacct_channel = ChannelFileStub(
+        lines=get_success_lines(),
+        channel=DelayedChannelSpy(calls_until_exit=long_running)
+    )
+
+    sshclient_mock = Mock(wraps=CmdSpecificSSHClientStub({
+        "sbatch": ChannelFileStub(lines=["1234"]),
+        "sacct": sacct_channel,
+        "scancel": ChannelFileStub(lines=[])
+    }))
+
+    sshclient_mock.exec_command.side_effect = mark_as_done_after_scancel(
+        sacct_channel)
+
+    sshclient_type_mock.return_value = sshclient_mock
+
+    thread = Thread(target=lambda: sut.run(valid_options))
+    thread.start()
+
+    actual = sut.cancel()
+
+    thread.join()
+    assert call.exec_command("scancel 1234") in sshclient_mock.method_calls
+    assert actual == 130
+
+
+def mark_as_done_after_scancel(channel):
+    def _mark_cmd_as_done_after_scancel(command):
+        if command.startswith("scancel"):
+            channel._channel = ChannelStub()
+
+        return mock.DEFAULT
+
+    return _mark_cmd_as_done_after_scancel
 
 
 def completed_slurm_job():
