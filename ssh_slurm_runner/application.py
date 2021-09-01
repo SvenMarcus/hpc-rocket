@@ -23,7 +23,7 @@ class Application:
     def run(self, options: LaunchOptions) -> int:
         try:
             executor = self._create_sshexecutor(options)
-            env_prep = self._make_env_preparation(options)
+            env_prep = self._create_env_preparation(options)
         except SSHError as err:
             self._ui.error(self._get_error_message(err))
             return 1
@@ -93,7 +93,7 @@ class Application:
 
         return 1
 
-    def _make_env_preparation(self, options) -> EnvironmentPreparation:
+    def _create_env_preparation(self, options) -> EnvironmentPreparation:
         env_prep = EnvironmentPreparation(
             LocalFilesystem("."),
             self._make_ssh_filesystem(options),
@@ -150,12 +150,14 @@ class Application:
 
     def cancel(self) -> int:
         try:
-            print(f"Canceling job {self._jobid}")
+            self._ui.info(f"Canceling job {self._jobid}")
             self._runner.scancel(self._jobid)
             self._watcher.stop()
+            self._ui.error("Job canceled")
             job = self._runner.poll_status(self._jobid)
             self._ui.update(job)
-        except SlurmError as err:
-            print(err.args)
+        except Exception as err:
+            self._ui.error("An error occured while canceling the job:")
+            self._ui.error(f"\t{self._get_error_message(err)}")
 
-        return 1
+        return 130
