@@ -1,5 +1,6 @@
 from typing import List, NamedTuple, Optional
 
+from ssh_slurm_runner.errors import error_type
 from ssh_slurm_runner.filesystem import Filesystem
 from ssh_slurm_runner.ui import UI, NullUI
 
@@ -92,7 +93,7 @@ class EnvironmentPreparation:
             self._target_filesystem.delete(file)
         except FileNotFoundError as err:
             self._ui.error(
-                f"{type(err).__name__}: Cannot delete file '{file}'")
+                f"{error_type(err)}: Cannot delete file '{file}'")
             return False
 
         return True
@@ -125,7 +126,7 @@ class EnvironmentPreparation:
                                              filesystem=self._src_filesystem)
             except (FileNotFoundError, FileExistsError) as err:
                 self._ui.error(
-                    f"{type(err).__name__}: Cannot copy file '{src}'")
+                    f"{error_type(err)}: Cannot copy file '{src}'")
 
     def rollback(self) -> None:
         """

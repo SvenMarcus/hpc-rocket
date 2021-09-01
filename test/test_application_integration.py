@@ -510,7 +510,7 @@ def test__given_ui__when_running__should_update_ui_after_polling(valid_options: 
     ui_spy.update.assert_called_with(completed_slurm_job())
 
 
-def test__given_running_job__when_canceling__should_cancel_job(sshclient_type_mock, valid_options: LaunchOptions):
+def test__given_running_application__when_canceling_after_polling_job__should_cancel_job(sshclient_type_mock, valid_options: LaunchOptions):
     from threading import Thread
 
     sut = Application(Mock())
@@ -534,12 +534,19 @@ def test__given_running_job__when_canceling__should_cancel_job(sshclient_type_mo
 
     thread = Thread(target=lambda: sut.run(valid_options))
     thread.start()
+    wait_until_first_job_poll(sshclient_mock)
 
     actual = sut.cancel()
 
     thread.join()
     assert call.exec_command("scancel 1234") in sshclient_mock.method_calls
     assert actual == 130
+
+
+def wait_until_first_job_poll(sshclient_mock):
+    args_list = sshclient_mock.exec_command.call_args_list
+    while not any(args[0].startswith("sacct") for args, _ in args_list):
+        continue
 
 
 def mark_as_done_after_scancel(channel):

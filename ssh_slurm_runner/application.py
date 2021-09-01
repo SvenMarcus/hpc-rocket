@@ -1,5 +1,5 @@
 import os
-from ssh_slurm_runner.errors import SSHError
+from ssh_slurm_runner.errors import SSHError, get_error_message
 from typing import Optional
 
 from ssh_slurm_runner.environmentpreparation import EnvironmentPreparation
@@ -25,7 +25,7 @@ class Application:
             executor = self._create_sshexecutor(options)
             env_prep = self._create_env_preparation(options)
         except SSHError as err:
-            self._ui.error(self._get_error_message(err))
+            self._ui.error(get_error_message(err))
             return 1
 
         success = self._try_env_preparation(env_prep)
@@ -48,7 +48,7 @@ class Application:
             env_prep.prepare()
             self._ui.success("Done")
         except (FileNotFoundError, FileExistsError) as err:
-            self._ui.error(self._get_error_message(err))
+            self._ui.error(get_error_message(err))
             self._ui.info("Performing rollback")
             env_prep.rollback()
             self._ui.success("Done")
@@ -143,11 +143,6 @@ class Application:
 
         return keyfile
 
-    def _get_error_message(self, err: Exception) -> str:
-        type_name = type(err).__name__
-        error_string = f"{type_name}: {err}"
-        return error_string
-
     def cancel(self) -> int:
         try:
             self._ui.info(f"Canceling job {self._jobid}")
@@ -158,6 +153,6 @@ class Application:
             self._ui.update(job)
         except Exception as err:
             self._ui.error("An error occured while canceling the job:")
-            self._ui.error(f"\t{self._get_error_message(err)}")
+            self._ui.error(f"\t{get_error_message(err)}")
 
         return 130
