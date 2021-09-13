@@ -1,4 +1,5 @@
 import sys
+from typing import TextIO
 
 from ssh_slurm_runner.slurmrunner import SlurmJob
 from ssh_slurm_runner.ui import UI
@@ -7,7 +8,7 @@ from ssh_slurm_runner.ui import UI
 class PrintLoggingUI(UI):
 
     def __init__(self) -> None:
-        self._file = None
+        self._file: TextIO = None # type: ignore[assignment]
         self._stdout_backup = sys.stdout
 
     def __enter__(self) -> 'PrintLoggingUI':
