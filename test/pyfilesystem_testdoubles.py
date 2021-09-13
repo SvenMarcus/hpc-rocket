@@ -1,104 +1,20 @@
-from typing import List, Tuple
-from unittest.mock import MagicMock
-from fs.info import Info
+from typing import Callable, Optional, Text
 
+import fs.base
 import fs.subfs
-from fs.wrapfs import WrapFS
+from fs.memoryfs import MemoryFS
 
 
-class PyFilesystemStub:
+class ArbitraryArgsMemoryFS(MemoryFS):
 
-    def __init__(self, existing_files: List[str] = None, existing_dirs: List[str] = None) -> None:
-        self.existing_files = existing_files or list()
-        self.existing_dirs = existing_dirs or list()
-
-    # def copy(self, src: str, dst: str, overwrite: bool = False) -> None:
-    #     pass
-
-    def isdir(self, path: str) -> bool:
-        return path in self.existing_dirs
-
-    def exists(self, path: str) -> bool:
-        print(f"Get called with {path}")
-        return path in self.existing_files or path in self.existing_dirs
-
-    def makedirs(self, path: str) -> None:
-        pass
-
-    def remove(self, path: str) -> None:
-        pass
-
-    def opendir(self, path: str, factory=None) -> 'PyFilesystemStub':
-        return self
-
-class PyFilesystemFake(PyFilesystemStub):
-
-    def __init__(self, existing_files: List[str] = None, existing_dirs: List[str] = None) -> None:
-        super().__init__(existing_files=existing_files, existing_dirs=existing_dirs)
-
-    def makedirs(self, path: str) -> None:
-        return self.existing_dirs.append(path)
-
-    def remove(self, path: str) -> None:
-        self.existing_files.remove(path)
-
-    def removetree(self, path: str) -> None:
-        self.existing_dirs.remove(path)
-        filtered = filter(lambda file: file.startswith(path),
-                          self.existing_files)
-
-        for file in filtered:
-            self.existing_files.remove(file)
-
-    def getinfo(self, path: str, namespaces) -> dict:
-        if not self.exists(path):
-            raise fs.errors.ResourceNotFound(path)
-
-        return Info({
-            "basic": {
-                "name": path,
-                "is_dir": path in self.existing_dirs,
-                "is_file": path in self.existing_files,
-            }
-        })
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__()
 
 
-class VerifyDirsCreatedAndCopyPyFSMock(PyFilesystemStub):
+class OnlySubFSMemoryFS(ArbitraryArgsMemoryFS):
 
-    def __init__(self, expected_dirs: List[str],
-                 expected_copies: List[Tuple[str, str]],
-                 expected_calls: List[str] = None,
-                 existing_files: List[str] = None,
-                 existing_dirs: List[str] = None
-                 ) -> None:
-        super().__init__(
-            existing_dirs=existing_dirs,
-            existing_files=existing_files)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
-        self.expected_dirs = expected_dirs
-        self.expected_copies = expected_copies
-        self.expected_calls = expected_calls
-        self.dirs_created = []
-        self.copy_calls = list()
-        self.calls = []
-
-    def makedirs(self, path: str):
-        self.calls.append("makedirs")
-        self.dirs_created.append(path)
-        return MagicMock(spec=fs.subfs.SubFS)
-
-    def copy(self, src: str, dst: str, overwrite: bool = False):
-        self.calls.append("copy")
-        self.copy_calls.append((src, dst))
-
-    def verify(self):
-        assert self.expected_calls == self.calls
-        assert self.expected_dirs == self.dirs_created
-        assert self.expected_copies == self.copy_calls
-
-
-def copy_file_between_filesystems_fake(origin_fs: PyFilesystemStub, origin_path: str, dest_fs: PyFilesystemStub, dest_path: str):
-    assert origin_path in origin_fs.existing_files
-    assert dest_path not in dest_fs.existing_files
-
-    dest_fs.existing_files.append(dest_path)
+    def opendir(self, path: Text, factory: Optional[Callable[['OnlySubFSMemoryFS', Text], fs.subfs.SubFS['OnlySubFSMemoryFS']]] = None) -> fs.subfs.SubFS['OnlySubFSMemoryFS']:
+        return super().opendir(path, factory=fs.subfs.SubFS)

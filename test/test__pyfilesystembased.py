@@ -1,10 +1,10 @@
-from test.pyfilesystem_testdoubles import PyFilesystemStub, VerifyDirsCreatedAndCopyPyFSMock
-from unittest.mock import MagicMock, Mock, patch
+from typing import Set
+from unittest.mock import MagicMock
 
 import fs
 import fs.base
 import pytest
-from fs import ResourceType
+from fs.memoryfs import MemoryFS
 from ssh_slurm_runner.filesystem import Filesystem
 from ssh_slurm_runner.pyfilesystembased import PyFilesystemBased
 
@@ -21,318 +21,245 @@ class _TestFilesystemImpl(PyFilesystemBased):
         return self._internal_fs
 
 
-class MockWrappingPyFilesystemBasedStub(PyFilesystemBased):
-
-    def __init__(self, internal_fs=None) -> None:
-        self._internal_fs = internal_fs or MagicMock(
-            spec=fs.base.FS).return_value
-        self.existing_files = set()
-        self.existing_dirs = set()
-
-    @property
-    def internal_fs(self) -> fs.base.FS:
-        return self._internal_fs
-
-    def copy(self, source: str, target: str, filesystem: 'Filesystem') -> None:
-        pass
-
-    def delete(self, path: str) -> None:
-        pass
-
-    def exists(self, path: str) -> None:
-        return path in self.existing_files or path in self.existing_dirs
-
-
 class NonPyFilesystemBasedFilesystem(Filesystem):
 
     def __init__(self) -> None:
         pass
 
-    def copy(self, source: str, target: str, filesystem: 'Filesystem') -> None:
+    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: 'Filesystem' = None) -> None:
         pass
 
     def delete(self, path: str) -> None:
         pass
 
-    def exists(self, path: str) -> None:
+    def exists(self, path: str) -> bool:
         pass
 
 
-SOURCE = "~/file.txt"
-TARGET = "~/another/folder/copy.txt"
+SOURCE = "file.txt"
+TARGET = "copy.txt"
 
 
-@pytest.fixture
-def fs_type_mock():
-    patcher = patch("fs.base.FS")
-    type_mock = patcher.start()
-    type_mock.return_value.configure_mock(
-        exists=exists_with_files(SOURCE),
-        isdir=lambda _: False
-    )
-
-    yield type_mock
-
-    patcher.stop()
+def write_file_with_content(mem_fs: fs.base.FS, path: str, content: str = "") -> None:
+    with mem_fs.open(path, "w") as src_file:
+        src_file.write(content)
 
 
-@pytest.fixture
-def copy_file():
-    patcher = patch("fs.copy.copy_file")
-
-    yield patcher.start()
-
-    patcher.stop()
+def assert_file_content_equals(mem_fs: fs.base.FS, path: str, content: str):
+    with mem_fs.open(path) as target_file:
+        line = target_file.readline()
+        assert line == content
 
 
-@pytest.fixture
-def copy_dir():
-    patcher = patch("fs.copy.copy_dir")
+def test__when_copying_file__should_copy_to_target_path():
+    mem_fs = MemoryFS()
+    content = "content"
+    write_file_with_content(mem_fs, SOURCE, content)
 
-    yield patcher.start()
-
-    patcher.stop()
-
-
-def test__when_copying_file__should_call_copy_on_fs(fs_type_mock):
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+    sut = _TestFilesystemImpl(mem_fs)
 
     sut.copy(SOURCE, TARGET)
 
-    fs_mock = fs_type_mock.return_value
-    fs_mock.copy.assert_called_with(SOURCE, TARGET, overwrite=False)
+    assert mem_fs.exists(TARGET)
+    assert_file_content_equals(mem_fs, TARGET, content)
 
 
-def test__when_copying_file__but_parent_dir_missing__should_create_missing_dirs(fs_type_mock):
-    target_parent_dir = "~/another/folder"
-    mock = VerifyDirsCreatedAndCopyPyFSMock(
-        expected_copies=[(SOURCE, TARGET)],
-        expected_dirs=[target_parent_dir],
-        existing_files=[SOURCE],
-        expected_calls=["makedirs", "copy"]
-    )
+def test__when_copying_file__but_parent_dir_missing__should_create_missing_dirs():
+    complete_path = "another/folder/" + TARGET
 
-    fs_type_mock.return_value = mock
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+    mem_fs = MemoryFS()
+    write_file_with_content(mem_fs, SOURCE)
 
-    sut.copy(SOURCE, TARGET)
+    sut = _TestFilesystemImpl(mem_fs)
+    sut.copy(SOURCE, complete_path)
 
-    mock.verify()
+    assert mem_fs.exists(complete_path)
 
 
-def test__when_copying_directory__should_call_copydir_on_fs(fs_type_mock):
-    src_dir = "~/mydir"
-    copy_dir = "~/copydir"
-    sshfs_mock = fs_mock_copy_expecting_directory(fs_type_mock, src_dir)
+def test__a__when_copying_directory__should_copy_entire_directory():
+    src_dir = "mydir"
+    copy_dir = "copydir"
+    mem_fs = MemoryFS()
+    sub_fs = mem_fs.makedir(src_dir)
+    write_file_with_content(sub_fs, SOURCE)
 
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+    sut = _TestFilesystemImpl(mem_fs)
 
     sut.copy(src_dir, copy_dir)
 
-    sshfs_mock.copydir.assert_called_with(src_dir, copy_dir, create=True)
+    assert mem_fs.exists(f"{copy_dir}/{SOURCE}")
 
 
-def test__when_copying_file_to_other_filesystem__should_call_copy_file(fs_type_mock, copy_file):
-    fs_mock = MockWrappingPyFilesystemBasedStub()
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+def test__when_copying_file_to_other_filesystem__should_call_copy_file():
+    target_fs = MemoryFS()
+    origin_fs = MemoryFS()
+    write_file_with_content(origin_fs, SOURCE, "content")
 
-    sut.copy(SOURCE, TARGET, filesystem=fs_mock)
+    sut = _TestFilesystemImpl(origin_fs)
 
-    sshfs_mock = fs_type_mock.return_value
-    copy_file.assert_called_with(
-        sshfs_mock, SOURCE, fs_mock.internal_fs, TARGET)
+    sut.copy(SOURCE, TARGET, filesystem=_TestFilesystemImpl(target_fs))
 
-
-def test__when_copying_file_to_other_filesystem__but_parent_dir_missing__should_create_missing_dirs(fs_type_mock, copy_file):
-    target_parent_dir = "~/another/folder"
-    missing_dirs_mock = VerifyDirsCreatedAndCopyPyFSMock(
-        expected_dirs=[target_parent_dir],
-        expected_copies=[],
-        expected_calls=["makedirs"]
-    )
-
-    fs_mock = MockWrappingPyFilesystemBasedStub(missing_dirs_mock)
-    fs_mock.existing_files = [SOURCE]
-
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
-
-    sut.copy(SOURCE, TARGET, filesystem=fs_mock)
-
-    missing_dirs_mock.verify()
-    sshfs_mock = fs_type_mock.return_value
-    copy_file.assert_called_with(
-        sshfs_mock, SOURCE, fs_mock.internal_fs, TARGET)
+    assert target_fs.exists(TARGET)
+    assert_file_content_equals(target_fs, TARGET, "content")
 
 
-@pytest.mark.usefixtures("copy_file")
-def test__when_copying_file_to_other_filesystem__and_parent_dir_exists__should_not_try_to_create_dirs(fs_type_mock):
-    target_parent_dir = "~/another/folder"
+def test__when_copying_file_to_other_filesystem__but_parent_dir_missing__should_create_missing_dirs():
+    complete_path = "another/folder/" + TARGET
 
-    filesystem_stub = MockWrappingPyFilesystemBasedStub()
-    filesystem_stub.existing_files = [SOURCE]
-    filesystem_stub.existing_dirs = [target_parent_dir]
+    target_fs = MemoryFS()
+    origin_fs = MemoryFS()
+    write_file_with_content(origin_fs, SOURCE)
 
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+    sut = _TestFilesystemImpl(origin_fs)
 
-    sut.copy(SOURCE, TARGET, filesystem=filesystem_stub)
+    sut.copy(SOURCE, complete_path, filesystem=_TestFilesystemImpl(target_fs))
 
-    filesystem_stub.internal_fs.makedirs.assert_not_called()
+    assert target_fs.exists(complete_path)
 
 
-def test__when_copying__but_source_does_not_exist__should_raise_file_not_found_error(fs_type_mock):
-    fs_type_mock.return_value.configure_mock(exists=exists_with_files())
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+def test__when_copying_file_to_other_filesystem__and_parent_dir_exists__should_not_try_to_create_dirs():
+    target_parent_dir = "another/folder"
+
+    target_fs = MemoryFS()
+    target_fs.makedirs(target_parent_dir)
+    target_fs_wrapping_mock = MagicMock(spec=MemoryFS, wraps=target_fs)
+
+    origin_fs = MemoryFS()
+    origin_fs.create(SOURCE)
+
+    sut = _TestFilesystemImpl(origin_fs)
+
+    complete_path = f"{target_parent_dir}/{TARGET}"
+    sut.copy(SOURCE, complete_path, filesystem=_TestFilesystemImpl(target_fs_wrapping_mock))
+
+    target_fs_wrapping_mock.makedirs.assert_not_called()
+
+
+def test__when_copying__but_source_does_not_exist__should_raise_file_not_found_error():
+    sut = _TestFilesystemImpl(MemoryFS())
 
     with pytest.raises(FileNotFoundError):
         sut.copy(SOURCE, TARGET)
 
 
-def test__when_copying__but_file_exists__should_raise_file_exists_error(fs_type_mock):
-    fs_type_mock.return_value.configure_mock(
-        exists=exists_with_files(SOURCE, TARGET))
+def test__when_copying__but_file_exists__should_raise_file_exists_error():
+    mem_fs = MemoryFS()
+    mem_fs.create(SOURCE)
+    mem_fs.create(TARGET)
 
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+    sut = _TestFilesystemImpl(mem_fs)
 
     with pytest.raises(FileExistsError):
         sut.copy(SOURCE, TARGET)
 
 
-def test__when_copying_to_existing_path_with_overwrite_enabled__should_copy_file(fs_type_mock):
-    fs_mock = fs_type_mock.return_value
-    sut = _TestFilesystemImpl(fs_mock)
+def test__when_copying_to_existing_path_with_overwrite_enabled__should_copy_file():
+    mem_fs = MemoryFS()
+    write_file_with_content(mem_fs, SOURCE, "new content")
+    write_file_with_content(mem_fs, TARGET, "old content")
+
+    sut = _TestFilesystemImpl(mem_fs)
 
     sut.copy(SOURCE, TARGET, overwrite=True)
 
-    fs_mock.copy.assert_called_with(SOURCE, TARGET, overwrite=True)
+    assert_file_content_equals(mem_fs, TARGET, "new content")
 
 
-def test__when_copying_to_other_filesystem__but_file_exists__should_raise_file_exists_error(fs_type_mock, copy_file):
-    fs_mock = MockWrappingPyFilesystemBasedStub(Mock(isdir=lambda _: False))
-    fs_mock.existing_files.add(TARGET)
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+def test__when_copying_to_other_filesystem__but_file_exists__should_raise_file_exists_error():
+    origin_fs = MemoryFS()
+    origin_fs.create(SOURCE)
+
+    target_fs = MemoryFS()
+    target_fs.create(TARGET)
+
+    sut = _TestFilesystemImpl(origin_fs)
 
     with pytest.raises(FileExistsError):
-        sut.copy(SOURCE, TARGET, filesystem=fs_mock)
+        sut.copy(SOURCE, TARGET, filesystem=_TestFilesystemImpl(target_fs))
 
 
-def test__when_copying_to_existing_path_on_other_filesystem_with_overwrite_enabled__should_copy_file(fs_type_mock, copy_file):
-    remote_fs_mock = Mock(isdir=lambda _: False)
-    fs_mock = MockWrappingPyFilesystemBasedStub(remote_fs_mock)
-    fs_mock.existing_files.add(TARGET)
+def test__when_copying_to_existing_path_on_other_filesystem_with_overwrite_enabled__should_copy_file():
+    target_fs = MemoryFS()
+    write_file_with_content(target_fs, TARGET, "old content")
 
-    local_fs_mock = fs_type_mock.return_value
-    sut = _TestFilesystemImpl(local_fs_mock)
+    origin_fs = MemoryFS()
+    write_file_with_content(origin_fs, SOURCE, "new content")
+    sut = _TestFilesystemImpl(origin_fs)
 
-    sut.copy(SOURCE, TARGET, filesystem=fs_mock, overwrite=True)
+    sut.copy(SOURCE, TARGET, filesystem=_TestFilesystemImpl(
+        target_fs), overwrite=True)
 
-    copy_file.assert_called_with(local_fs_mock, SOURCE, remote_fs_mock, TARGET)
-
-
-def test__when_copying_directory_to_other_filesystem__should_call_copy_dir(fs_type_mock, copy_dir):
-    source_pyfs_mock = fs_type_mock.return_value
-    source_pyfs_mock.configure_mock(
-        isdir=lambda path: True,
-        exists=lambda path: True)
-
-    target_fs_mock = MockWrappingPyFilesystemBasedStub()
-    sut = _TestFilesystemImpl(source_pyfs_mock)
-
-    source = "~/mydir"
-    target = "~/copydir"
-
-    sut.copy(source, target, filesystem=target_fs_mock)
-
-    copy_dir.assert_called_with(
-        source_pyfs_mock, source,
-        target_fs_mock.internal_fs, target)
+    assert_file_content_equals(target_fs, TARGET, "new content")
 
 
-def test__when_copying_directory__but_directory_exists__should_copy_into_existing_directory(fs_type_mock):
-    source_pyfs_mock = fs_type_mock.return_value
-    source_pyfs_mock.configure_mock(
-        isdir=lambda path: True,
-        exists=lambda path: True)
+def test__when_copying_directory_to_other_filesystem__should_copy_dir():
+    source_dir = "mydir"
+    target_dir = "copydir"
 
-    sut = _TestFilesystemImpl(source_pyfs_mock)
-    sut.copy("./sourcedir", "./targetdir")
+    origin_fs = MemoryFS()
+    sub_fs = origin_fs.makedir(source_dir)
+    write_file_with_content(sub_fs, SOURCE, "content")
 
-    source_pyfs_mock.copydir.assert_called_with(
-        "./sourcedir", "./targetdir", create=True)
+    sut = _TestFilesystemImpl(origin_fs)
+
+    target_fs = MemoryFS()
+    sut.copy(source_dir, target_dir, filesystem=_TestFilesystemImpl(target_fs))
+
+    complete_path = f"{target_dir}/{SOURCE}"
+    assert target_fs.exists(complete_path)
+    assert_file_content_equals(target_fs, complete_path, "content")
 
 
-def test__when_copying_to_non_pyfilesystem__should_raise_runtime_error(fs_type_mock):
-    fs_mock = NonPyFilesystemBasedFilesystem()
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+def test__when_copying_directory__but_directory_exists__should_copy_into_existing_directory():
+    origin_fs = MemoryFS()
+    sub_fs = origin_fs.makedir("sourcedir")
+    origin_fs.makedir("targetdir")
+    write_file_with_content(sub_fs, SOURCE, "content")
+
+    sut = _TestFilesystemImpl(origin_fs)
+    sut.copy("sourcedir", "targetdir")
+
+    complete_path = f"targetdir/{SOURCE}"
+    assert origin_fs.exists(complete_path)
+
+
+def test__when_copying_to_non_pyfilesystem__should_raise_runtime_error():
+    target_fs = NonPyFilesystemBasedFilesystem()
+
+    origin_fs = MemoryFS()
+    origin_fs.create(SOURCE)
+    sut = _TestFilesystemImpl(origin_fs)
 
     with pytest.raises(RuntimeError):
-        sut.copy(SOURCE, TARGET, filesystem=fs_mock)
+        sut.copy(SOURCE, TARGET, filesystem=target_fs)
 
 
-def test__when_deleting_file__should_call_fs_remove(fs_type_mock):
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+def test__when_deleting_file__should_remove_file_from_fs():
+    fs = MemoryFS()
+    fs.create(SOURCE)
+
+    sut = _TestFilesystemImpl(fs)
 
     sut.delete(SOURCE)
 
-    sshfs_mock = fs_type_mock.return_value
-    sshfs_mock.remove.assert_called_with(SOURCE)
+    assert not fs.exists(SOURCE)
 
 
-def test__when_deleting_directory__should_call_fs_removetree(fs_type_mock):
-    dir_path = "~/mydir"
-    sshfs_mock = sshfs_mock_remove_expecting_directory(
-        fs_type_mock, dir_path)
+def test__when_deleting_directory__should_call_fs_removetree():
+    dir_path = "mydir"
+    fs = MemoryFS()
+    sub_fs = fs.makedir(dir_path)
+    sub_fs.create(SOURCE)
 
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+    sut = _TestFilesystemImpl(fs)
 
     sut.delete(dir_path)
 
-    sshfs_mock.removetree.assert_called_with(dir_path)
+    assert not fs.exists(dir_path)
 
 
-def test__when_deleting_file_but_does_not_exist__should_raise_file_not_found_error(fs_type_mock):
-    fs_type_mock.return_value.configure_mock(exists=exists_with_files())
-    sut = _TestFilesystemImpl(fs_type_mock.return_value)
+def test__when_deleting_file_but_does_not_exist__should_raise_file_not_found_error():
+    sut = _TestFilesystemImpl(MemoryFS())
 
     with pytest.raises(FileNotFoundError):
         sut.delete(SOURCE)
-
-
-def fs_mock_copy_expecting_directory(fs_type_mock, src_dir):
-    sshfs_mock = fs_type_mock.return_value
-
-    def copy(src, dst):
-        import fs.errors
-        raise fs.errors.FileExpected(src)
-
-    sshfs_mock.configure_mock(
-        exists=exists_with_files(src_dir),
-        gettype=lambda _: ResourceType.directory,
-        isdir=lambda _: True,
-        copy=copy
-    )
-
-    return sshfs_mock
-
-
-def sshfs_mock_remove_expecting_directory(fs_type_mock, dir_path):
-    sshfs_mock = fs_type_mock.return_value
-
-    def remove(path):
-        import fs.errors
-        raise fs.errors.FileExpected(path)
-
-    sshfs_mock.configure_mock(
-        exists=exists_with_files(dir_path),
-        gettype=lambda _: ResourceType.directory,
-        isdir=lambda _: True,
-        remove=remove
-    )
-
-    return sshfs_mock
-
-
-def exists_with_files(*args):
-    def exists(path: str):
-        return path in args
-
-    return exists

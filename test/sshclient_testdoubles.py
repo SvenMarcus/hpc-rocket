@@ -83,7 +83,7 @@ class SSHClientMock(CmdSpecificSSHClientStub):
         self._host_key_file = host_key_file
         self.connected = False
         self.loaded_keys = False
-        self.commands = {}
+        self.commands: Dict[str, ChannelFileStub] = {}
 
     def connect(self, hostname, port=None, username=None, password=None, pkey=None, key_filename=None, *args, **kwargs):
         assert self.loaded_keys, "Tried to connect without loading known_hosts"

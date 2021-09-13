@@ -1,10 +1,12 @@
 import dataclasses
 import os
 from dataclasses import replace
+from test.ui_testdoubles import PrintLoggingUI
+
+from fs.memoryfs import MemoryFS
 from ssh_slurm_runner.environmentpreparation import CopyInstruction
 from ssh_slurm_runner.errors import SSHError
-from test.pyfilesystem_testdoubles import (PyFilesystemFake, PyFilesystemStub,
-                                           copy_file_between_filesystems_fake)
+from test.pyfilesystem_testdoubles import ArbitraryArgsMemoryFS, OnlySubFSMemoryFS
 from test.sshclient_testdoubles import (ChannelFileStub, ChannelStub,
                                         CmdSpecificSSHClientStub,
                                         DelayedChannelSpy, SSHClientMock)
@@ -81,7 +83,10 @@ def failing_sshclient_stub(sshclient_type_mock):
 @pytest.fixture(autouse=True)
 def osfs_type_mock():
     patcher = patch("fs.osfs.OSFS")
-    yield patcher.start()
+    osfs_type_mock = patcher.start()
+    osfs_type_mock.return_value = Mock(
+        spec=MemoryFS, wraps=ArbitraryArgsMemoryFS())
+    yield osfs_type_mock
 
     patcher.stop()
 
@@ -91,7 +96,11 @@ def sshfs_type_mock():
     patcher = patch(
         "ssh_slurm_runner.chmodsshfs.PermissionChangingSSHFSDecorator")
 
-    yield patcher.start()
+    sshfs_type_mock = patcher.start()
+    mem_fs = OnlySubFSMemoryFS()
+    mem_fs.makedirs(HOME_DIR)
+    sshfs_type_mock.return_value = Mock(spec=MemoryFS, wraps=mem_fs)
+    yield sshfs_type_mock
 
     patcher.stop()
 
@@ -120,19 +129,17 @@ def make_options_with_files_to_copy(files_to_copy):
 
 
 def make_options_with_files_to_copy_and_clean(files_to_copy, files_to_clean):
-    options = LaunchOptions(
-        host="example.com",
-        user="myuser",
-        password="mypassword",
-        private_key="PRIVATE",
-        private_keyfile="my_private_keyfile",
-        sbatch="test.job",
-        poll_interval=0,
-        copy_files=files_to_copy,
-        clean_files=files_to_clean
-    )
+    return dataclasses.replace(
+        make_options_with_files_to_copy(files_to_copy),
+        clean_files=files_to_clean)
 
-    return options
+
+def make_options_with_files_to_copy_collect_and_clean(files_to_copy, files_to_collect, files_to_clean):
+    return dataclasses.replace(
+        make_options_with_files_to_copy_and_clean(
+            files_to_copy,
+            files_to_clean),
+        collect_files=files_to_collect)
 
 
 HOME_DIR = "/home/myuser"
@@ -259,7 +266,7 @@ def test__given_config_with_only_password__when_running__should_login_to_sshfs_w
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_mock: MagicMock,
-                                                                    valid_options: LaunchOptions,):
+                                                                    valid_options: LaunchOptions):
     sut = Application(Mock())
 
     sut.run(valid_options)
@@ -273,45 +280,38 @@ def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_m
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem(osfs_type_mock,
-                                                                                                sshfs_type_mock,
-                                                                                                fs_copy_file_mock):
+                                                                                                sshfs_type_mock):
     options = make_options_with_files_to_copy([
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
     ])
 
-    osfs_type_mock.return_value = PyFilesystemStub(
-        ["myfile.txt", "otherfile.gif"])
-
-    filesystem_fake = PyFilesystemFake()
-    sshfs_type_mock.return_value = filesystem_fake
-
-    fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
+    osfs_type_mock.create("myfile.txt")
+    osfs_type_mock.create("otherfile.gif")
 
     sut = Application(Mock())
 
     sut.run(options)
 
-    assert "mycopy.txt" in filesystem_fake.existing_files
-    assert "copy.gif" in filesystem_fake.existing_files
+    assert sshfs_type_mock.exists(f"{HOME_DIR}/mycopy.txt")
+    assert sshfs_type_mock.exists(f"{HOME_DIR}/copy.gif")
 
 
+@pytest.mark.usefixtures("sshfs_type_mock")
 def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem_before_running_job(osfs_type_mock,
-                                                                                                                   sshfs_type_mock,
                                                                                                                    fs_copy_file_mock,
                                                                                                                    successful_sshclient_stub):
+
+    sut = Application(Mock())
+    osfs_type_mock.return_value.create("myfile.txt")
+
     options = make_options_with_files_to_copy(
         [CopyInstruction("myfile.txt", "mycopy.txt")])
-
-    osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
-    sshfs_type_mock.return_value = PyFilesystemFake()
 
     call_order, call_logger = make_call_logger_with_capture()
     fs_copy_file_mock.side_effect = call_logger("copy_file")
     successful_sshclient_stub.exec_command.side_effect = call_logger(
         "exec_command")
-
-    sut = Application(Mock())
 
     sut.run(options)
 
@@ -321,37 +321,32 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
 
 @pytest.mark.usefixtures("sshclient_type_mock")
 def test__given_config_with_non_existing_file_to_copy__when_running__should_perform_rollback_and_exit(osfs_type_mock,
-                                                                                                      sshfs_type_mock,
-                                                                                                      fs_copy_file_mock):
+                                                                                                      sshfs_type_mock):
     options = make_options_with_files_to_copy([
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
     ])
-    osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
 
-    sshfs_fake = PyFilesystemFake()
-    sshfs_type_mock.return_value = sshfs_fake
-    fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
+    osfs_type_mock.return_value.create("myfile.txt")
 
     sut = Application(Mock())
 
     exit_code = sut.run(options)
 
-    assert "mycopy.txt" not in sshfs_fake.existing_files
+    assert not sshfs_type_mock.return_value.exists(f"{HOME_DIR}/mycopy.txt")
+    assert not sshfs_type_mock.return_value.exists(f"{HOME_DIR}/copy.gif")
     assert exit_code == 1
 
 
-@pytest.mark.usefixtures("sshclient_type_mock", "fs_copy_file_mock")
-def test__given_config_with_non_existing_file_to_copy__when_running__should_print_to_ui(osfs_type_mock,
-                                                                                        sshfs_type_mock):
+@pytest.mark.usefixtures("sshclient_type_mock", "sshfs_type_mock")
+def test__given_config_with_non_existing_file_to_copy__when_running__should_print_to_ui(osfs_type_mock):
+
     options = make_options_with_files_to_copy([
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
     ])
-    osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
 
-    sshfs_fake = PyFilesystemFake()
-    sshfs_type_mock.return_value = sshfs_fake
+    osfs_type_mock.return_value.create("myfile.txt")
 
     ui_spy = Mock()
     sut = Application(ui_spy)
@@ -364,53 +359,45 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_prin
 
 @pytest.mark.usefixtures("sshclient_type_mock")
 def test__given_config_with_already_existing_file_to_copy__when_running__should_perform_rollback_and_exit(osfs_type_mock,
-                                                                                                          sshfs_type_mock,
-                                                                                                          fs_copy_file_mock):
+                                                                                                          sshfs_type_mock):
     options = make_options_with_files_to_copy([
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
     ])
-    osfs_type_mock.return_value = PyFilesystemStub(
-        ["myfile.txt", "otherfile.gif"])
 
-    sshfs_fake = PyFilesystemFake(["copy.gif"])
-    sshfs_type_mock.return_value = sshfs_fake
-    fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
+    osfs_type_mock.return_value.create("myfile.txt")
+    osfs_type_mock.return_value.create("otherfile.gif")
+
+    sshfs_type_mock.return_value.create(f"{HOME_DIR}/copy.gif")
 
     sut = Application(Mock())
 
     exit_code = sut.run(options)
 
-    assert "mycopy.txt" not in sshfs_fake.existing_files
-    assert "copy.gif" in sshfs_fake.existing_files
+    assert not sshfs_type_mock.return_value.exists(f"{HOME_DIR}/mycopy.txt")
+    assert sshfs_type_mock.return_value.exists(f"{HOME_DIR}/copy.gif")
     assert exit_code == 1
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_clean__when_running__should_remove_files_from_remote_filesystem(osfs_type_mock,
-                                                                                                     sshfs_type_mock,
-                                                                                                     fs_copy_file_mock):
+                                                                                                     sshfs_type_mock):
     options = make_options_with_files_to_copy_and_clean(
         [CopyInstruction("myfile.txt", "mycopy.txt")],
         ["mycopy.txt"]
     )
 
-    osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
-
-    filesystem_fake = PyFilesystemFake()
-    sshfs_type_mock.return_value = filesystem_fake
-    fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
+    osfs_type_mock.return_value.create("myfile.txt")
 
     sut = Application(Mock())
 
     sut.run(options)
 
-    assert "mycopy.txt" not in filesystem_fake.existing_files
+    assert not sshfs_type_mock.return_value.exists(f"{HOME_DIR}/mycopy.txt")
 
 
 def test__given_config_with_files_to_clean__when_running__should_clean_files_to_remote_filesystem_after_completing_job(osfs_type_mock,
                                                                                                                        sshfs_type_mock,
-                                                                                                                       fs_copy_file_mock,
                                                                                                                        successful_sshclient_stub):
     options = make_options_with_files_to_copy_and_clean(
         [CopyInstruction("myfile.txt", "mycopy.txt")],
@@ -419,14 +406,11 @@ def test__given_config_with_files_to_clean__when_running__should_clean_files_to_
 
     call_order, call_logger = make_call_logger_with_capture()
 
-    osfs_type_mock.return_value = PyFilesystemStub(["myfile.txt"])
+    osfs_type_mock.return_value.create("myfile.txt")
 
-    pyfilesystem_wrapper_mock = MagicMock(wraps=PyFilesystemFake())
-    pyfilesystem_wrapper_mock.opendir.return_value = pyfilesystem_wrapper_mock
-    pyfilesystem_wrapper_mock.remove.side_effect = call_logger("remove")
-    sshfs_type_mock.return_value = pyfilesystem_wrapper_mock
-
-    fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
+    sshfs = sshfs_type_mock.return_value
+    sshfs.opendir.return_value = sshfs
+    sshfs.remove.side_effect = call_logger("remove")
     successful_sshclient_stub.exec_command.side_effect = call_logger(
         "exec_command")
 
@@ -439,26 +423,23 @@ def test__given_config_with_files_to_clean__when_running__should_clean_files_to_
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_collect__when_running__should_collect_files_from_remote_filesystem_after_completing_job_and_before_cleaning(osfs_type_mock,
-                                                                                                                                                 sshfs_type_mock,
-                                                                                                                                                 fs_copy_file_mock):
-    options = dataclasses.replace(make_options_with_files_to_copy_and_clean(
-        [CopyInstruction("myfile.txt", "mycopy.txt")],
-        ["mycopy.txt"]
-    ), collect_files=[CopyInstruction("mycopy.txt", "mycopy.txt")])
+                                                                                                                                                 sshfs_type_mock):
+    options = make_options_with_files_to_copy_collect_and_clean(
+        files_to_copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
+        files_to_clean=["mycopy.txt"],
+        files_to_collect=[CopyInstruction("mycopy.txt", "mycopy.txt")]
+    )
 
-    local_fs_fake = PyFilesystemFake(["myfile.txt"])
-    osfs_type_mock.return_value = local_fs_fake
-
-    ssh_fs_fake = PyFilesystemFake()
-    sshfs_type_mock.return_value = ssh_fs_fake
-    fs_copy_file_mock.side_effect = copy_file_between_filesystems_fake
+    local_fs = osfs_type_mock.return_value
+    local_fs.create("myfile.txt")
 
     sut = Application(Mock())
 
     sut.run(options)
 
-    assert "mycopy.txt" in local_fs_fake.existing_files
-    assert "mycopy.txt" not in ssh_fs_fake.existing_files
+    sshfs = sshfs_type_mock.return_value
+    assert local_fs.exists("mycopy.txt")
+    assert not sshfs.exists("mycopy.txt")
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
@@ -515,7 +496,7 @@ def test__given_running_application__when_canceling_after_polling_job__should_ca
 
     sut = Application(Mock())
 
-    long_running = 1e10
+    long_running = int(1e10)
     sacct_channel = ChannelFileStub(
         lines=get_success_lines(),
         channel=DelayedChannelSpy(calls_until_exit=long_running)
