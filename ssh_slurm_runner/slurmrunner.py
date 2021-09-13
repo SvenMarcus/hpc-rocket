@@ -43,7 +43,7 @@ class SlurmRunner:
 
     def __init__(self, executor: CommandExecutor):
         self._executor = executor
-        self._active_jobs = []
+        self._active_jobs: List[str] = []
 
     def sbatch(self, filename: str) -> str:
         cmd = self._executor.exec_command("sbatch " + filename)

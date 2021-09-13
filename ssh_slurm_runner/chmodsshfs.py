@@ -1,5 +1,5 @@
 import stat
-from typing import IO, Collection, Iterator, List, Optional, Text, Tuple
+from typing import IO, BinaryIO, Collection, Iterator, List, Optional, Text, Tuple
 
 import fs.base
 import fs.sshfs as sshfs
@@ -29,8 +29,8 @@ class PermissionChangingSSHFSDecorator(fs.base.FS):
     def listdir(self, path: Text) -> List[Text]:
         return self._internal_fs.listdir(path)
 
-    def openbin(self, path: Text, mode: Text) -> IO:
-        return self._internal_fs.openbin(path, mode)
+    def openbin(self, path: Text, mode: Text = "r", buffering=-1, **options) -> BinaryIO:
+        return self._internal_fs.openbin(path, mode, buffering, **options)
 
     def opendir(self, path: Text, factory = None) -> fs.subfs.SubFS[fs.base.FS]:
         return super().opendir(path, factory)
@@ -53,10 +53,10 @@ class PermissionChangingSSHFSDecorator(fs.base.FS):
     def islink(self, path: Text) -> bool:
         return self._internal_fs.islink(path)
 
-    def scandir(self, path: Text, namespaces: Optional[Collection[Text]], page: Optional[Tuple[int, int]] = None) -> Iterator[Info]:
+    def scandir(self, path: Text, namespaces: Optional[Collection[Text]] = None, page: Optional[Tuple[int, int]] = None) -> Iterator[Info]:
         return self._internal_fs.scandir(path, namespaces, page)
 
-    def makedir(self, path: Text, permissions: Optional[Permissions], recreate: bool = False) -> fs.subfs.SubFS[fs.base.FS]:
+    def makedir(self, path: Text, permissions: Optional[Permissions] = None, recreate: bool = False) -> fs.subfs.SubFS[fs.base.FS]:
         return self._internal_fs.makedir(path, permissions, recreate)
 
     def move(self, src_path: Text, dst_path: Text, overwrite: bool = False) -> None:

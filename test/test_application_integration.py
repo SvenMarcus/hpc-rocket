@@ -539,6 +539,7 @@ def test__given_running_application__when_canceling_after_polling_job__should_ca
     actual = sut.cancel()
 
     thread.join()
+
     assert call.exec_command("scancel 1234") in sshclient_mock.method_calls
     assert actual == 130
 

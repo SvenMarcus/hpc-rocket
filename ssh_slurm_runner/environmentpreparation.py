@@ -23,10 +23,10 @@ class EnvironmentPreparation:
         self._src_filesystem = source_filesystem
         self._target_filesystem = target_filesystem
         self._ui = ui or NullUI()
-        self._copy = list()
-        self._delete = list()
-        self._collect = list()
-        self._copied_files = list()
+        self._copy: List[CopyInstruction] = list()
+        self._collect: List[CopyInstruction] = list()
+        self._delete: List[str] = list()
+        self._copied_files: List[str] = list()
 
     def files_to_copy(self, copy_instructions: List[CopyInstruction]) -> None:
         """

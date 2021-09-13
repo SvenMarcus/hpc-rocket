@@ -50,7 +50,7 @@ class PyFilesystemBased(Filesystem, ABC):
 
         self.internal_fs.remove(path)
 
-    def exists(self, path: str) -> None:
+    def exists(self, path: str) -> bool:
         return self.internal_fs.exists(path)
 
     def _try_copy_to_filesystem(self, source, target, filesystem):

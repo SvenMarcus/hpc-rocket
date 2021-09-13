@@ -34,7 +34,7 @@ class Filesystem(ABC):
         pass
 
     @abstractmethod
-    def exists(self, path: str) -> None:
+    def exists(self, path: str) -> bool:
         """Checks if a file exists on the Filesystem
 
         Args:

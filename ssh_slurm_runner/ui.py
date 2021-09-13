@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from rich.console import RenderableType
 from rich.live import Live
 from rich.spinner import Spinner
 from rich.table import Table
@@ -44,7 +45,7 @@ class NullUI(UI):
 class RichUI(UI):
 
     def __init__(self) -> None:
-        self._rich_live: Live = None
+        self._rich_live: Live
 
     def __enter__(self):
         self._rich_live = Live(
@@ -79,7 +80,7 @@ class RichUI(UI):
         table.add_column("State")
 
         for task in job.tasks:
-            last_column = task.state
+            last_column: RenderableType = task.state
             if task.state == "RUNNING":
                 last_column = Spinner("bouncingBar", task.state)
             table.add_row(str(task.id), task.name, last_column)

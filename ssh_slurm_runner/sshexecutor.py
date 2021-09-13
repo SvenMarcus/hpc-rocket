@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import paramiko as pm
 from paramiko.channel import ChannelFile, ChannelStderrFile, ChannelStdinFile
@@ -15,8 +15,8 @@ class RemoteCommand(RunningCommand):
         self._stdin = stdin
         self._stdout = stdout
         self._stderr = stderr
-        self._stdout_lines = []
-        self._stderr_lines = []
+        self._stdout_lines: List[str] = []
+        self._stderr_lines: List[str] = []
 
     def wait_until_exit(self) -> int:
         while not self._stdout.channel.exit_status_ready():
@@ -51,11 +51,11 @@ class SSHExecutor(CommandExecutor):
     def load_host_keys_from_file(self, hostfile: str) -> None:
         self._client.load_host_keys(hostfile)
 
-    def connect(self, username: str, keyfile: str = None, password: str = None, private_key: str = None) -> None:
+    def connect(self, username: str, keyfile: Optional[str] = None, password: Optional[str] = None, private_key: Optional[str] = None) -> None:
         try:
             self._client.connect(self._hostname,
                                  username=username, password=password,
-                                 key_filename=keyfile, pkey=private_key)
+                                 key_filename=keyfile, pkey=private_key) # type: ignore[arg-type]
         except Exception as err:
             raise SSHError(str(err))
 

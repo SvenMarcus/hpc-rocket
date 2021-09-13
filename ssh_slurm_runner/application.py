@@ -15,10 +15,10 @@ class Application:
 
     def __init__(self, ui: UI) -> None:
         self._ui = ui
-        self._latest_job_update: Optional[SlurmJob] = None
-        self._runner: Optional[SlurmRunner] = None
-        self._watcher: Optional[JobWatcher] = None
-        self._jobid = 0
+        self._latest_job_update: SlurmJob
+        self._runner: SlurmRunner
+        self._watcher: JobWatcher
+        self._jobid: str
 
     def run(self, options: LaunchOptions) -> int:
         try:
