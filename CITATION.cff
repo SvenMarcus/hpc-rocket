@@ -6,9 +6,9 @@ authors:
   - family-names: Marcus
     given-names: Sven
     orcid: https://orcid.org/0000-0003-3689-2162
-title: SSH Slurm Runner
-url: https://github.com/SvenMarcus/ssh-slurm-runner
-repository-code: https://github.com/SvenMarcus/ssh-slurm-runner
+title: HPC Launch
+url: https://github.com/SvenMarcus/hpclaunch
+repository-code: https://github.com/SvenMarcus/hpclaunch
 references:
   - title: rich
     authors:
