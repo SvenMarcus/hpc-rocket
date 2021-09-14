@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from ssh_slurm_runner.environmentpreparation import CopyInstruction
+from hpclaunch.environmentpreparation import CopyInstruction
 
 
 @dataclass

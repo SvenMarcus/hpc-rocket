@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, Mock, patch
 import pytest
-from ssh_slurm_runner.slurmrunner import SlurmError, SlurmJob, SlurmRunner, SlurmTask
-from ssh_slurm_runner.sshexecutor import SSHExecutor
+from hpclaunch.slurmrunner import SlurmError, SlurmJob, SlurmRunner, SlurmTask
+from hpclaunch.sshexecutor import SSHExecutor
 
 from test.paramiko_sshclient_mockutil import make_get_transport, make_close, get_blocking_channel_exit_status_ready_func
 

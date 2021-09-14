@@ -1,4 +1,4 @@
-from ssh_slurm_runner.executor import CommandExecutor
+from hpclaunch.executor import CommandExecutor
 from typing import List, Tuple
 from dataclasses import dataclass
 

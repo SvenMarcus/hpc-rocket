@@ -1,12 +1,8 @@
 import dataclasses
 import os
 from dataclasses import replace
-from test.ui_testdoubles import PrintLoggingUI
-
-from fs.memoryfs import MemoryFS
-from ssh_slurm_runner.environmentpreparation import CopyInstruction
-from ssh_slurm_runner.errors import SSHError
-from test.pyfilesystem_testdoubles import ArbitraryArgsMemoryFS, OnlySubFSMemoryFS
+from test.pyfilesystem_testdoubles import (ArbitraryArgsMemoryFS,
+                                           OnlySubFSMemoryFS)
 from test.sshclient_testdoubles import (ChannelFileStub, ChannelStub,
                                         CmdSpecificSSHClientStub,
                                         DelayedChannelSpy, SSHClientMock)
@@ -14,9 +10,12 @@ from unittest import mock
 from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
-from ssh_slurm_runner.application import Application
-from ssh_slurm_runner.launchoptions import LaunchOptions
-from ssh_slurm_runner.slurmrunner import SlurmJob, SlurmTask
+from fs.memoryfs import MemoryFS
+from hpclaunch.application import Application
+from hpclaunch.environmentpreparation import CopyInstruction
+from hpclaunch.errors import SSHError
+from hpclaunch.launchoptions import LaunchOptions
+from hpclaunch.slurmrunner import SlurmJob, SlurmTask
 
 
 @pytest.fixture
@@ -94,7 +93,7 @@ def osfs_type_mock():
 @pytest.fixture(autouse=True)
 def sshfs_type_mock():
     patcher = patch(
-        "ssh_slurm_runner.chmodsshfs.PermissionChangingSSHFSDecorator")
+        "hpclaunch.chmodsshfs.PermissionChangingSSHFSDecorator")
 
     sshfs_type_mock = patcher.start()
     mem_fs = OnlySubFSMemoryFS()

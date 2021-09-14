@@ -1,5 +1,5 @@
 from typing import Dict, List
-from ssh_slurm_runner.launchoptions import LaunchOptions
+from hpclaunch.launchoptions import LaunchOptions
 
 
 class TransportStub:

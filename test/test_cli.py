@@ -1,6 +1,6 @@
-from ssh_slurm_runner.environmentpreparation import CopyInstruction
-from ssh_slurm_runner.launchoptions import LaunchOptions
-from ssh_slurm_runner.cli import parse_cli_args
+from hpclaunch.environmentpreparation import CopyInstruction
+from hpclaunch.launchoptions import LaunchOptions
+from hpclaunch.cli import parse_cli_args
 
 
 def test__given_valid_args__should_return_matching_config():

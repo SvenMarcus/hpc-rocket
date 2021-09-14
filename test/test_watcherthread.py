@@ -3,8 +3,8 @@ from typing import Tuple
 from unittest.mock import Mock
 
 import pytest
-from ssh_slurm_runner.slurmrunner import SlurmJob, SlurmRunner
-from ssh_slurm_runner.watcher.watcherthread import WatcherThread
+from hpclaunch.slurmrunner import SlurmJob, SlurmRunner
+from hpclaunch.watcher.watcherthread import WatcherThread
 
 
 def test__given_completed_job__when_polling__should_trigger_callback():

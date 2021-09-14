@@ -1,5 +1,5 @@
-from ssh_slurm_runner.filesystem import Filesystem
-from ssh_slurm_runner.environmentpreparation import CopyInstruction, EnvironmentPreparation
+from hpclaunch.filesystem import Filesystem
+from hpclaunch.environmentpreparation import CopyInstruction, EnvironmentPreparation
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -7,7 +7,7 @@ import pytest
 
 def new_mock_filesystem() -> Filesystem:
     return MagicMock(
-        spec="ssh_slurm_runner.filesystem.Filesystem").return_value
+        spec="hpclaunch.filesystem.Filesystem").return_value
 
 
 def test__given_files_to_copy__but_not_preparing__should_not_do_anything():

@@ -1,7 +1,7 @@
-from ssh_slurm_runner.executor import CommandExecutor, RunningCommand
+from hpclaunch.executor import CommandExecutor, RunningCommand
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from ssh_slurm_runner.slurmrunner import SlurmError, SlurmJob, SlurmRunner, SlurmTask
+from hpclaunch.slurmrunner import SlurmError, SlurmJob, SlurmRunner, SlurmTask
 
 
 @pytest.fixture

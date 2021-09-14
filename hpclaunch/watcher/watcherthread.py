@@ -2,7 +2,7 @@ import threading
 
 from typing import Callable
 
-from ssh_slurm_runner.slurmrunner import SlurmRunner
+from hpclaunch.slurmrunner import SlurmRunner
 
 
 def make_watcherthread(runner: SlurmRunner, jobid: str, callback: Callable, interval: float):

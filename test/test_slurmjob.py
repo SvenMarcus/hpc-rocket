@@ -1,5 +1,5 @@
 from typing import List
-from ssh_slurm_runner.slurmrunner import SlurmJob, SlurmTask
+from hpclaunch.slurmrunner import SlurmJob, SlurmTask
 
 
 def job_with_state(state: str, sub_tasks: List[SlurmTask] = None) -> SlurmJob:

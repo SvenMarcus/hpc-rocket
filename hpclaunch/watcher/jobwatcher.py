@@ -1,8 +1,8 @@
 from typing import Callable
 
-import ssh_slurm_runner.watcher.watcherthread as wt
+import hpclaunch.watcher.watcherthread as wt
 
-from ssh_slurm_runner.slurmrunner import SlurmRunner
+from hpclaunch.slurmrunner import SlurmRunner
 
 
 class NotWatchingError(RuntimeError):

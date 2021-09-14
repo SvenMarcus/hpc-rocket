@@ -2,16 +2,16 @@ import argparse
 
 import yaml
 
-from ssh_slurm_runner.environmentpreparation import CopyInstruction
-from ssh_slurm_runner.launchoptions import LaunchOptions
+from hpclaunch.environmentpreparation import CopyInstruction
+from hpclaunch.launchoptions import LaunchOptions
 
 
 def parse_cli_args(args) -> LaunchOptions:
-    parser = argparse.ArgumentParser("ssh_slurm_runner")
+    parser = argparse.ArgumentParser("hpclaunch")
     subparsers = parser.add_subparsers()
 
     run_parser = subparsers.add_parser(
-        "run", help="Configure SSH Slurm Runner from the command line")
+        "run", help="Configure HPC Launch from the command line")
     run_parser.add_argument("jobfile", type=str,
                             help="The name of the job file to run with sbatch")
     run_parser.add_argument("--host", type=str, required=True,
@@ -26,7 +26,7 @@ def parse_cli_args(args) -> LaunchOptions:
         "--keyfile", type=str, help="The path to a file containing a private SSH key")
 
     yaml_parser = subparsers.add_parser(
-        "from-config", help="Configure SSH Slurm Runner from a configuration file")
+        "from-config", help="Configure HPC Launch from a configuration file")
     yaml_parser.add_argument("configfile", type=str)
 
     config = parser.parse_args(args)

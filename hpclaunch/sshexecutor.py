@@ -3,8 +3,8 @@ from typing import List, Optional
 import paramiko as pm
 from paramiko.channel import ChannelFile, ChannelStderrFile, ChannelStdinFile
 
-from ssh_slurm_runner.errors import SSHError
-from ssh_slurm_runner.executor import CommandExecutor, RunningCommand
+from hpclaunch.errors import SSHError
+from hpclaunch.executor import CommandExecutor, RunningCommand
 
 
 class RemoteCommand(RunningCommand):

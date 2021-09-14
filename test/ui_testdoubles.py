@@ -1,8 +1,8 @@
 import sys
 from typing import TextIO
 
-from ssh_slurm_runner.slurmrunner import SlurmJob
-from ssh_slurm_runner.ui import UI
+from hpclaunch.slurmrunner import SlurmJob
+from hpclaunch.ui import UI
 
 
 class PrintLoggingUI(UI):

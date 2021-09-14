@@ -1,14 +1,14 @@
 import os
-from ssh_slurm_runner.errors import SSHError, get_error_message
+from hpclaunch.errors import SSHError, get_error_message
 from typing import Optional
 
-from ssh_slurm_runner.environmentpreparation import EnvironmentPreparation
-from ssh_slurm_runner.filesystemimpl import LocalFilesystem, SSHFilesystem
-from ssh_slurm_runner.launchoptions import LaunchOptions
-from ssh_slurm_runner.slurmrunner import SlurmError, SlurmJob, SlurmRunner
-from ssh_slurm_runner.sshexecutor import SSHExecutor
-from ssh_slurm_runner.ui import UI
-from ssh_slurm_runner.watcher.jobwatcher import JobWatcher
+from hpclaunch.environmentpreparation import EnvironmentPreparation
+from hpclaunch.filesystemimpl import LocalFilesystem, SSHFilesystem
+from hpclaunch.launchoptions import LaunchOptions
+from hpclaunch.slurmrunner import SlurmJob, SlurmRunner
+from hpclaunch.sshexecutor import SSHExecutor
+from hpclaunch.ui import UI
+from hpclaunch.watcher.jobwatcher import JobWatcher
 
 
 class Application:

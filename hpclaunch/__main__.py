@@ -1,9 +1,9 @@
 import sys
 import signal
 
-from ssh_slurm_runner.application import Application
-from ssh_slurm_runner.cli import parse_cli_args
-from ssh_slurm_runner.ui import RichUI
+from hpclaunch.application import Application
+from hpclaunch.cli import parse_cli_args
+from hpclaunch.ui import RichUI
 
 
 def main():

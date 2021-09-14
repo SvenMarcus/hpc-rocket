@@ -5,8 +5,8 @@ import fs
 import fs.base
 import pytest
 from fs.memoryfs import MemoryFS
-from ssh_slurm_runner.filesystem import Filesystem
-from ssh_slurm_runner.pyfilesystembased import PyFilesystemBased
+from hpclaunch.filesystem import Filesystem
+from hpclaunch.pyfilesystembased import PyFilesystemBased
 
 
 # This class name starts with an underscore because pytest tries to collect it as test otherwise

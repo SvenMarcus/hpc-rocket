@@ -1,14 +1,14 @@
 import pytest
 
-from ssh_slurm_runner.watcher.jobwatcher import JobWatcher, NotWatchingError
+from hpclaunch.watcher.jobwatcher import JobWatcher, NotWatchingError
 from unittest.mock import MagicMock, Mock, patch
-from ssh_slurm_runner.slurmrunner import SlurmJob, SlurmRunner
+from hpclaunch.slurmrunner import SlurmJob, SlurmRunner
 
 
 @pytest.fixture
 def make_watcherthread_stub():
     patcher = patch(
-        "ssh_slurm_runner.watcher.watcherthread.make_watcherthread")
+        "hpclaunch.watcher.watcherthread.make_watcherthread")
     patched = patcher.start()
 
     yield patched

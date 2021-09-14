@@ -1,8 +1,8 @@
 from typing import List, NamedTuple, Optional
 
-from ssh_slurm_runner.errors import error_type
-from ssh_slurm_runner.filesystem import Filesystem
-from ssh_slurm_runner.ui import UI, NullUI
+from hpclaunch.errors import error_type
+from hpclaunch.filesystem import Filesystem
+from hpclaunch.ui import UI, NullUI
 
 
 class CopyInstruction(NamedTuple):

@@ -1,8 +1,8 @@
-from ssh_slurm_runner.errors import SSHError
+from hpclaunch.errors import SSHError
 from unittest.mock import patch
 
 import pytest
-from ssh_slurm_runner.filesystemimpl import LocalFilesystem, SSHFilesystem
+from hpclaunch.filesystemimpl import LocalFilesystem, SSHFilesystem
 
 
 @pytest.fixture

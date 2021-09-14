@@ -5,7 +5,7 @@ from rich.live import Live
 from rich.spinner import Spinner
 from rich.table import Table
 
-from ssh_slurm_runner.slurmrunner import SlurmJob
+from hpclaunch.slurmrunner import SlurmJob
 
 
 class UI(ABC):

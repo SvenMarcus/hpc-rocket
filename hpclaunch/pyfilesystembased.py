@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 import fs.base
 import fs.copy as fscp
 
-from ssh_slurm_runner.filesystem import Filesystem
+from hpclaunch.filesystem import Filesystem
 
 
 class PyFilesystemBased(Filesystem, ABC):

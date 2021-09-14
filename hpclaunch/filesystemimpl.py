@@ -1,11 +1,11 @@
-from ssh_slurm_runner.errors import SSHError
+from hpclaunch.errors import SSHError
 import fs.base
 from fs.errors import CreateFailed
 import fs.osfs
 from fs.subfs import ClosingSubFS
 
-import ssh_slurm_runner.chmodsshfs as sshfs
-from ssh_slurm_runner.pyfilesystembased import PyFilesystemBased
+import hpclaunch.chmodsshfs as sshfs
+from hpclaunch.pyfilesystembased import PyFilesystemBased
 
 
 class LocalFilesystem(PyFilesystemBased):
