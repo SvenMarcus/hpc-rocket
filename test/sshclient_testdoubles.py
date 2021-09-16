@@ -58,6 +58,9 @@ class CmdSpecificSSHClientStub:
     def __init__(self, cmd_to_channels: Dict[str, ChannelFileStub]):
         self.cmd_to_channels = cmd_to_channels
 
+    def set_missing_host_key_policy(self, *args):
+        pass
+
     def connect(self, hostname, port=None, username=None, password=None, pkey=None, key_filename=None, *args, **kwargs):
         pass
 

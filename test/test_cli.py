@@ -44,22 +44,26 @@ def test__given_valid_args_for_yaml__should_return_matching_config():
         connection=ConnectionData(
             hostname="cluster.example.com",
             username="the_user",
+            password="1234",
             keyfile="/home/user/.ssh/keyfile",
         ),
         proxyjumps=[
             ConnectionData(
                 hostname="proxy1.example.com",
                 username="proxy1-user",
+                password="proxy1-pass",
                 keyfile="/home/user/.ssh/proxy1_keyfile",
             ),
             ConnectionData(
                 hostname="proxy2.example.com",
                 username="proxy2-user",
+                password="proxy2-pass",
                 keyfile="/home/user/.ssh/proxy2_keyfile",
             ),
             ConnectionData(
                 hostname="proxy3.example.com",
                 username="proxy3-user",
+                password="proxy3-pass",
                 keyfile="/home/user/.ssh/proxy3_keyfile",
             ),
         ],

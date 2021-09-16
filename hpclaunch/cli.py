@@ -73,7 +73,8 @@ def _connection_data_from_dict(config):
     return ConnectionData(
         hostname=config["host"],
         username=config["user"],
-        keyfile=config["private_keyfile"]
+        keyfile=config.get("private_keyfile"),
+        password=str(config.get("password"))
     )
 
 
