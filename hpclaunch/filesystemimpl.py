@@ -1,3 +1,4 @@
+from typing import List
 from hpclaunch.errors import SSHError
 import fs.base
 from fs.errors import CreateFailed
@@ -6,6 +7,7 @@ from fs.subfs import ClosingSubFS
 
 import hpclaunch.chmodsshfs as sshfs
 from hpclaunch.pyfilesystembased import PyFilesystemBased
+from hpclaunch.sshexecutor import ConnectionData, build_channel_with_proxyjumps
 
 
 class LocalFilesystem(PyFilesystemBased):
@@ -30,7 +32,9 @@ class SSHFilesystem(PyFilesystemBased):
     A PyFilesystem2 based Filesystem that connects to a remote machine via SSH
     """
 
-    def __init__(self, user: str, host: str, password: str = None, private_key: str = None, private_keyfile: str = None) -> None:
+    def __init__(
+            self, connection_data: ConnectionData,
+            proxyjumps: List[ConnectionData] = None) -> None:
         """
         Args:
             user (str): The user on the remote machine
@@ -39,14 +43,21 @@ class SSHFilesystem(PyFilesystemBased):
             private_key (str): The user's private SSH key. Alternative to `password`.
         """
         self._internal_fs = self._create_new_sshfilesystem(
-            user, host, password, private_key, private_keyfile)
+            connection_data, proxyjumps)
 
-    def _create_new_sshfilesystem(self, user, host, password, private_key, private_keyfile):
+    def _create_new_sshfilesystem(self, connection_data: ConnectionData, proxyjumps: List[ConnectionData] = None):
         try:
-            return sshfs.PermissionChangingSSHFSDecorator(
-                host, user=user, passwd=password, pkey=private_key or private_keyfile).opendir(f"/home/{user}", factory=ClosingSubFS)
+            channel = build_channel_with_proxyjumps(connection_data, proxyjumps or [])
+            fs = sshfs.PermissionChangingSSHFSDecorator(
+                host=connection_data.hostname,
+                user=connection_data.username,
+                passwd=connection_data.password,
+                pkey=connection_data.key or connection_data.keyfile,
+                port=connection_data.port, sock=channel)
+
+            return fs.opendir(f"/home/{connection_data.username}", factory=ClosingSubFS)
         except CreateFailed as err:
-            raise SSHError(f"Could not connect to {host}") from err
+            raise SSHError(f"Could not connect to {connection_data.hostname}") from err
 
     @property
     def internal_fs(self) -> fs.base.FS:

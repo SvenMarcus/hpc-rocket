@@ -1,11 +1,9 @@
-from test.sshclient_testdoubles import ChannelFileStub
 from unittest.mock import Mock, patch
 
 import pytest
 import paramiko
-from hpclaunch.sshclient import ConnectionData, SSHExecutor
+from hpclaunch.sshexecutor import ConnectionData, SSHExecutor, RemoteCommand
 from hpclaunch.errors import SSHError
-from hpclaunch.sshclient import RemoteCommand
 
 
 def connection_data():

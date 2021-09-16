@@ -1,3 +1,4 @@
+from hpclaunch.sshexecutor import ConnectionData
 from hpclaunch.environmentpreparation import CopyInstruction
 from hpclaunch.launchoptions import LaunchOptions
 from hpclaunch.cli import parse_cli_args
@@ -22,11 +23,13 @@ def test__given_valid_args__should_return_matching_config():
 
     assert config == LaunchOptions(
         sbatch="slurm.job",
-        host="cluster.example.com",
-        user="the_user",
-        password="the_password",
-        private_keyfile="/home/user/.ssh/keyfile",
-        private_key="SECRET_KEY"
+        connection=ConnectionData(
+            hostname="cluster.example.com",
+            username="the_user",
+            password="the_password",
+            keyfile="/home/user/.ssh/keyfile",
+            key="SECRET_KEY",
+        )
     )
 
 
@@ -38,11 +41,30 @@ def test__given_valid_args_for_yaml__should_return_matching_config():
 
     assert config == LaunchOptions(
         sbatch="slurm.job",
-        host="cluster.example.com",
-        user="the_user",
-        private_keyfile="/home/user/.ssh/keyfile",
+        connection=ConnectionData(
+            hostname="cluster.example.com",
+            username="the_user",
+            keyfile="/home/user/.ssh/keyfile",
+        ),
+        proxyjumps=[
+            ConnectionData(
+                hostname="proxy1.example.com",
+                username="proxy1-user",
+                keyfile="/home/user/.ssh/proxy1_keyfile",
+            ),
+            ConnectionData(
+                hostname="proxy2.example.com",
+                username="proxy2-user",
+                keyfile="/home/user/.ssh/proxy2_keyfile",
+            ),
+            ConnectionData(
+                hostname="proxy3.example.com",
+                username="proxy3-user",
+                keyfile="/home/user/.ssh/proxy3_keyfile",
+            ),
+        ],
         copy_files=[
-            CopyInstruction("myfile.txt", "mycopy.txt"), 
+            CopyInstruction("myfile.txt", "mycopy.txt"),
             CopyInstruction("slurm.job", "slurm.job", True)],
         clean_files=["mycopy.txt", "slurm.job"],
         collect_files=[CopyInstruction("result.txt", "result.txt", True)],

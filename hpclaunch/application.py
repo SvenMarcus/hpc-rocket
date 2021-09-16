@@ -1,3 +1,4 @@
+import dataclasses
 import os
 from hpclaunch.errors import SSHError, get_error_message
 from typing import Optional
@@ -6,7 +7,7 @@ from hpclaunch.environmentpreparation import EnvironmentPreparation
 from hpclaunch.filesystemimpl import LocalFilesystem, SSHFilesystem
 from hpclaunch.launchoptions import LaunchOptions
 from hpclaunch.slurmrunner import SlurmJob, SlurmRunner
-from hpclaunch.sshclient import ConnectionData, SSHExecutor
+from hpclaunch.sshexecutor import ConnectionData, SSHExecutor
 from hpclaunch.ui import UI
 from hpclaunch.watcher.jobwatcher import JobWatcher
 
@@ -107,13 +108,9 @@ class Application:
 
     def _make_ssh_filesystem(self, options: LaunchOptions) -> SSHFilesystem:
         home_dir = os.environ['HOME']
-        keyfile = self._resolve_keyfile_from_home_dir(options, home_dir)
-
-        return SSHFilesystem(options.user,
-                             options.host,
-                             options.password,
-                             options.private_key,
-                             keyfile)
+        connection = self._resolve_keyfile_in_connection(options.connection, home_dir)
+        proxyjumps = [self._resolve_keyfile_in_connection(proxy, home_dir) for proxy in options.proxyjumps]
+        return SSHFilesystem(connection, proxyjumps)
 
     def _poll_callback(self, job: SlurmJob) -> None:
         self._latest_job_update = job
@@ -121,22 +118,22 @@ class Application:
 
     def _create_sshexecutor(self, options: LaunchOptions) -> SSHExecutor:
         home_dir = os.environ['HOME']
-        keyfile = self._resolve_keyfile_from_home_dir(options, home_dir)
+        connection = self._resolve_keyfile_in_connection(options.connection, home_dir)
 
         executor = SSHExecutor()
         executor.load_host_keys_from_file(f"{home_dir}/.ssh/known_hosts")
 
-        executor.connect(ConnectionData(
-            hostname=options.host,
-            username=options.user,
-            password=options.password,
-            key=options.private_key,
-            keyfile=keyfile))
+        proxyjumps = [self._resolve_keyfile_in_connection(proxy, home_dir) for proxy in options.proxyjumps]
+        executor.connect(connection, proxyjumps=proxyjumps)
 
         return executor
 
-    def _resolve_keyfile_from_home_dir(self, options, home_dir: str) -> Optional[str]:
-        keyfile = options.private_keyfile
+    def _resolve_keyfile_in_connection(self, connection, home_dir):
+        keyfile = self._resolve_keyfile_from_home_dir(connection.keyfile, home_dir)
+        connection = dataclasses.replace(connection, keyfile=keyfile)
+        return connection
+
+    def _resolve_keyfile_from_home_dir(self, keyfile: str, home_dir: str) -> Optional[str]:
         if not keyfile:
             return None
 

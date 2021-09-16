@@ -1,4 +1,6 @@
 from typing import Dict, List
+from unittest.mock import Mock
+
 from hpclaunch.launchoptions import LaunchOptions
 
 
@@ -76,10 +78,12 @@ class CmdSpecificSSHClientStub:
 
 class SSHClientMock(CmdSpecificSSHClientStub):
 
-    def __init__(self, cmd_to_channels: Dict[str, ChannelFileStub], launch_options: LaunchOptions, host_key_file: str, private_keyfile_abspath: str = None):
+    def __init__(
+            self, cmd_to_channels: Dict[str, ChannelFileStub],
+            launch_options: LaunchOptions, host_key_file: str, private_keyfile_abspath: str = None):
         super().__init__(cmd_to_channels)
         self._options = launch_options
-        self._private_keyfile_abspath = private_keyfile_abspath or launch_options.private_keyfile
+        self._private_keyfile_abspath = private_keyfile_abspath or launch_options.connection.keyfile
         self._host_key_file = host_key_file
         self.connected = False
         self.loaded_keys = False
@@ -89,10 +93,10 @@ class SSHClientMock(CmdSpecificSSHClientStub):
         assert self.loaded_keys, "Tried to connect without loading known_hosts"
         print(key_filename)
         self.connected = (
-            self._options.host == hostname and
-            self._options.password == password and
-            self._options.user == username and
-            self._options.private_key == pkey and
+            self._options.connection.hostname == hostname and
+            self._options.connection.password == password and
+            self._options.connection.username == username and
+            self._options.connection.key == pkey and
             self._private_keyfile_abspath == key_filename
         )
 
@@ -116,3 +120,11 @@ class SSHClientMock(CmdSpecificSSHClientStub):
             f"sbatch {self._options.sbatch}" + f"\nbut was: {self.command}"
 
         assert not self.connected
+
+
+def mock_iterating_sshclient_side_effect(sshclient_class: Mock, mocks: List[Mock]):
+    mocks_iter = iter(mocks)
+    def next_mock():
+        return next(mocks_iter, Mock())
+
+    sshclient_class.side_effect = next_mock

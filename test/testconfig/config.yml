@@ -2,6 +2,19 @@ host: cluster.example.com
 user: the_user
 private_keyfile: /home/user/.ssh/keyfile
 
+proxyjumps:
+  - host: proxy1.example.com
+    user: proxy1-user
+    private_keyfile: /home/user/.ssh/proxy1_keyfile
+
+  - host: proxy2.example.com
+    user: proxy2-user
+    private_keyfile: /home/user/.ssh/proxy2_keyfile
+
+  - host: proxy3.example.com
+    user: proxy3-user
+    private_keyfile: /home/user/.ssh/proxy3_keyfile
+
 copy:
   - from: myfile.txt
     to: mycopy.txt

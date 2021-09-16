@@ -1,7 +1,7 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 import pytest
-from hpclaunch.slurmrunner import SlurmError, SlurmJob, SlurmRunner, SlurmTask
-from hpclaunch.sshexecutor import SSHExecutor
+from hpclaunch.slurmrunner import SlurmJob, SlurmRunner, SlurmTask
+from hpclaunch.sshexecutor import ConnectionData, SSHExecutor
 
 from test.paramiko_sshclient_mockutil import make_get_transport, make_close, get_blocking_channel_exit_status_ready_func
 
@@ -38,8 +38,8 @@ def configure_sshclient_fake(patched, cmd_output_file: str):
 
 
 def test__when_calling_sbatch__should_return_job_id(sbatch_sshclient_fake):
-    executor = SSHExecutor("cluster.example.com")
-    executor.connect("user", password="123456")
+    executor = SSHExecutor()
+    executor.connect(ConnectionData("cluster.example.com", "user", password="123456"))
     runner = SlurmRunner(executor)
 
     jobid = runner.sbatch("myjob.job")
@@ -48,8 +48,8 @@ def test__when_calling_sbatch__should_return_job_id(sbatch_sshclient_fake):
 
 
 def test__when_polling_job__should_return_slurm_job_with_matching_data(sshclient_poll_running_job_fake):
-    executor = SSHExecutor("cluster.example.com")
-    executor.connect("user", password="123456")
+    executor = SSHExecutor()
+    executor.connect(ConnectionData("cluster.example.com", "user", password="123456"))
     runner = SlurmRunner(executor)
 
     actual = runner.poll_status("123456")
