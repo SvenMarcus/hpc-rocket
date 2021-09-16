@@ -119,11 +119,9 @@ class Application:
     def _create_sshexecutor(self, options: LaunchOptions) -> SSHExecutor:
         home_dir = os.environ['HOME']
         connection = self._resolve_keyfile_in_connection(options.connection, home_dir)
-
-        executor = SSHExecutor()
-        executor.load_host_keys_from_file(f"{home_dir}/.ssh/known_hosts")
-
         proxyjumps = [self._resolve_keyfile_in_connection(proxy, home_dir) for proxy in options.proxyjumps]
+        
+        executor = SSHExecutor()
         executor.connect(connection, proxyjumps=proxyjumps)
 
         return executor

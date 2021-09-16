@@ -194,7 +194,6 @@ def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient
             "sacct": ChannelFileStub(lines=get_success_lines())
         },
         launch_options=valid_options,
-        host_key_file=f"{HOME_DIR}/.ssh/known_hosts",
         private_keyfile_abspath=expected_keyfile)
 
     sshclient_type_mock.return_value = sshclient_mock
