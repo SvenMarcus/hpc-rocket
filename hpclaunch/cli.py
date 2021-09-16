@@ -65,7 +65,7 @@ def _parse_yaml_configuration(path: str) -> LaunchOptions:
             clean_files=config.get("clean", []),
             collect_files=_collect_copy_instructions(config.get("collect", [])),
             connection=_connection_data_from_dict(config),
-            proxyjumps=_collect_proxyjumps(config["proxyjumps"])
+            proxyjumps=_collect_proxyjumps(config.get("proxyjumps", []))
         )
 
 
