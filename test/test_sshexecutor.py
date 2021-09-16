@@ -1,16 +1,20 @@
 from hpclaunch.errors import SSHError
 import pytest
+import paramiko
 
 from unittest.mock import MagicMock, Mock, patch
-from hpclaunch.sshexecutor import RemoteCommand, SSHExecutor
+from hpclaunch.sshexecutor import SSHExecutor
+from hpclaunch.sshclient import RemoteCommand
 from test.paramiko_sshclient_mockutil import make_get_transport, make_close, get_blocking_channel_exit_status_ready_func
 
 
 @pytest.fixture
 def pm_sshclient_fake():
+    mock = Mock(spec=paramiko.SSHClient)
     patcher = patch("paramiko.SSHClient")
     patched = patcher.start()
-    patched.return_value.configure_mock(
+    patched.return_value = mock
+    mock.configure_mock(
         get_transport=make_get_transport(patched.return_value),
         close=make_close(patched.return_value)
     )
@@ -49,20 +53,23 @@ def stderr():
     return stderr
 
 
-def test__when_connecting_with_user_and_keyfile__should_connect_with_username_and_keyfile_to_host(pm_sshclient_fake: Mock):
+def test__when_connecting_with_user_and_keyfile__should_connect_with_username_and_keyfile_to_host(
+        pm_sshclient_fake: Mock):
     sut = SSHExecutor("cluster.example.com")
     sut.connect("myuser", keyfile="/home/myuser/.ssh/keyfile")
 
     pm_sshclient_fake.connect.assert_called_with(
-        'cluster.example.com', username='myuser', key_filename='/home/myuser/.ssh/keyfile', password=None, pkey=None)
+        hostname='cluster.example.com', username='myuser', key_filename='/home/myuser/.ssh/keyfile',
+        password=None, pkey=None, port=22, sock=None)
 
 
-def test__when_connecting_with_user_and_password__should_call_connect_with_username_and_password(pm_sshclient_fake: Mock):
+def test__when_connecting_with_user_and_password__should_call_connect_with_username_and_password(
+        pm_sshclient_fake: Mock):
     sut = SSHExecutor("cluster.example.com")
     sut.connect("myuser", password="12345")
 
     pm_sshclient_fake.connect.assert_called_with(
-        'cluster.example.com', username='myuser', password='12345', key_filename=None, pkey=None)
+        hostname='cluster.example.com', username='myuser', password='12345', key_filename=None, pkey=None, port=22, sock=None)
 
 
 def test__when_connecting_with_user_and_private_key__should_call_connect_with_username_and_key(pm_sshclient_fake: Mock):
@@ -70,7 +77,7 @@ def test__when_connecting_with_user_and_private_key__should_call_connect_with_us
     sut.connect("myuser", private_key="12345")
 
     pm_sshclient_fake.connect.assert_called_with(
-        'cluster.example.com', username='myuser', pkey="12345", password=None, key_filename=None)
+        hostname='cluster.example.com', username='myuser', pkey="12345", password=None, key_filename=None, port=22, sock=None)
 
 
 def test__when_connecting__is_connected_should_be_true(pm_sshclient_fake: Mock):
@@ -86,7 +93,8 @@ def test__when_not_connecting__is_connected__should_be_false(pm_sshclient_fake: 
     assert sut.is_connected == False
 
 
-def test__given_client_connected__when_executing_command__should_return_remote_command_with_stdin_stdout_stderr(pm_sshclient_fake: Mock):
+def test__given_client_connected__when_executing_command__should_return_remote_command_with_stdin_stdout_stderr(
+        pm_sshclient_fake: Mock):
     pm_sshclient_fake.exec_command.return_value = (
         Mock("paramiko.channel.ChannelStdinFile"),
         Mock("paramiko.channel.ChannelFile"),

@@ -6,7 +6,7 @@ from hpclaunch.environmentpreparation import EnvironmentPreparation
 from hpclaunch.filesystemimpl import LocalFilesystem, SSHFilesystem
 from hpclaunch.launchoptions import LaunchOptions
 from hpclaunch.slurmrunner import SlurmJob, SlurmRunner
-from hpclaunch.sshexecutor import SSHExecutor
+from hpclaunch.sshclient import ConnectionData, SSHExecutor
 from hpclaunch.ui import UI
 from hpclaunch.watcher.jobwatcher import JobWatcher
 
@@ -119,17 +119,19 @@ class Application:
         self._latest_job_update = job
         self._ui.update(job)
 
-    def _create_sshexecutor(self, options) -> SSHExecutor:
+    def _create_sshexecutor(self, options: LaunchOptions) -> SSHExecutor:
         home_dir = os.environ['HOME']
         keyfile = self._resolve_keyfile_from_home_dir(options, home_dir)
 
-        executor = SSHExecutor(options.host)
+        executor = SSHExecutor()
         executor.load_host_keys_from_file(f"{home_dir}/.ssh/known_hosts")
 
-        executor.connect(options.user,
-                         keyfile,
-                         options.password,
-                         options.private_key)
+        executor.connect(ConnectionData(
+            hostname=options.host,
+            username=options.user,
+            password=options.password,
+            key=options.private_key,
+            keyfile=keyfile))
 
         return executor
 
