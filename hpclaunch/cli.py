@@ -1,4 +1,6 @@
 import argparse
+from typing import Dict, List
+from hpclaunch.sshexecutor import ConnectionData
 
 import yaml
 
@@ -7,40 +9,50 @@ from hpclaunch.launchoptions import LaunchOptions
 
 
 def parse_cli_args(args) -> LaunchOptions:
-    parser = argparse.ArgumentParser("hpclaunch")
-    subparsers = parser.add_subparsers()
-
-    run_parser = subparsers.add_parser(
-        "run", help="Configure HPC Launch from the command line")
-    run_parser.add_argument("jobfile", type=str,
-                            help="The name of the job file to run with sbatch")
-    run_parser.add_argument("--host", type=str, required=True,
-                            help="Address of the remote machine")
-    run_parser.add_argument("--user", type=str, required=True,
-                            help="User on the remote machine")
-    run_parser.add_argument("--password", type=str,
-                            help="The password for the given user")
-    run_parser.add_argument("--private-key", type=str,
-                            help="A private SSH key")
-    run_parser.add_argument(
-        "--keyfile", type=str, help="The path to a file containing a private SSH key")
-
-    yaml_parser = subparsers.add_parser(
-        "from-config", help="Configure HPC Launch from a configuration file")
-    yaml_parser.add_argument("configfile", type=str)
+    parser = _setup_parser()
 
     config = parser.parse_args(args)
     if "configfile" in config:
         return _parse_yaml_configuration(config.configfile)
 
+    return _parse_cli_configuration(config)
+
+
+def _setup_parser():
+    parser = argparse.ArgumentParser("hpclaunch")
+    subparsers = parser.add_subparsers()
+
+    _setup_yaml_parser(subparsers)
+    _setup_cli_parser(subparsers)
+
+    return parser
+
+
+def _setup_cli_parser(subparsers):
+    run_parser = subparsers.add_parser("run", help="Configure HPC Launch from the command line")
+    run_parser.add_argument("jobfile", type=str, help="The name of the job file to run with sbatch")
+    run_parser.add_argument("--host", type=str, required=True, help="Address of the remote machine")
+    run_parser.add_argument("--user", type=str, required=True, help="User on the remote machine")
+    run_parser.add_argument("--password", type=str, help="The password for the given user")
+    run_parser.add_argument("--private-key", type=str, help="A private SSH key")
+    run_parser.add_argument("--keyfile", type=str, help="The path to a file containing a private SSH key")
+
+
+def _setup_yaml_parser(subparsers):
+    yaml_parser = subparsers.add_parser("from-config", help="Configure HPC Launch from a configuration file")
+    yaml_parser.add_argument("configfile", type=str)
+
+
+def _parse_cli_configuration(config):
     return LaunchOptions(
         config.jobfile,
-        config.host,
-        config.user,
-        config.password,
-        config.private_key,
-        config.keyfile
-    )
+        connection=ConnectionData(
+            hostname=config.host,
+            username=config.user,
+            password=config.password,
+            key=config.private_key,
+            keyfile=config.keyfile
+        ))
 
 
 def _parse_yaml_configuration(path: str) -> LaunchOptions:
@@ -49,15 +61,25 @@ def _parse_yaml_configuration(path: str) -> LaunchOptions:
 
         return LaunchOptions(
             sbatch=config["sbatch"],
-            host=config["host"],
-            user=config["user"],
-            password=config.get("password"),
-            private_key=config.get("private_key"),
-            private_keyfile=config.get("private_keyfile"),
             copy_files=_collect_copy_instructions(config.get("copy", [])),
             clean_files=config.get("clean", []),
-            collect_files=_collect_copy_instructions(config.get("collect", []))
+            collect_files=_collect_copy_instructions(config.get("collect", [])),
+            connection=_connection_data_from_dict(config),
+            proxyjumps=_collect_proxyjumps(config["proxyjumps"])
         )
+
+
+def _connection_data_from_dict(config):
+    return ConnectionData(
+        hostname=config["host"],
+        username=config["user"],
+        keyfile=config.get("private_keyfile"),
+        password=str(config.get("password"))
+    )
+
+
+def _collect_proxyjumps(proxyjumps: List[Dict[str, str]]):
+    return [_connection_data_from_dict(proxy) for proxy in proxyjumps]
 
 
 def _collect_copy_instructions(copy_list):

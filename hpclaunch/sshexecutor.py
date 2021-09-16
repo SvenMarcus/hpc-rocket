@@ -1,17 +1,27 @@
+from dataclasses import dataclass
 from typing import List, Optional
 
 import paramiko as pm
-from paramiko.channel import ChannelFile, ChannelStderrFile, ChannelStdinFile
-
+import paramiko.channel as channel
 from hpclaunch.errors import SSHError
 from hpclaunch.executor import CommandExecutor, RunningCommand
 
 
+@dataclass
+class ConnectionData:
+    hostname: str
+    username: str
+    password: Optional[str] = None
+    keyfile: Optional[str] = None
+    key: Optional[str] = None
+    port: int = 22
+
+
 class RemoteCommand(RunningCommand):
     def __init__(self,
-                 stdin: ChannelStdinFile,
-                 stdout: ChannelFile,
-                 stderr: ChannelStderrFile) -> None:
+                 stdin: channel.ChannelStdinFile,
+                 stdout: channel.ChannelFile,
+                 stderr: channel.ChannelStderrFile) -> None:
         self._stdin = stdin
         self._stdout = stdout
         self._stderr = stderr
@@ -39,32 +49,90 @@ class RemoteCommand(RunningCommand):
 
 
 class SSHExecutor(CommandExecutor):
-    def __init__(self, hostname: str) -> None:
-        self._hostname: str = hostname
-        self._client: pm.SSHClient = pm.SSHClient()
 
-    @property
-    def is_connected(self) -> bool:
-        transport = self._client.get_transport()
-        return transport is not None and transport.is_active()
+    def __init__(self) -> None:
+        self._is_connected = False
+        self._client = pm.SSHClient()
+        self._client.set_missing_host_key_policy(pm.AutoAddPolicy)
 
     def load_host_keys_from_file(self, hostfile: str) -> None:
         self._client.load_host_keys(hostfile)
 
-    def connect(self, username: str, keyfile: Optional[str] = None, password: Optional[str] = None, private_key: Optional[str] = None) -> None:
+    def connect(self, connection: ConnectionData, proxyjumps: List[ConnectionData] = None):
         try:
-            self._client.connect(self._hostname,
-                                 username=username, password=password,
-                                 key_filename=keyfile, pkey=private_key) # type: ignore[arg-type]
+            channel = build_channel_with_proxyjumps(connection, proxyjumps or [])
+            _connect_client(self._client, connection, channel=channel)
+            self._is_connected = True
         except Exception as err:
-            raise SSHError(str(err))
+            raise SSHError(str(err)) from err
 
-    def disconnect(self) -> None:
+    def _connect_client(self, sshclient, connection, channel):
+        sshclient.connect(
+            hostname=connection.hostname,
+            username=connection.username,
+            port=connection.port,
+            key_filename=connection.keyfile,
+            password=connection.password,
+            pkey=connection.key,  # type: ignore[arg-type]
+            sock=channel
+        )
+
+    def disconnect(self):
         self._client.close()
+        self._is_connected = False
 
-    def exec_command(self, cmd: str) -> RemoteCommand:
-        if not self.is_connected:
-            raise SSHError("Client not connected")
-
-        stdin, stdout, stderr = self._client.exec_command(cmd)
+    def exec_command(self, command: str) -> RunningCommand:
+        stdin, stdout, stderr = self._client.exec_command(command)
         return RemoteCommand(stdin, stdout, stderr)
+
+    @property
+    def is_connected(self) -> bool:
+        return self._is_connected
+
+    @property
+    def client(self) -> pm.SSHClient:
+        return self._client
+
+
+def build_channel_with_proxyjumps(connection: ConnectionData, proxyjumps: List[ConnectionData]) -> Optional[pm.Channel]:
+    channel = None
+    for index, proxyjump in enumerate(proxyjumps):
+        next_host = _next_host(connection, proxyjumps, index)
+        proxy = _make_sshclient_and_connect(proxyjump, channel)
+        channel = _open_channel_to_next_host(next_host, proxy)
+
+    return channel
+
+
+def _next_host(connection: ConnectionData, proxyjumps: List[ConnectionData], index: int) -> ConnectionData:
+    if index < len(proxyjumps) - 1:
+        return proxyjumps[index + 1]
+
+    return connection
+
+
+def _open_channel_to_next_host(next_connection: ConnectionData, proxy: pm.SSHClient) -> pm.Channel:
+    transport = proxy.get_transport()
+    channel = transport.open_channel(  # type: ignore
+        "direct-tcpip", (next_connection.hostname, next_connection.port), ('', 0))
+
+    return channel
+
+
+def _make_sshclient_and_connect(connection: ConnectionData, channel=None):
+    sshclient = pm.SSHClient()
+    sshclient.set_missing_host_key_policy(pm.AutoAddPolicy)
+    _connect_client(sshclient, connection, channel)
+    return sshclient
+
+
+def _connect_client(sshclient, connection, channel):
+    sshclient.connect(
+        hostname=connection.hostname,
+        username=connection.username,
+        port=connection.port,
+        key_filename=connection.keyfile,
+        password=connection.password,
+        pkey=connection.key,  # type: ignore[arg-type]
+        sock=channel
+    )

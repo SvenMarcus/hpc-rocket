@@ -5,7 +5,15 @@ from test.pyfilesystem_testdoubles import (ArbitraryArgsMemoryFS,
                                            OnlySubFSMemoryFS)
 from test.sshclient_testdoubles import (ChannelFileStub, ChannelStub,
                                         CmdSpecificSSHClientStub,
-                                        DelayedChannelSpy, SSHClientMock)
+                                        DelayedChannelSpy, SSHClientMock,
+                                        mock_iterating_sshclient_side_effect)
+
+from test.test__sshexecutor import proxy_connection, proxy_mock_with_transport, assert_connected_with_data, assert_channel_opened
+
+from test.sshfilesystem_assertions import (
+    assert_sshfs_connected_with_keyfile_from_connection_data,
+    assert_sshfs_connected_with_password_from_connection_data,
+    assert_sshfs_connected_with_connection_data)
 from unittest import mock
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -16,6 +24,7 @@ from hpclaunch.environmentpreparation import CopyInstruction
 from hpclaunch.errors import SSHError
 from hpclaunch.launchoptions import LaunchOptions
 from hpclaunch.slurmrunner import SlurmJob, SlurmTask
+from hpclaunch.sshexecutor import ConnectionData
 
 
 @pytest.fixture
@@ -31,14 +40,28 @@ def sshclient_type_mock():
 @pytest.fixture
 def valid_options():
     return LaunchOptions(
-        host="example.com",
-        user="myuser",
-        password="mypassword",
-        private_key="PRIVATE",
-        private_keyfile="my_private_keyfile",
+        connection=ConnectionData(
+            hostname="example.com",
+            username="myuser",
+            password="mypassword",
+            key="PRIVATE",
+            keyfile="my_private_keyfile",
+        ),
         sbatch="test.job",
         poll_interval=0
     )
+
+
+@pytest.fixture
+def options_with_proxy(valid_options):
+    proxy_connection = ConnectionData(
+        hostname="proxy1-host",
+        username="proxy1-user",
+        password="proxy1-pass",
+        keyfile="~/proxy1-keyfile"
+    )
+
+    return replace(valid_options, proxyjumps=[proxy_connection])
 
 
 def get_success_lines():
@@ -55,6 +78,10 @@ def get_error_lines():
 
 @pytest.fixture
 def successful_sshclient_stub(sshclient_type_mock):
+    return make_successful_sshclient(sshclient_type_mock)
+
+
+def make_successful_sshclient(sshclient_type_mock):
     ssh_stub = CmdSpecificSSHClientStub({
         "sbatch": ChannelFileStub(lines=["1234"]),
         "sacct": ChannelFileStub(lines=get_success_lines())
@@ -114,11 +141,12 @@ def fs_copy_file_mock():
 
 def make_options_with_files_to_copy(files_to_copy):
     options = LaunchOptions(
-        host="example.com",
-        user="myuser",
-        password="mypassword",
-        private_key="PRIVATE",
-        private_keyfile="my_private_keyfile",
+        connection=ConnectionData(
+            hostname="example.com",
+            username="myuser",
+            password="mypassword",
+            key="PRIVATE",
+            keyfile="my_private_keyfile"),
         sbatch="test.job",
         poll_interval=0,
         copy_files=files_to_copy
@@ -156,8 +184,9 @@ def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient
                                                                        input_keyfile: str,
                                                                        expected_keyfile: str):
     os.environ['HOME'] = HOME_DIR
-    valid_options = replace(
-        valid_options, private_keyfile=input_keyfile)
+
+    connection = replace(valid_options.connection, keyfile=input_keyfile)
+    valid_options = replace(valid_options, connection=connection)
 
     sshclient_mock = SSHClientMock(
         cmd_to_channels={
@@ -165,7 +194,6 @@ def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient
             "sacct": ChannelFileStub(lines=get_success_lines())
         },
         launch_options=valid_options,
-        host_key_file=f"{HOME_DIR}/.ssh/known_hosts",
         private_keyfile_abspath=expected_keyfile)
 
     sshclient_type_mock.return_value = sshclient_mock
@@ -176,9 +204,30 @@ def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient
     sshclient_mock.verify()
 
 
-def test__given_ssh_connection_not_available_for_executor__when_running__should_log_error_and_exit(valid_options, sshclient_type_mock):
+def test__given_options_with_proxy_jumps__when_running__should_connect_to_executor_through_proxies(
+        sshclient_type_mock, successful_sshclient_stub, options_with_proxy: LaunchOptions):
+
+    proxy_connection = options_with_proxy.proxyjumps[0]
+
+    proxy_mock, transport_channel = proxy_mock_with_transport()
+    main_mock = successful_sshclient_stub
+
+    mock_iterating_sshclient_side_effect(sshclient_type_mock, [main_mock, proxy_mock])
+
+    sut = Application(Mock())
+
+    sut.run(options_with_proxy)
+
+    proxy_connection_with_resolved_keyfile = replace(proxy_connection, keyfile=f"{HOME_DIR}/proxy1-keyfile")
+    assert_connected_with_data(proxy_mock, proxy_connection_with_resolved_keyfile)
+    assert_channel_opened(proxy_mock.get_transport(), options_with_proxy.connection)
+    assert_connected_with_data(main_mock, options_with_proxy.connection, channel=transport_channel)
+
+
+def test__given_ssh_connection_not_available_for_executor__when_running__should_log_error_and_exit(
+        valid_options, sshclient_type_mock):
     ssh_client_mock = sshclient_type_mock.return_value
-    ssh_client_mock.connect.side_effect = SSHError(valid_options.host)
+    ssh_client_mock.connect.side_effect = SSHError(valid_options.connection.hostname)
 
     ui_spy = Mock()
     sut = Application(ui_spy)
@@ -186,7 +235,7 @@ def test__given_ssh_connection_not_available_for_executor__when_running__should_
     sut.run(valid_options)
 
     ssh_client_mock.exec_command.assert_not_called()
-    ui_spy.error.assert_called_once_with(f"SSHError: {valid_options.host}")
+    ui_spy.error.assert_called_once_with(f"SSHError: {valid_options.connection.hostname}")
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
@@ -208,31 +257,33 @@ def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_c
 
     sut.run(valid_options)
 
-    sshfs_type_mock.assert_called_with(
-        valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=valid_options.private_key)
+    assert_sshfs_connected_with_connection_data(sshfs_type_mock, valid_options.connection)
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
-def test__given_ssh_connection_not_available_for_sshfs__when_running__should_log_error_and_exit(valid_options, sshfs_type_mock):
-    sshfs_type_mock.side_effect = SSHError(valid_options.host)
+def test__given_ssh_connection_not_available_for_sshfs__when_running__should_log_error_and_exit(
+        valid_options, sshfs_type_mock):
+    sshfs_type_mock.side_effect = SSHError(valid_options.connection.hostname)
 
     ui_spy = Mock()
     sut = Application(ui_spy)
 
     sut.run(valid_options)
 
-    ui_spy.error.assert_called_once_with(f"SSHError: {valid_options.host}")
+    ui_spy.error.assert_called_once_with(f"SSHError: {valid_options.connection.hostname}")
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
 @pytest.mark.parametrize(["input_keyfile", "expected_keyfile"], INPUT_AND_EXPECTED_KEYFILE_PATHS)
-def test__given_config_with_only_private_keyfile__when_running__should_login_to_sshfs_with_correct_credentials(sshfs_type_mock,
-                                                                                                               input_keyfile,
-                                                                                                               expected_keyfile):
+def test__given_config_with_only_private_keyfile__when_running__should_login_to_sshfs_with_correct_credentials(
+        sshfs_type_mock, input_keyfile, expected_keyfile):
+
+    os.environ['HOME'] = HOME_DIR
     valid_options = LaunchOptions(
-        host="example.com",
-        user="myuser",
-        private_keyfile=input_keyfile,
+        connection=ConnectionData(
+            hostname="example.com",
+            username="myuser",
+            keyfile=input_keyfile),
         sbatch="test.job",
         poll_interval=0
     )
@@ -241,16 +292,17 @@ def test__given_config_with_only_private_keyfile__when_running__should_login_to_
 
     sut.run(valid_options)
 
-    sshfs_type_mock.assert_called_with(
-        valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=expected_keyfile)
+    connection_with_resolved_keyfile = replace(valid_options.connection, keyfile=expected_keyfile)
+    assert_sshfs_connected_with_keyfile_from_connection_data(sshfs_type_mock, connection_with_resolved_keyfile)
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_only_password__when_running__should_login_to_sshfs_with_correct_credentials(sshfs_type_mock):
     valid_options = LaunchOptions(
-        host="example.com",
-        user="myuser",
-        password="mypassword",
+        connection=ConnectionData(
+            hostname="example.com",
+            username="myuser",
+            password="mypassword"),
         sbatch="test.job",
         poll_interval=0
     )
@@ -259,8 +311,29 @@ def test__given_config_with_only_password__when_running__should_login_to_sshfs_w
 
     sut.run(valid_options)
 
-    sshfs_type_mock.assert_called_with(
-        valid_options.host, user=valid_options.user, passwd=valid_options.password, pkey=valid_options.private_key)
+    assert_sshfs_connected_with_password_from_connection_data(sshfs_type_mock, valid_options.connection)
+
+
+def test__given_config_with_proxy__when_running__should_login_to_sshfs_over_proxy(
+        sshclient_type_mock, sshfs_type_mock, options_with_proxy):
+    main_for_executor = make_successful_sshclient(sshclient_type_mock)
+
+    proxy_connection = options_with_proxy.proxyjumps[0]
+    proxy_mock, transport_channel = proxy_mock_with_transport()
+
+    mock_iterating_sshclient_side_effect(sshclient_type_mock, [
+        main_for_executor, Mock(),
+        proxy_mock, Mock()  # create proxy client first, because sshfs will create its own client afterwards
+    ])
+
+    sut = Application(Mock())
+
+    sut.run(options_with_proxy)
+
+    proxy_connection_with_resolved_keyfile = replace(proxy_connection, keyfile=f"{HOME_DIR}/proxy1-keyfile")
+    assert_connected_with_data(proxy_mock, proxy_connection_with_resolved_keyfile)
+    assert_channel_opened(proxy_mock.get_transport(), options_with_proxy.connection)
+    assert_sshfs_connected_with_connection_data(sshfs_type_mock, options_with_proxy.connection, transport_channel)
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")
@@ -277,7 +350,7 @@ def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_m
     assert args == (HOME_DIR,)
 
 
-@pytest.mark.usefixtures("successful_sshclient_stub")
+@ pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem(osfs_type_mock,
                                                                                                 sshfs_type_mock):
     options = make_options_with_files_to_copy([
@@ -296,10 +369,9 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
     assert sshfs_type_mock.exists(f"{HOME_DIR}/copy.gif")
 
 
-@pytest.mark.usefixtures("sshfs_type_mock")
-def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem_before_running_job(osfs_type_mock,
-                                                                                                                   fs_copy_file_mock,
-                                                                                                                   successful_sshclient_stub):
+@ pytest.mark.usefixtures("sshfs_type_mock")
+def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem_before_running_job(
+        osfs_type_mock, fs_copy_file_mock, successful_sshclient_stub):
 
     sut = Application(Mock())
     osfs_type_mock.return_value.create("myfile.txt")
@@ -318,7 +390,7 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
     assert first_two_calls == ["copy_file", "exec_command"]
 
 
-@pytest.mark.usefixtures("sshclient_type_mock")
+@ pytest.mark.usefixtures("sshclient_type_mock")
 def test__given_config_with_non_existing_file_to_copy__when_running__should_perform_rollback_and_exit(osfs_type_mock,
                                                                                                       sshfs_type_mock):
     options = make_options_with_files_to_copy([
@@ -337,7 +409,7 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_perf
     assert exit_code == 1
 
 
-@pytest.mark.usefixtures("sshclient_type_mock", "sshfs_type_mock")
+@ pytest.mark.usefixtures("sshclient_type_mock", "sshfs_type_mock")
 def test__given_config_with_non_existing_file_to_copy__when_running__should_print_to_ui(osfs_type_mock):
 
     options = make_options_with_files_to_copy([
@@ -356,9 +428,9 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_prin
         "FileNotFoundError: otherfile.gif") in ui_spy.method_calls
 
 
-@pytest.mark.usefixtures("sshclient_type_mock")
-def test__given_config_with_already_existing_file_to_copy__when_running__should_perform_rollback_and_exit(osfs_type_mock,
-                                                                                                          sshfs_type_mock):
+@ pytest.mark.usefixtures("sshclient_type_mock")
+def test__given_config_with_already_existing_file_to_copy__when_running__should_perform_rollback_and_exit(
+        osfs_type_mock, sshfs_type_mock):
     options = make_options_with_files_to_copy([
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
@@ -378,7 +450,7 @@ def test__given_config_with_already_existing_file_to_copy__when_running__should_
     assert exit_code == 1
 
 
-@pytest.mark.usefixtures("successful_sshclient_stub")
+@ pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_clean__when_running__should_remove_files_from_remote_filesystem(osfs_type_mock,
                                                                                                      sshfs_type_mock):
     options = make_options_with_files_to_copy_and_clean(
@@ -395,9 +467,8 @@ def test__given_config_with_files_to_clean__when_running__should_remove_files_fr
     assert not sshfs_type_mock.return_value.exists(f"{HOME_DIR}/mycopy.txt")
 
 
-def test__given_config_with_files_to_clean__when_running__should_clean_files_to_remote_filesystem_after_completing_job(osfs_type_mock,
-                                                                                                                       sshfs_type_mock,
-                                                                                                                       successful_sshclient_stub):
+def test__given_config_with_files_to_clean__when_running__should_clean_files_to_remote_filesystem_after_completing_job(
+        osfs_type_mock, sshfs_type_mock, successful_sshclient_stub):
     options = make_options_with_files_to_copy_and_clean(
         [CopyInstruction("myfile.txt", "mycopy.txt")],
         ["mycopy.txt"]
@@ -420,7 +491,7 @@ def test__given_config_with_files_to_clean__when_running__should_clean_files_to_
     assert call_order == ["exec_command", "exec_command", "remove"]
 
 
-@pytest.mark.usefixtures("successful_sshclient_stub")
+@ pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_collect__when_running__should_collect_files_from_remote_filesystem_after_completing_job_and_before_cleaning(osfs_type_mock,
                                                                                                                                                  sshfs_type_mock):
     options = make_options_with_files_to_copy_collect_and_clean(
@@ -441,7 +512,7 @@ def test__given_config_with_files_to_collect__when_running__should_collect_files
     assert not sshfs.exists("mycopy.txt")
 
 
-@pytest.mark.usefixtures("successful_sshclient_stub")
+@ pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_zero(valid_options: LaunchOptions):
     sut = Application(Mock())
 
@@ -450,7 +521,7 @@ def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_
     assert actual == 0
 
 
-@pytest.mark.usefixtures("failing_sshclient_stub")
+@ pytest.mark.usefixtures("failing_sshclient_stub")
 def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one(valid_options: LaunchOptions):
 
     sut = Application(Mock())
@@ -480,7 +551,7 @@ def test__given_valid_config__when_running_long_running_job__should_wait_for_com
     assert channel_spy.times_called == 2
 
 
-@pytest.mark.usefixtures("successful_sshclient_stub")
+@ pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_ui__when_running__should_update_ui_after_polling(valid_options: LaunchOptions):
     ui_spy = Mock()
     sut = Application(ui_spy)
@@ -490,7 +561,8 @@ def test__given_ui__when_running__should_update_ui_after_polling(valid_options: 
     ui_spy.update.assert_called_with(completed_slurm_job())
 
 
-def test__given_running_application__when_canceling_after_polling_job__should_cancel_job(sshclient_type_mock, valid_options: LaunchOptions):
+def test__given_running_application__when_canceling_after_polling_job__should_cancel_job(
+        sshclient_type_mock, valid_options: LaunchOptions):
     from threading import Thread
 
     sut = Application(Mock())
