@@ -2,8 +2,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 import paramiko
-from hpclaunch.sshexecutor import ConnectionData, SSHExecutor, RemoteCommand
-from hpclaunch.errors import SSHError
+from hpcrocket.ssh.sshexecutor import ConnectionData, SSHExecutor, RemoteCommand
+from hpcrocket.ssh.errors import SSHError
 
 
 def connection_data():

@@ -1,9 +1,9 @@
 import sys
 import signal
 
-from hpclaunch.application import Application
-from hpclaunch.cli import parse_cli_args
-from hpclaunch.ui import RichUI
+from hpcrocket.core.application import Application
+from hpcrocket.cli import parse_cli_args
+from hpcrocket.ui import RichUI
 
 
 def main():

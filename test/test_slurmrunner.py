@@ -1,7 +1,9 @@
-from hpclaunch.executor import CommandExecutor, RunningCommand
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
-from hpclaunch.slurmrunner import SlurmError, SlurmJob, SlurmRunner, SlurmTask
+from hpcrocket.core.executor import CommandExecutor, RunningCommand
+from hpcrocket.core.slurmrunner import (SlurmError, SlurmRunner,
+                                        SlurmTask)
 
 
 @pytest.fixture
@@ -50,7 +52,8 @@ def test__when_sbatch_fails__should_throw_slurm_error(executor_spy: Mock):
     assert "failed" in str(exception_info.value)
 
 
-def test__when_running_scancel_on_started_job__should_execute_scancel_with_executor_and_remove_from_active_jobs(executor_spy: Mock):
+def test__when_running_scancel_on_started_job__should_execute_scancel_with_executor_and_remove_from_active_jobs(
+        executor_spy: Mock):
     sut = make_sut(executor_spy)
     sut.sbatch("myjobfile.job")
 

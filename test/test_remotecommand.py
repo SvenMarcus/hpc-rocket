@@ -1,8 +1,9 @@
-import pytest
-from unittest.mock import MagicMock, Mock
-from hpclaunch.sshexecutor import RemoteCommand
+from test.paramiko_sshclient_mockutil import \
+    get_blocking_channel_exit_status_ready_func
+from unittest.mock import MagicMock
 
-from test.paramiko_sshclient_mockutil import get_blocking_channel_exit_status_ready_func
+import pytest
+from hpcrocket.ssh.sshexecutor import RemoteCommand
 
 
 @pytest.fixture

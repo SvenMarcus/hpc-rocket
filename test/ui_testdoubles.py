@@ -1,8 +1,8 @@
 import sys
 from typing import TextIO
 
-from hpclaunch.slurmrunner import SlurmJob
-from hpclaunch.ui import UI
+from hpcrocket.core.slurmrunner import SlurmJob
+from hpcrocket.ui import UI
 
 
 class PrintLoggingUI(UI):

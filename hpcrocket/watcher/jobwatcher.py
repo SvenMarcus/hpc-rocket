@@ -1,8 +1,7 @@
 from typing import Callable
 
-import hpclaunch.watcher.watcherthread as wt
-
-from hpclaunch.slurmrunner import SlurmRunner
+import hpcrocket.watcher.watcherthread as wt
+from hpcrocket.core.slurmrunner import SlurmRunner
 
 
 class NotWatchingError(RuntimeError):

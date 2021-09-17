@@ -5,7 +5,7 @@ from rich.live import Live
 from rich.spinner import Spinner
 from rich.table import Table
 
-from hpclaunch.slurmrunner import SlurmJob
+from hpcrocket.core.slurmrunner import SlurmJob
 
 
 class UI(ABC):

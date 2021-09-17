@@ -1,12 +1,11 @@
-from typing import Set
 from unittest.mock import MagicMock
 
 import fs
 import fs.base
 import pytest
 from fs.memoryfs import MemoryFS
-from hpclaunch.filesystem import Filesystem
-from hpclaunch.pyfilesystembased import PyFilesystemBased
+from hpcrocket.core.filesystem import Filesystem
+from hpcrocket.pyfilesystembased import PyFilesystemBased
 
 
 # This class name starts with an underscore because pytest tries to collect it as test otherwise

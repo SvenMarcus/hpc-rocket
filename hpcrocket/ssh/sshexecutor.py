@@ -3,8 +3,8 @@ from typing import List, Optional
 
 import paramiko as pm
 import paramiko.channel as channel
-from hpclaunch.errors import SSHError
-from hpclaunch.executor import CommandExecutor, RunningCommand
+from hpcrocket.core.executor import CommandExecutor, RunningCommand
+from hpcrocket.ssh.errors import SSHError
 
 
 @dataclass

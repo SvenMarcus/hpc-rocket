@@ -1,8 +1,8 @@
 from typing import List, NamedTuple, Optional
 
-from hpclaunch.errors import error_type
-from hpclaunch.filesystem import Filesystem
-from hpclaunch.ui import UI, NullUI
+from hpcrocket.core.errors import error_type
+from hpcrocket.core.filesystem import Filesystem
+from hpcrocket.ui import UI, NullUI
 
 
 class CopyInstruction(NamedTuple):

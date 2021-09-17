@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 import fs.base
 import fs.copy as fscp
 
-from hpclaunch.filesystem import Filesystem
+from hpcrocket.core.filesystem import Filesystem
 
 
 class PyFilesystemBased(Filesystem, ABC):

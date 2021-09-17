@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
-from hpclaunch.sshexecutor import ConnectionData
-from typing import List, Optional
+from typing import List
 
-from hpclaunch.environmentpreparation import CopyInstruction
+from hpcrocket.core.environmentpreparation import CopyInstruction
+from hpcrocket.ssh.sshexecutor import ConnectionData
 
 
 @dataclass

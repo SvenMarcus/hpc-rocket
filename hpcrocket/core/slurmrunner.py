@@ -1,6 +1,7 @@
-from hpclaunch.executor import CommandExecutor
-from typing import List, Tuple
 from dataclasses import dataclass
+from typing import List, Tuple
+
+from hpcrocket.core.executor import CommandExecutor
 
 
 class SlurmError(RuntimeError):
