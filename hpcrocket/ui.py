@@ -26,6 +26,10 @@ class UI(ABC):
     def success(self, text: str) -> None:
         pass
 
+    @abstractmethod
+    def launch(self, text: str) -> None:
+        pass
+
 
 class NullUI(UI):
 
@@ -40,6 +44,10 @@ class NullUI(UI):
 
     def success(self, text: str) -> None:
         pass
+
+    def launch(self, text: str) -> None:
+        pass
+
 
 
 class RichUI(UI):
@@ -72,6 +80,9 @@ class RichUI(UI):
     def success(self, text: str) -> None:
         self._rich_live.console.print(
             ":heavy_check_mark: ", text, style="bold green", emoji=True)
+
+    def launch(self, text: str) -> None:
+        self._rich_live.console.print(":rocket: ", text, style="bold yellow", emoji=True)
 
     def _make_table(self, job: SlurmJob) -> Table:
         table = Table(style="bold")

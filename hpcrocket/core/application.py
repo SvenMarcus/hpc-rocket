@@ -60,7 +60,7 @@ class Application:
         return True
 
     def _launch_job(self, runner: SlurmRunner, options: LaunchOptions) -> None:
-        self._ui.info("Launching job")
+        self._ui.launch("Launching job")
         self._jobid = runner.sbatch(options.sbatch)
         self._ui.success(f"Job {self._jobid} launched")
 
