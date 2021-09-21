@@ -122,7 +122,7 @@ class Application:
         home_dir = os.environ['HOME']
         connection = self._resolve_keyfile_in_connection(options.connection, home_dir)
         proxyjumps = [self._resolve_keyfile_in_connection(proxy, home_dir) for proxy in options.proxyjumps]
-        
+
         executor = SSHExecutor()
         executor.connect(connection, proxyjumps=proxyjumps)
 

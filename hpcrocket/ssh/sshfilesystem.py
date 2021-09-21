@@ -38,7 +38,7 @@ class SSHFilesystem(PyFilesystemBased):
                 pkey=connection_data.key or connection_data.keyfile,
                 port=connection_data.port, sock=channel)
 
-            return fs.opendir(f"/home/{connection_data.username}", factory=ClosingSubFS)
+            return fs.opendir(fs.homedir(), factory=ClosingSubFS)
         except CreateFailed as err:
             raise SSHError(f"Could not connect to {connection_data.hostname}") from err
 

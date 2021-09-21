@@ -15,7 +15,7 @@ from test.test__sshexecutor import (assert_channel_opened,
                                     assert_connected_with_data,
                                     proxy_mock_with_transport)
 from unittest import mock
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 from fs.memoryfs import MemoryFS
@@ -126,6 +126,8 @@ def sshfs_type_mock():
     mem_fs = OnlySubFSMemoryFS()
     mem_fs.makedirs(HOME_DIR)
     sshfs_type_mock.return_value = Mock(spec=MemoryFS, wraps=mem_fs)
+    sshfs_type_mock.return_value.homedir = lambda: HOME_DIR
+
     yield sshfs_type_mock
 
     patcher.stop()
@@ -344,10 +346,9 @@ def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_m
     sut.run(valid_options)
 
     sshfs_mock: MagicMock = sshfs_type_mock.return_value
-    method_name, args, _ = sshfs_mock.mock_calls[0]
+    calls = sshfs_mock.mock_calls
 
-    assert method_name == "opendir"
-    assert args == (HOME_DIR,)
+    assert call.opendir(HOME_DIR, factory=ANY) in calls
 
 
 @ pytest.mark.usefixtures("successful_sshclient_stub")

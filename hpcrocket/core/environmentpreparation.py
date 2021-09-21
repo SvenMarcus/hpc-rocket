@@ -36,7 +36,7 @@ class EnvironmentPreparation:
             copy_instructions: A list of copy instructions (essentially tuples) of the form (src, dest, overwrite)
 
         Returns:
-            None        
+            None
         """
         self._copy = list(copy_instructions)
 
@@ -83,7 +83,7 @@ class EnvironmentPreparation:
             None
 
         Raises:
-            None        
+            None
         """
         for file in self._delete:
             self._try_delete(file)

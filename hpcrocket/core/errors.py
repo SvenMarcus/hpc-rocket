@@ -4,6 +4,7 @@ def error_type(err: Exception) -> str:
     """
     return type(err).__name__
 
+
 def get_error_message(err: Exception) -> str:
     """
     Returns the error message of the exception as a string in the form '{error_type(err)}: {str(err)}'

@@ -18,12 +18,15 @@ class PermissionChangingSSHFSDecorator(fs.base.FS):
         super().__init__()
         self._internal_fs = sshfs.SSHFS(*args, **kwargs)
 
+    def homedir(self) -> str:
+        return self._internal_fs._sftp.normalize(".")
+
     def upload(self, path: str, file: IO, *args, **kwargs):
         self._internal_fs.upload(path, file, *args, **kwargs)
-        self._internal_fs._sftp.chmod(
-            path, stat.ST_MODE | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
-    
-    def download(self, path: Text, file: IO, chunk_size = None, **options) -> None:
+        self._internal_fs._sftp.chmod(path, stat.ST_MODE | stat.S_IRUSR | stat.S_IWUSR |
+                                      stat.S_IXUSR | stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
+
+    def download(self, path: Text, file: IO, chunk_size=None, **options) -> None:
         self._internal_fs.download(path, file, chunk_size, **options)
 
     def listdir(self, path: Text) -> List[Text]:
@@ -32,8 +35,8 @@ class PermissionChangingSSHFSDecorator(fs.base.FS):
     def openbin(self, path: Text, mode: Text = "r", buffering=-1, **options) -> BinaryIO:
         return self._internal_fs.openbin(path, mode, buffering, **options)
 
-    def opendir(self, path: Text, factory = None) -> fs.subfs.SubFS[fs.base.FS]:
-        return super().opendir(path, factory)
+    def opendir(self, path: Text, factory=None) -> fs.subfs.SubFS[fs.base.FS]:
+        return self._internal_fs.opendir(path, factory)
 
     def remove(self, path: Text) -> None:
         self._internal_fs.remove(path)
@@ -61,5 +64,3 @@ class PermissionChangingSSHFSDecorator(fs.base.FS):
 
     def move(self, src_path: Text, dst_path: Text, overwrite: bool = False) -> None:
         self._internal_fs.move(src_path, dst_path, overwrite)
-
-    

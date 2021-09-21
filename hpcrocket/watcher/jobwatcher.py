@@ -14,7 +14,7 @@ class JobWatcher:
 
     def __init__(self, runner: SlurmRunner) -> None:
         self.runner = runner
-        self.watching_thread: wt.WatcherThread = None # type: ignore[assignment]
+        self.watching_thread: wt.WatcherThread = None  # type: ignore[assignment]
 
     def watch(self, jobid: str, callback: Callable, poll_interval: int) -> None:
         self.watching_thread = wt.make_watcherthread(

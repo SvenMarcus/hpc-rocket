@@ -52,8 +52,7 @@ class SSHExecutor(CommandExecutor):
 
     def __init__(self) -> None:
         self._is_connected = False
-        self._client = pm.SSHClient()
-        self._client.set_missing_host_key_policy(pm.AutoAddPolicy)
+        self._client = _make_sshclient()
 
     def load_host_keys_from_file(self, hostfile: str) -> None:
         self._client.load_host_keys(hostfile)
@@ -65,17 +64,6 @@ class SSHExecutor(CommandExecutor):
             self._is_connected = True
         except Exception as err:
             raise SSHError(str(err)) from err
-
-    def _connect_client(self, sshclient, connection, channel):
-        sshclient.connect(
-            hostname=connection.hostname,
-            username=connection.username,
-            port=connection.port,
-            key_filename=connection.keyfile,
-            password=connection.password,
-            pkey=connection.key,  # type: ignore[arg-type]
-            sock=channel
-        )
 
     def disconnect(self):
         self._client.close()
@@ -120,9 +108,13 @@ def _open_channel_to_next_host(next_connection: ConnectionData, proxy: pm.SSHCli
 
 
 def _make_sshclient_and_connect(connection: ConnectionData, channel=None):
+    sshclient = _make_sshclient()
+    _connect_client(sshclient, connection, channel)
+    return sshclient
+
+def _make_sshclient():
     sshclient = pm.SSHClient()
     sshclient.set_missing_host_key_policy(pm.AutoAddPolicy)
-    _connect_client(sshclient, connection, channel)
     return sshclient
 
 

@@ -49,7 +49,6 @@ class NullUI(UI):
         pass
 
 
-
 class RichUI(UI):
 
     def __init__(self) -> None:
