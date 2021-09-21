@@ -1,15 +1,17 @@
 import dataclasses
 import os
-from hpclaunch.errors import SSHError, get_error_message
 from typing import Optional
 
-from hpclaunch.environmentpreparation import EnvironmentPreparation
-from hpclaunch.filesystemimpl import LocalFilesystem, SSHFilesystem
-from hpclaunch.launchoptions import LaunchOptions
-from hpclaunch.slurmrunner import SlurmJob, SlurmRunner
-from hpclaunch.sshexecutor import ConnectionData, SSHExecutor
-from hpclaunch.ui import UI
-from hpclaunch.watcher.jobwatcher import JobWatcher
+from hpcrocket.core.environmentpreparation import EnvironmentPreparation
+from hpcrocket.core.errors import get_error_message
+from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.core.slurmrunner import SlurmJob, SlurmRunner
+from hpcrocket.local.localfilesystem import LocalFilesystem
+from hpcrocket.ssh.errors import SSHError
+from hpcrocket.ssh.sshexecutor import SSHExecutor
+from hpcrocket.ssh.sshfilesystem import SSHFilesystem
+from hpcrocket.ui import UI
+from hpcrocket.watcher.jobwatcher import JobWatcher
 
 
 class Application:
@@ -58,7 +60,7 @@ class Application:
         return True
 
     def _launch_job(self, runner: SlurmRunner, options: LaunchOptions) -> None:
-        self._ui.info("Launching job")
+        self._ui.launch("Launching job")
         self._jobid = runner.sbatch(options.sbatch)
         self._ui.success(f"Job {self._jobid} launched")
 
@@ -120,7 +122,7 @@ class Application:
         home_dir = os.environ['HOME']
         connection = self._resolve_keyfile_in_connection(options.connection, home_dir)
         proxyjumps = [self._resolve_keyfile_in_connection(proxy, home_dir) for proxy in options.proxyjumps]
-        
+
         executor = SSHExecutor()
         executor.connect(connection, proxyjumps=proxyjumps)
 

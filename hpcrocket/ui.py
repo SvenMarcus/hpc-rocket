@@ -5,7 +5,7 @@ from rich.live import Live
 from rich.spinner import Spinner
 from rich.table import Table
 
-from hpclaunch.slurmrunner import SlurmJob
+from hpcrocket.core.slurmrunner import SlurmJob
 
 
 class UI(ABC):
@@ -26,6 +26,10 @@ class UI(ABC):
     def success(self, text: str) -> None:
         pass
 
+    @abstractmethod
+    def launch(self, text: str) -> None:
+        pass
+
 
 class NullUI(UI):
 
@@ -39,6 +43,9 @@ class NullUI(UI):
         pass
 
     def success(self, text: str) -> None:
+        pass
+
+    def launch(self, text: str) -> None:
         pass
 
 
@@ -72,6 +79,9 @@ class RichUI(UI):
     def success(self, text: str) -> None:
         self._rich_live.console.print(
             ":heavy_check_mark: ", text, style="bold green", emoji=True)
+
+    def launch(self, text: str) -> None:
+        self._rich_live.console.print(":rocket: ", text, style="bold yellow", emoji=True)
 
     def _make_table(self, job: SlurmJob) -> Table:
         table = Table(style="bold")

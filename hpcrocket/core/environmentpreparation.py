@@ -1,8 +1,8 @@
 from typing import List, NamedTuple, Optional
 
-from hpclaunch.errors import error_type
-from hpclaunch.filesystem import Filesystem
-from hpclaunch.ui import UI, NullUI
+from hpcrocket.core.errors import error_type
+from hpcrocket.core.filesystem import Filesystem
+from hpcrocket.ui import UI, NullUI
 
 
 class CopyInstruction(NamedTuple):
@@ -36,7 +36,7 @@ class EnvironmentPreparation:
             copy_instructions: A list of copy instructions (essentially tuples) of the form (src, dest, overwrite)
 
         Returns:
-            None        
+            None
         """
         self._copy = list(copy_instructions)
 
@@ -83,7 +83,7 @@ class EnvironmentPreparation:
             None
 
         Raises:
-            None        
+            None
         """
         for file in self._delete:
             self._try_delete(file)

@@ -1,5 +1,6 @@
 from typing import List
-from hpclaunch.slurmrunner import SlurmJob, SlurmTask
+
+from hpcrocket.core.slurmrunner import SlurmJob, SlurmTask
 
 
 def job_with_state(state: str, sub_tasks: List[SlurmTask] = None) -> SlurmJob:

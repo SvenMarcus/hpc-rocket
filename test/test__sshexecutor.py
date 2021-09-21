@@ -2,8 +2,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 import paramiko
-from hpclaunch.sshexecutor import ConnectionData, SSHExecutor, RemoteCommand
-from hpclaunch.errors import SSHError
+from hpcrocket.ssh.sshexecutor import ConnectionData, SSHExecutor, RemoteCommand
+from hpcrocket.ssh.errors import SSHError
 
 
 def connection_data():
@@ -15,7 +15,7 @@ def connection_data():
         password="1234")
 
 
-def proxy_connection(proxy_index=1):
+def proxy_connection_data(proxy_index=1):
     return ConnectionData(
         hostname=f"proxy-host-{proxy_index}",
         username=f"proxy-user-{proxy_index}",
@@ -126,9 +126,9 @@ def test__given_proxyjump__when_connecting__should_connect_to_destination_throug
     sshclient_class.side_effect = next_mock
 
     sut = SSHExecutor()
-    sut.connect(connection_data(), proxyjumps=[proxy_connection()])
+    sut.connect(connection_data(), proxyjumps=[proxy_connection_data()])
 
-    assert_connected_with_data(proxy_mock, proxy_connection())
+    assert_connected_with_data(proxy_mock, proxy_connection_data())
     assert_channel_opened(proxy_mock.get_transport(), connection_data())
     assert_connected_with_data(main_mock, connection_data(), channel=transport_channel)
 
@@ -147,8 +147,8 @@ def test__given_two_proxyjumps__when_connecting__should_connect_to_proxies_then_
     sshclient_class.side_effect = next_mock
 
     sut = SSHExecutor()
-    first_proxy_connection = proxy_connection(1)
-    second_proxy_connection = proxy_connection(2)
+    first_proxy_connection = proxy_connection_data(1)
+    second_proxy_connection = proxy_connection_data(2)
     final_connection = connection_data()
     sut.connect(final_connection,
                 proxyjumps=[
@@ -174,7 +174,7 @@ def test__given_proxyjump__when_connection_to_proxy_fails__should_raise_ssherror
     sut = SSHExecutor()
 
     with pytest.raises(SSHError):
-        sut.connect(connection_data(), proxyjumps=[proxy_connection()])
+        sut.connect(connection_data(), proxyjumps=[proxy_connection_data()])
 
 
 def proxy_mock_with_transport(proxy_index=1):

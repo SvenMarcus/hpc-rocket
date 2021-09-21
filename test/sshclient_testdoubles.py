@@ -1,7 +1,7 @@
 from typing import Dict, List
 from unittest.mock import Mock
 
-from hpclaunch.launchoptions import LaunchOptions
+from hpcrocket.core.launchoptions import LaunchOptions
 
 
 class TransportStub:

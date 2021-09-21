@@ -1,13 +1,14 @@
-from hpclaunch.sshexecutor import ConnectionData
-from hpclaunch.filesystemimpl import LocalFilesystem, SSHFilesystem
-from hpclaunch.errors import SSHError
-from unittest.mock import patch
+from test.sshfilesystem_assertions import (
+    assert_sshfs_connected_with_connection_data,
+    assert_sshfs_connected_with_keyfile_from_connection_data,
+    assert_sshfs_connected_with_private_key_from_connection_data)
+from unittest.mock import Mock, patch
 
 import pytest
-
-from test.sshfilesystem_assertions import (assert_sshfs_connected_with_private_key_from_connection_data,
-                                           assert_sshfs_connected_with_keyfile_from_connection_data,
-                                           assert_sshfs_connected_with_connection_data)
+from hpcrocket.local.localfilesystem import LocalFilesystem
+from hpcrocket.ssh.errors import SSHError
+from hpcrocket.ssh.sshexecutor import ConnectionData
+from hpcrocket.ssh.sshfilesystem import SSHFilesystem
 
 
 @pytest.fixture

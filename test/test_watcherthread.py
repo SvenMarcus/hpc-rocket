@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
-from typing import Tuple
 from unittest.mock import Mock
 
 import pytest
-from hpclaunch.slurmrunner import SlurmJob, SlurmRunner
-from hpclaunch.watcher.watcherthread import WatcherThread
+from hpcrocket.core.slurmrunner import SlurmJob, SlurmRunner
+from hpcrocket.watcher.watcherthread import WatcherThread
 
 
 def test__given_completed_job__when_polling__should_trigger_callback():

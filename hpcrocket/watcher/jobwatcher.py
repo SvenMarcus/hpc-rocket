@@ -1,8 +1,7 @@
 from typing import Callable
 
-import hpclaunch.watcher.watcherthread as wt
-
-from hpclaunch.slurmrunner import SlurmRunner
+import hpcrocket.watcher.watcherthread as wt
+from hpcrocket.core.slurmrunner import SlurmRunner
 
 
 class NotWatchingError(RuntimeError):
@@ -15,7 +14,7 @@ class JobWatcher:
 
     def __init__(self, runner: SlurmRunner) -> None:
         self.runner = runner
-        self.watching_thread: wt.WatcherThread = None # type: ignore[assignment]
+        self.watching_thread: wt.WatcherThread = None  # type: ignore[assignment]
 
     def watch(self, jobid: str, callback: Callable, poll_interval: int) -> None:
         self.watching_thread = wt.make_watcherthread(

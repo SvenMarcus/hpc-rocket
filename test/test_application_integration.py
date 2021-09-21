@@ -7,24 +7,24 @@ from test.sshclient_testdoubles import (ChannelFileStub, ChannelStub,
                                         CmdSpecificSSHClientStub,
                                         DelayedChannelSpy, SSHClientMock,
                                         mock_iterating_sshclient_side_effect)
-
-from test.test__sshexecutor import proxy_connection, proxy_mock_with_transport, assert_connected_with_data, assert_channel_opened
-
 from test.sshfilesystem_assertions import (
+    assert_sshfs_connected_with_connection_data,
     assert_sshfs_connected_with_keyfile_from_connection_data,
-    assert_sshfs_connected_with_password_from_connection_data,
-    assert_sshfs_connected_with_connection_data)
+    assert_sshfs_connected_with_password_from_connection_data)
+from test.test__sshexecutor import (assert_channel_opened,
+                                    assert_connected_with_data,
+                                    proxy_mock_with_transport)
 from unittest import mock
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 from fs.memoryfs import MemoryFS
-from hpclaunch.application import Application
-from hpclaunch.environmentpreparation import CopyInstruction
-from hpclaunch.errors import SSHError
-from hpclaunch.launchoptions import LaunchOptions
-from hpclaunch.slurmrunner import SlurmJob, SlurmTask
-from hpclaunch.sshexecutor import ConnectionData
+from hpcrocket.core.application import Application
+from hpcrocket.core.environmentpreparation import CopyInstruction
+from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.core.slurmrunner import SlurmJob, SlurmTask
+from hpcrocket.ssh.errors import SSHError
+from hpcrocket.ssh.sshexecutor import ConnectionData
 
 
 @pytest.fixture
@@ -120,12 +120,14 @@ def osfs_type_mock():
 @pytest.fixture(autouse=True)
 def sshfs_type_mock():
     patcher = patch(
-        "hpclaunch.chmodsshfs.PermissionChangingSSHFSDecorator")
+        "hpcrocket.ssh.chmodsshfs.PermissionChangingSSHFSDecorator")
 
     sshfs_type_mock = patcher.start()
     mem_fs = OnlySubFSMemoryFS()
     mem_fs.makedirs(HOME_DIR)
     sshfs_type_mock.return_value = Mock(spec=MemoryFS, wraps=mem_fs)
+    sshfs_type_mock.return_value.homedir = lambda: HOME_DIR
+
     yield sshfs_type_mock
 
     patcher.stop()
@@ -344,10 +346,9 @@ def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_m
     sut.run(valid_options)
 
     sshfs_mock: MagicMock = sshfs_type_mock.return_value
-    method_name, args, _ = sshfs_mock.mock_calls[0]
+    calls = sshfs_mock.mock_calls
 
-    assert method_name == "opendir"
-    assert args == (HOME_DIR,)
+    assert call.opendir(HOME_DIR, factory=ANY) in calls
 
 
 @ pytest.mark.usefixtures("successful_sshclient_stub")

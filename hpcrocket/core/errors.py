@@ -1,14 +1,9 @@
-class SSHError(RuntimeError):
-    """
-    Raised when the SSH connection fails.
-    """
-    pass
-
 def error_type(err: Exception) -> str:
     """
     Returns the type of the exception as a string.
     """
     return type(err).__name__
+
 
 def get_error_message(err: Exception) -> str:
     """

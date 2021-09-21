@@ -1,8 +1,7 @@
 import threading
-
 from typing import Callable
 
-from hpclaunch.slurmrunner import SlurmRunner
+from hpcrocket.core.slurmrunner import SlurmRunner
 
 
 def make_watcherthread(runner: SlurmRunner, jobid: str, callback: Callable, interval: float):

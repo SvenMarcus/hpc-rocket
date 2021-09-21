@@ -1,7 +1,7 @@
-from hpclaunch.sshexecutor import ConnectionData
-from hpclaunch.environmentpreparation import CopyInstruction
-from hpclaunch.launchoptions import LaunchOptions
-from hpclaunch.cli import parse_cli_args
+from hpcrocket.ssh.sshexecutor import ConnectionData
+from hpcrocket.core.environmentpreparation import CopyInstruction
+from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.cli import parse_cli_args
 
 
 def test__given_valid_args__should_return_matching_config():
@@ -35,7 +35,7 @@ def test__given_valid_args__should_return_matching_config():
 
 def test__given_valid_args_for_yaml__should_return_matching_config():
     config = parse_cli_args([
-        "from-config",
+        "launch",
         "test/testconfig/config.yml"
     ])
 

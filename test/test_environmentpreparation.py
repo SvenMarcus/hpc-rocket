@@ -1,5 +1,5 @@
-from hpclaunch.filesystem import Filesystem
-from hpclaunch.environmentpreparation import CopyInstruction, EnvironmentPreparation
+from hpcrocket.core.filesystem import Filesystem
+from hpcrocket.core.environmentpreparation import CopyInstruction, EnvironmentPreparation
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -7,7 +7,7 @@ import pytest
 
 def new_mock_filesystem() -> Filesystem:
     return MagicMock(
-        spec="hpclaunch.filesystem.Filesystem").return_value
+        spec="hpcrocket.filesystem.Filesystem").return_value
 
 
 def test__given_files_to_copy__but_not_preparing__should_not_do_anything():
