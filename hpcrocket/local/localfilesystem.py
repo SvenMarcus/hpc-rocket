@@ -1,7 +1,7 @@
 import fs.base
 import fs.osfs
 
-from hpcrocket.pyfilesystembased import PyFilesystemBased
+from hpcrocket.pyfilesystem.pyfilesystembased import PyFilesystemBased
 
 
 class LocalFilesystem(PyFilesystemBased):

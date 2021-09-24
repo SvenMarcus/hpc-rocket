@@ -1,7 +1,19 @@
 from abc import ABC, abstractmethod
+from typing import Protocol
 
 
-class Filesystem(ABC):
+class FilesystemFactory(Protocol):
+
+    @abstractmethod
+    def create_local_filesystem(self) -> 'Filesystem':
+        pass
+
+    @abstractmethod
+    def create_ssh_filesystem(self) -> 'Filesystem':
+        pass
+
+
+class Filesystem(Protocol):
     """
     Abstract base class for all Filesystems
     """

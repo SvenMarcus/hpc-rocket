@@ -4,11 +4,12 @@ from typing import Optional
 
 from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.errors import get_error_message
+from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmrunner import SlurmJob, SlurmRunner
 from hpcrocket.local.localfilesystem import LocalFilesystem
 from hpcrocket.ssh.errors import SSHError
-from hpcrocket.ssh.sshexecutor import SSHExecutor
+from hpcrocket.ssh.sshexecutor import SSHExecutor, ConnectionData
 from hpcrocket.ssh.sshfilesystem import SSHFilesystem
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher
@@ -16,7 +17,8 @@ from hpcrocket.watcher.jobwatcher import JobWatcher
 
 class Application:
 
-    def __init__(self, ui: UI) -> None:
+    def __init__(self, filesystem_factory: FilesystemFactory, ui: UI) -> None:
+        self._fs_factory = filesystem_factory
         self._ui = ui
         self._latest_job_update: SlurmJob
         self._runner: SlurmRunner
@@ -98,8 +100,8 @@ class Application:
 
     def _create_env_preparation(self, options) -> EnvironmentPreparation:
         env_prep = EnvironmentPreparation(
-            LocalFilesystem("."),
-            self._make_ssh_filesystem(options),
+            self._fs_factory.create_local_filesystem(),
+            self._fs_factory.create_ssh_filesystem(),
             self._ui)
 
         env_prep.files_to_copy(options.copy_files)
@@ -108,39 +110,17 @@ class Application:
 
         return env_prep
 
-    def _make_ssh_filesystem(self, options: LaunchOptions) -> SSHFilesystem:
-        home_dir = os.environ['HOME']
-        connection = self._resolve_keyfile_in_connection(options.connection, home_dir)
-        proxyjumps = [self._resolve_keyfile_in_connection(proxy, home_dir) for proxy in options.proxyjumps]
-        return SSHFilesystem(connection, proxyjumps)
-
     def _poll_callback(self, job: SlurmJob) -> None:
         self._latest_job_update = job
         self._ui.update(job)
 
     def _create_sshexecutor(self, options: LaunchOptions) -> SSHExecutor:
-        home_dir = os.environ['HOME']
-        connection = self._resolve_keyfile_in_connection(options.connection, home_dir)
-        proxyjumps = [self._resolve_keyfile_in_connection(proxy, home_dir) for proxy in options.proxyjumps]
+        connection = ConnectionData.with_resolved_keyfile(options.connection)
+        proxyjumps = [ConnectionData.with_resolved_keyfile(proxy) for proxy in options.proxyjumps]
 
         executor = SSHExecutor()
         executor.connect(connection, proxyjumps=proxyjumps)
-
         return executor
-
-    def _resolve_keyfile_in_connection(self, connection, home_dir):
-        keyfile = self._resolve_keyfile_from_home_dir(connection.keyfile, home_dir)
-        connection = dataclasses.replace(connection, keyfile=keyfile)
-        return connection
-
-    def _resolve_keyfile_from_home_dir(self, keyfile: str, home_dir: str) -> Optional[str]:
-        if not keyfile:
-            return None
-
-        if keyfile.startswith("~/"):
-            keyfile = keyfile.replace("~/", home_dir + "/", 1)
-
-        return keyfile
 
     def cancel(self) -> int:
         try:

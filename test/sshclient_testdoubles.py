@@ -1,7 +1,10 @@
-from typing import Dict, List
+from dataclasses import dataclass
+from test.slurmoutput import get_error_lines, get_success_lines
+from typing import Dict, List, Optional, Tuple, Type
 from unittest.mock import Mock
 
 from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.ssh.sshexecutor import ConnectionData
 
 
 class TransportStub:
@@ -55,6 +58,14 @@ class ChannelFileStub:
 
 class CmdSpecificSSHClientStub:
 
+    @classmethod
+    def successful(cls: Type['CmdSpecificSSHClientStub']):
+        return SuccessfulSlurmCmdSSHClient()
+
+    @classmethod
+    def failing(cls: Type['CmdSpecificSSHClientStub']):
+        return FailingSlurmCmdSSHClient()
+
     def __init__(self, cmd_to_channels: Dict[str, ChannelFileStub]):
         self.cmd_to_channels = cmd_to_channels
 
@@ -79,12 +90,28 @@ class CmdSpecificSSHClientStub:
         pass
 
 
-class SSHClientMock(CmdSpecificSSHClientStub):
+class SuccessfulSlurmCmdSSHClient(CmdSpecificSSHClientStub):
 
-    def __init__(
-            self, cmd_to_channels: Dict[str, ChannelFileStub],
-            launch_options: LaunchOptions, private_keyfile_abspath: str = None):
-        super().__init__(cmd_to_channels)
+    def __init__(self):
+        super().__init__({
+            "sbatch": ChannelFileStub(lines=["1234"]),
+            "sacct": ChannelFileStub(lines=get_success_lines())
+        })
+
+
+class FailingSlurmCmdSSHClient(CmdSpecificSSHClientStub):
+
+    def __init__(self):
+        super().__init__({
+            "sbatch": ChannelFileStub(lines=["1234"]),
+            "sacct": ChannelFileStub(lines=get_error_lines())
+        })
+
+
+class SSHClientMock(SuccessfulSlurmCmdSSHClient):
+
+    def __init__(self, launch_options: LaunchOptions, private_keyfile_abspath: str = None):
+        super().__init__()
         self._options = launch_options
         self._private_keyfile_abspath = private_keyfile_abspath or launch_options.connection.keyfile
         self.connected = False
@@ -95,6 +122,7 @@ class SSHClientMock(CmdSpecificSSHClientStub):
             self._options.connection.hostname == hostname and
             self._options.connection.password == password and
             self._options.connection.username == username and
+            self._options.connection.port == port and
             self._options.connection.key == pkey and
             self._private_keyfile_abspath == key_filename
         )
@@ -115,15 +143,70 @@ class SSHClientMock(CmdSpecificSSHClientStub):
         self.connected = False
 
     def verify(self):
-        assert self.commands["sbatch"] == f"sbatch {self._options.sbatch}", "Expected: " + \
-            f"sbatch {self._options.sbatch}" + f"\nbut was: {self.command}"
+        assert self.commands["sbatch"] == f"sbatch {self._options.sbatch}", \
+            "Expected: " + f"sbatch {self._options.sbatch}" + f"\nbut was: {self.command}"
 
         assert not self.connected
 
 
 def mock_iterating_sshclient_side_effect(sshclient_class: Mock, mocks: List[Mock]):
     mocks_iter = iter(mocks)
+
     def next_mock():
         return next(mocks_iter, Mock())
 
     sshclient_class.side_effect = next_mock
+
+
+class ProxyJumpVerifyingSSHClient(SuccessfulSlurmCmdSSHClient):
+
+    @dataclass
+    class ChannelMock:
+        kind: str
+        dest_addr: Optional[Tuple] = None
+        src_addr: Optional[Tuple] = None
+        window_size: Optional[int] = None
+        max_packet_size: Optional[int] = None
+        timeout: Optional[int] = None
+
+        def assert_connected_to(self, hostname, port):
+            assert self.kind == "direct-tcpip"
+            assert self.dest_addr == (hostname, port)
+            assert self.src_addr == ('', 0)
+
+    class TransportStub:
+
+        def __getattr__(self, name):
+            return Mock(name)
+
+        def open_channel(self, *args, **kwargs):
+            return ProxyJumpVerifyingSSHClient.ChannelMock(*args, **kwargs)
+
+    def __init__(self, connection: ConnectionData, proxyjumps: List[ConnectionData]) -> None:
+        super().__init__()
+        self.expected_path = [*proxyjumps, connection]
+        self.recorded_connection_path: List[ConnectionData] = []
+        self._recorded_channels: List[ProxyJumpVerifyingSSHClient.ChannelMock] = []
+
+    def connect(self, hostname, port=None, username=None, password=None, pkey=None, key_filename=None, *args, **kwargs):
+        self.recorded_connection_path.append(ConnectionData(hostname, username, password, key_filename, pkey, port))
+        self._recorded_channels.append(kwargs.get("sock"))
+
+    def get_transport(self):
+        return ProxyJumpVerifyingSSHClient.TransportStub()
+
+    def verify(self):
+        self._assert_all_nodes_connected_in_order()
+        self._assert_channels_built_in_order()
+
+    def _assert_all_nodes_connected_in_order(self):
+        assert self.expected_path == self.recorded_connection_path
+
+    def _assert_channels_built_in_order(self):
+        first_channel = self._recorded_channels.pop(0)
+        assert first_channel is None, "First connection should not have a channel"
+
+        path_from_first_proxy = self.expected_path[1:]
+        proxies_and_channels = zip(path_from_first_proxy, self._recorded_channels)
+        for proxy, channel in proxies_and_channels:
+            channel.assert_connected_to(proxy.hostname, proxy.port)

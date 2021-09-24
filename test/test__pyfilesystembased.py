@@ -5,7 +5,7 @@ import fs.base
 import pytest
 from fs.memoryfs import MemoryFS
 from hpcrocket.core.filesystem import Filesystem
-from hpcrocket.pyfilesystembased import PyFilesystemBased
+from hpcrocket.pyfilesystem.pyfilesystembased import PyFilesystemBased
 
 
 # This class name starts with an underscore because pytest tries to collect it as test otherwise

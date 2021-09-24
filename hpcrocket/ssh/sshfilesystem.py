@@ -4,7 +4,7 @@ import fs.base
 import hpcrocket.ssh.chmodsshfs as sshfs
 from fs.errors import CreateFailed
 from fs.subfs import ClosingSubFS
-from hpcrocket.pyfilesystembased import PyFilesystemBased
+from hpcrocket.pyfilesystem.pyfilesystembased import PyFilesystemBased
 from hpcrocket.ssh.errors import SSHError
 from hpcrocket.ssh.sshexecutor import (ConnectionData,
                                        build_channel_with_proxyjumps)
@@ -31,6 +31,7 @@ class SSHFilesystem(PyFilesystemBased):
     def _create_new_sshfilesystem(self, connection_data: ConnectionData, proxyjumps: List[ConnectionData] = None):
         try:
             channel = build_channel_with_proxyjumps(connection_data, proxyjumps or [])
+            print(channel)
             fs = sshfs.PermissionChangingSSHFSDecorator(
                 host=connection_data.hostname,
                 user=connection_data.username,
