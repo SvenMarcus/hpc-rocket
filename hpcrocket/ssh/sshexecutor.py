@@ -1,11 +1,11 @@
-import dataclasses
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import List, Optional
 
 import paramiko as pm
 import paramiko.channel as channel
-from hpcrocket.core.executor import CommandExecutor, RunningCommand
+from hpcrocket.core.executor import (CommandExecutor, CommandExecutorFactory,
+                                     RunningCommand)
 from hpcrocket.ssh.errors import SSHError
 
 
@@ -25,7 +25,7 @@ class ConnectionData:
     @staticmethod
     def _resolve_keyfile_in_connection(connection):
         keyfile = ConnectionData._resolve_keyfile_from_home_dir(connection.keyfile)
-        connection = dataclasses.replace(connection, keyfile=keyfile)
+        connection = replace(connection, keyfile=keyfile)
         return connection
 
     @staticmethod
@@ -88,7 +88,7 @@ class SSHExecutor(CommandExecutor):
         except Exception as err:
             raise SSHError(str(err)) from err
 
-    def disconnect(self):
+    def close(self):
         self._client.close()
         self._is_connected = False
 
@@ -104,6 +104,18 @@ class SSHExecutor(CommandExecutor):
     def client(self) -> pm.SSHClient:
         return self._client
 
+
+class SSHExecutorFactory(CommandExecutorFactory):
+
+    def __init__(self, options: 'LaunchOptions') -> None:
+        self._options = options
+
+    def create_executor(self) -> CommandExecutor:
+        connection = ConnectionData.with_resolved_keyfile(self._options.connection)
+        proxyjumps = [ConnectionData.with_resolved_keyfile(proxy) for proxy in self._options.proxyjumps]
+        executor = SSHExecutor()
+        executor.connect(connection, proxyjumps=proxyjumps)
+        return executor
 
 def build_channel_with_proxyjumps(connection: ConnectionData, proxyjumps: List[ConnectionData]) -> Optional[pm.Channel]:
     channel = None
@@ -134,6 +146,7 @@ def _make_sshclient_and_connect(connection: ConnectionData, channel=None):
     sshclient = _make_sshclient()
     _connect_client(sshclient, connection, channel)
     return sshclient
+
 
 def _make_sshclient():
     sshclient = pm.SSHClient()

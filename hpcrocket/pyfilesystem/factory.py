@@ -1,4 +1,3 @@
-import dataclasses
 from hpcrocket.ssh.sshexecutor import ConnectionData
 import os
 

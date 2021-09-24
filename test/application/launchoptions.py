@@ -16,6 +16,13 @@ def options_with_proxy():
     return dataclasses.replace(options(), proxyjumps=[proxy_connection()])
 
 
+def options_with_proxy_only_password():
+    return dataclasses.replace(
+        options(),
+        connection=main_connection_only_password(),
+        proxyjumps=[proxy_connection_only_password()])
+
+
 def main_connection():
     return ConnectionData(
         hostname="example.com",
@@ -26,6 +33,13 @@ def main_connection():
     )
 
 
+def main_connection_only_password():
+    return dataclasses.replace(
+        main_connection(),
+        key=None,
+        keyfile=None)
+
+
 def proxy_connection():
     return ConnectionData(
         hostname="proxy1-host",
@@ -33,6 +47,13 @@ def proxy_connection():
         password="proxy1-pass",
         keyfile="~/proxy1-keyfile"
     )
+
+
+def proxy_connection_only_password():
+    return dataclasses.replace(
+        proxy_connection(),
+        key=None,
+        keyfile=None)
 
 
 def options_with_files_to_copy(files_to_copy):

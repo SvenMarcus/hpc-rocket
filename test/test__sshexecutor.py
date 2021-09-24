@@ -81,7 +81,7 @@ def test__given_connected_client__when_disconnecting__should_disconnect(sshclien
     sut = SSHExecutor()
     sut.connect(connection_data())
 
-    sut.disconnect()
+    sut.close()
 
     sshclient_instance.close.assert_called()
     assert not sut.is_connected

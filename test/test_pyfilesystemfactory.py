@@ -1,6 +1,6 @@
-from contextlib import contextmanager
 
 from test.sshclient_testdoubles import ProxyJumpVerifyingSSHClient
+from test.application.filesystem_testdoubles import sshfs_with_connection_fake
 from hpcrocket.ssh.sshexecutor import ConnectionData
 from unittest.mock import ANY, DEFAULT, Mock, patch
 
@@ -61,24 +61,3 @@ def test__when_creating_ssh_filesystem__should_open_homedir(chmodsshfs_type_mock
 
         sshfs_mock.opendir.assert_called_with("/home/proxy-user", factory=ANY)
 
-
-@contextmanager
-def sshfs_with_connection_fake(sshclient_mock):
-
-    def emulate_connect(*args, **kwargs):
-        map_to_paramiko_arguments(kwargs)
-        sshclient_mock.connect(*args, **kwargs)
-        return DEFAULT
-
-    def map_to_paramiko_arguments(kwargs):
-        kwargs["hostname"] = kwargs["host"]
-        kwargs["username"] = kwargs["user"]
-        kwargs["password"] = kwargs["passwd"]
-        kwargs["pkey"] = kwargs["pkey"]
-
-    patcher = patch("hpcrocket.ssh.chmodsshfs.PermissionChangingSSHFSDecorator")
-    patched = patcher.start()
-    patched.side_effect = emulate_connect
-    yield patched
-
-    patcher.stop()

@@ -1,23 +1,18 @@
-import dataclasses
-import os
-from typing import Optional
-
 from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.errors import get_error_message
+from hpcrocket.core.executor import CommandExecutorFactory
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmrunner import SlurmJob, SlurmRunner
-from hpcrocket.local.localfilesystem import LocalFilesystem
 from hpcrocket.ssh.errors import SSHError
-from hpcrocket.ssh.sshexecutor import SSHExecutor, ConnectionData
-from hpcrocket.ssh.sshfilesystem import SSHFilesystem
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher
 
 
 class Application:
 
-    def __init__(self, filesystem_factory: FilesystemFactory, ui: UI) -> None:
+    def __init__(self, executor_factory: CommandExecutorFactory, filesystem_factory: FilesystemFactory, ui: UI) -> None:
+        self._executor_factory = executor_factory
         self._fs_factory = filesystem_factory
         self._ui = ui
         self._latest_job_update: SlurmJob
@@ -27,7 +22,7 @@ class Application:
 
     def run(self, options: LaunchOptions) -> int:
         try:
-            executor = self._create_sshexecutor(options)
+            executor = self._executor_factory.create_executor()
             env_prep = self._create_env_preparation(options)
         except SSHError as err:
             self._ui.error(get_error_message(err))
@@ -43,7 +38,7 @@ class Application:
 
         self._collect_results(env_prep)
         self._clean_remote_environment(env_prep)
-        executor.disconnect()
+        executor.close()
 
         return self._get_exit_code_for_job(self._latest_job_update)
 
@@ -82,12 +77,12 @@ class Application:
         else:
             self._ui.error("Job failed")
 
-    def _clean_remote_environment(self, env_prep):
+    def _clean_remote_environment(self, env_prep: EnvironmentPreparation):
         self._ui.info("Cleaning up remote environment")
         env_prep.clean()
         self._ui.success("Done")
 
-    def _collect_results(self, env_prep):
+    def _collect_results(self, env_prep: EnvironmentPreparation):
         self._ui.info("Collecting results")
         env_prep.collect()
         self._ui.success("Done")
@@ -113,14 +108,6 @@ class Application:
     def _poll_callback(self, job: SlurmJob) -> None:
         self._latest_job_update = job
         self._ui.update(job)
-
-    def _create_sshexecutor(self, options: LaunchOptions) -> SSHExecutor:
-        connection = ConnectionData.with_resolved_keyfile(options.connection)
-        proxyjumps = [ConnectionData.with_resolved_keyfile(proxy) for proxy in options.proxyjumps]
-
-        executor = SSHExecutor()
-        executor.connect(connection, proxyjumps=proxyjumps)
-        return executor
 
     def cancel(self) -> int:
         try:

@@ -31,7 +31,6 @@ class SSHFilesystem(PyFilesystemBased):
     def _create_new_sshfilesystem(self, connection_data: ConnectionData, proxyjumps: List[ConnectionData] = None):
         try:
             channel = build_channel_with_proxyjumps(connection_data, proxyjumps or [])
-            print(channel)
             fs = sshfs.PermissionChangingSSHFSDecorator(
                 host=connection_data.hostname,
                 user=connection_data.username,
