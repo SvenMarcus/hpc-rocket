@@ -149,15 +149,6 @@ class SSHClientMock(SuccessfulSlurmCmdSSHClient):
         assert not self.connected
 
 
-def mock_iterating_sshclient_side_effect(sshclient_class: Mock, mocks: List[Mock]):
-    mocks_iter = iter(mocks)
-
-    def next_mock():
-        return next(mocks_iter, Mock())
-
-    sshclient_class.side_effect = next_mock
-
-
 class ProxyJumpVerifyingSSHClient(SuccessfulSlurmCmdSSHClient):
 
     @dataclass
@@ -203,10 +194,10 @@ class ProxyJumpVerifyingSSHClient(SuccessfulSlurmCmdSSHClient):
         assert self.expected_path == self.recorded_connection_path
 
     def _assert_channels_built_in_order(self):
-        first_channel = self._recorded_channels.pop(0)
-        assert first_channel is None, "First connection should not have a channel"
+        no_channel = self._recorded_channels.pop(0)
+        assert no_channel is None, "First connection should not have a channel"
 
-        path_from_first_proxy = self.expected_path[1:]
-        proxies_and_channels = zip(path_from_first_proxy, self._recorded_channels)
+        path_from_2nd_proxy_to_end = self.expected_path[1:]
+        proxies_and_channels = zip(path_from_2nd_proxy_to_end, self._recorded_channels)
         for proxy, channel in proxies_and_channels:
             channel.assert_connected_to(proxy.hostname, proxy.port)
