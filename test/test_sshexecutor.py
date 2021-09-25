@@ -1,11 +1,11 @@
+from test.testdoubles.sshclient import ProxyJumpVerifyingSSHClient
 from unittest.mock import Mock, patch
 
-import pytest
 import paramiko
-from hpcrocket.ssh.sshexecutor import ConnectionData, SSHExecutor, RemoteCommand
+import pytest
+from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
-
-from test.sshclient_testdoubles import ProxyJumpVerifyingSSHClient
+from hpcrocket.ssh.sshexecutor import RemoteCommand, SSHExecutor
 
 
 def connection_data():

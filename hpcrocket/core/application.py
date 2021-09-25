@@ -4,7 +4,6 @@ from hpcrocket.core.executor import CommandExecutorFactory
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmrunner import SlurmJob, SlurmRunner
-from hpcrocket.ssh.errors import SSHError
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher
 
@@ -24,7 +23,7 @@ class Application:
         try:
             executor = self._executor_factory.create_executor()
             env_prep = self._create_env_preparation(options)
-        except SSHError as err:
+        except Exception as err:
             self._ui.error(get_error_message(err))
             return 1
 

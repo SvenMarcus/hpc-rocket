@@ -1,7 +1,7 @@
 import os
-from test.pyfilesystem_testdoubles import (ArbitraryArgsMemoryFS,
+from test.testdoubles.pyfilesystem import (ArbitraryArgsMemoryFS,
                                            OnlySubFSMemoryFS)
-from test.sshclient_testdoubles import CmdSpecificSSHClientStub
+from test.testdoubles.sshclient import CmdSpecificSSHClientStub
 from unittest.mock import Mock, patch
 
 import pytest

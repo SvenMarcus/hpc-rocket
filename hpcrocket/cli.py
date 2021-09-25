@@ -5,7 +5,7 @@ import yaml
 
 from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.core.launchoptions import LaunchOptions
-from hpcrocket.ssh.sshexecutor import ConnectionData
+from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 def parse_cli_args(args) -> LaunchOptions:

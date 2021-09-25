@@ -1,4 +1,4 @@
-from hpcrocket.ssh.sshexecutor import ConnectionData
+from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 def assert_sshfs_connected_with_connection_data(sshfs_type_mock, connection_data: ConnectionData, channel=None):

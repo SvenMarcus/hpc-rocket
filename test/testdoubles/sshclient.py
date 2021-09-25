@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Tuple, Type
 from unittest.mock import Mock
 
 from hpcrocket.core.launchoptions import LaunchOptions
-from hpcrocket.ssh.sshexecutor import ConnectionData
+from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 class TransportStub:

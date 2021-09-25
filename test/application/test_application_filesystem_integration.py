@@ -1,14 +1,14 @@
 import os
 from dataclasses import replace
-from test.application.executor_testdoubles import SlurmJobExecutorFactoryStub
-from test.application.filesystem_testdoubles import sshfs_with_connection_fake
 from test.application.fixtures import *
 from test.application.launchoptions import *
-from test.sshclient_testdoubles import ProxyJumpVerifyingSSHClient
 from test.sshfilesystem_assertions import (
     assert_sshfs_connected_with_connection_data,
     assert_sshfs_connected_with_keyfile_from_connection_data,
     assert_sshfs_connected_with_password_from_connection_data)
+from test.testdoubles.executor import SlurmJobExecutorFactoryStub
+from test.testdoubles.filesystem import sshfs_with_connection_fake
+from test.testdoubles.sshclient import ProxyJumpVerifyingSSHClient
 from unittest.mock import ANY, MagicMock, Mock, call
 
 import pytest
@@ -16,8 +16,8 @@ from hpcrocket.core.application import Application
 from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.pyfilesystem.factory import PyFilesystemFactory
+from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
-from hpcrocket.ssh.sshexecutor import ConnectionData
 
 
 @pytest.mark.usefixtures("successful_sshclient_stub")

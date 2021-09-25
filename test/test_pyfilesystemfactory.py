@@ -1,13 +1,13 @@
 
-from test.sshclient_testdoubles import ProxyJumpVerifyingSSHClient
-from test.application.filesystem_testdoubles import sshfs_with_connection_fake
-from hpcrocket.ssh.sshexecutor import ConnectionData
+from test.testdoubles.filesystem import sshfs_with_connection_fake
+from test.testdoubles.sshclient import ProxyJumpVerifyingSSHClient
 from unittest.mock import ANY, DEFAULT, Mock, patch
 
 from hpcrocket.core.launchoptions import LaunchOptions
-from hpcrocket.local.localfilesystem import LocalFilesystem
 from hpcrocket.pyfilesystem.factory import PyFilesystemFactory
-from hpcrocket.ssh.sshfilesystem import SSHFilesystem
+from hpcrocket.pyfilesystem.localfilesystem import LocalFilesystem
+from hpcrocket.pyfilesystem.sshfilesystem import SSHFilesystem
+from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 def options():

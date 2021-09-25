@@ -1,12 +1,11 @@
 from dataclasses import replace
-from test.application.filesystem_testdoubles import DummyFilesystemFactory
 from test.application.fixtures import *
 from test.application.launchoptions import *
-from test.slurmoutput import get_error_lines, get_success_lines
-from test.sshclient_testdoubles import (ChannelFileStub, ChannelStub,
-                                        DelayedChannelSpy,
-                                        ProxyJumpVerifyingSSHClient,
-                                        SSHClientMock)
+from test.slurmoutput import get_success_lines
+from test.testdoubles.filesystem import DummyFilesystemFactory
+from test.testdoubles.sshclient import (
+    ChannelFileStub, ChannelStub, DelayedChannelSpy,
+    ProxyJumpVerifyingSSHClient, SSHClientMock)
 from unittest.mock import DEFAULT, Mock, call
 
 import pytest

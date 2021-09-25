@@ -1,7 +1,7 @@
 import dataclasses
 
 from hpcrocket.core.launchoptions import LaunchOptions
-from hpcrocket.ssh.sshexecutor import ConnectionData
+from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 def options():

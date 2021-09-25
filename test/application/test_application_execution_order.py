@@ -1,6 +1,6 @@
-from test.application.executor_testdoubles import (
-    CompletedSlurmJobCommandStub, SlurmJobSubmittedCommandStub)
 from test.application.launchoptions import *
+from test.testdoubles.executor import (
+    CompletedSlurmJobCommandStub, SlurmJobSubmittedCommandStub)
 from typing import Any
 from unittest.mock import Mock
 

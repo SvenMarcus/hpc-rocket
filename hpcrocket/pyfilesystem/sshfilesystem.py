@@ -5,9 +5,9 @@ import hpcrocket.ssh.chmodsshfs as sshfs
 from fs.errors import CreateFailed
 from fs.subfs import ClosingSubFS
 from hpcrocket.pyfilesystem.pyfilesystembased import PyFilesystemBased
+from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
-from hpcrocket.ssh.sshexecutor import (ConnectionData,
-                                       build_channel_with_proxyjumps)
+from hpcrocket.ssh.sshexecutor import build_channel_with_proxyjumps
 
 
 class SSHFilesystem(PyFilesystemBased):
