@@ -1,4 +1,4 @@
-from test.paramiko_sshclient_mockutil import \
+from test.testdoubles.paramiko_sshclient_mockutil import \
     get_blocking_channel_exit_status_ready_func
 from unittest.mock import MagicMock
 

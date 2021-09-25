@@ -1,6 +1,17 @@
 from abc import ABC, abstractmethod
 
 
+class FilesystemFactory(ABC):
+
+    @abstractmethod
+    def create_local_filesystem(self) -> 'Filesystem':
+        pass
+
+    @abstractmethod
+    def create_ssh_filesystem(self) -> 'Filesystem':
+        pass
+
+
 class Filesystem(ABC):
     """
     Abstract base class for all Filesystems

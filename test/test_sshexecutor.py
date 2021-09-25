@@ -1,9 +1,11 @@
+from test.testdoubles.sshclient import ProxyJumpVerifyingSSHClient
 from unittest.mock import Mock, patch
 
-import pytest
 import paramiko
-from hpcrocket.ssh.sshexecutor import ConnectionData, SSHExecutor, RemoteCommand
+import pytest
+from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
+from hpcrocket.ssh.sshexecutor import RemoteCommand, SSHExecutor
 
 
 def connection_data():
@@ -81,7 +83,7 @@ def test__given_connected_client__when_disconnecting__should_disconnect(sshclien
     sut = SSHExecutor()
     sut.connect(connection_data())
 
-    sut.disconnect()
+    sut.close()
 
     sshclient_instance.close.assert_called()
     assert not sut.is_connected
@@ -115,53 +117,25 @@ def test__given_connected_client__when_executing_command__should_return_remote_c
 
 @patch("paramiko.SSHClient")
 def test__given_proxyjump__when_connecting__should_connect_to_destination_through_proxy(sshclient_class):
-    proxy_mock, transport_channel = proxy_mock_with_transport()
-
-    main_mock = Mock(name="main-mock")
-    mocks = iter((main_mock, proxy_mock))
-
-    def next_mock():
-        return next(mocks)
-
-    sshclient_class.side_effect = next_mock
+    mock = ProxyJumpVerifyingSSHClient(connection_data(), [proxy_connection_data()])
+    sshclient_class.return_value = mock
 
     sut = SSHExecutor()
     sut.connect(connection_data(), proxyjumps=[proxy_connection_data()])
 
-    assert_connected_with_data(proxy_mock, proxy_connection_data())
-    assert_channel_opened(proxy_mock.get_transport(), connection_data())
-    assert_connected_with_data(main_mock, connection_data(), channel=transport_channel)
+    mock.verify()
 
 
 @patch("paramiko.SSHClient")
 def test__given_two_proxyjumps__when_connecting__should_connect_to_proxies_then_destination(sshclient_class):
-    first_proxy, first_transport_channel = proxy_mock_with_transport(1)
-    second_proxy, second_transport_channel = proxy_mock_with_transport(2)
-
-    main_mock = Mock(name="main-mock")
-    mocks = iter((main_mock, first_proxy, second_proxy))
-
-    def next_mock():
-        return next(mocks)
-
-    sshclient_class.side_effect = next_mock
+    jumps = [proxy_connection_data(1), proxy_connection_data(2)]
+    mock = ProxyJumpVerifyingSSHClient(connection_data(), jumps)
+    sshclient_class.return_value = mock
 
     sut = SSHExecutor()
-    first_proxy_connection = proxy_connection_data(1)
-    second_proxy_connection = proxy_connection_data(2)
-    final_connection = connection_data()
-    sut.connect(final_connection,
-                proxyjumps=[
-                    first_proxy_connection,
-                    second_proxy_connection])
+    sut.connect(connection_data(), proxyjumps=jumps)
 
-    assert_connected_with_data(first_proxy, first_proxy_connection)
-    assert_channel_opened(first_proxy.get_transport(), second_proxy_connection)
-
-    assert_connected_with_data(second_proxy, second_proxy_connection, first_transport_channel)
-    assert_channel_opened(second_proxy.get_transport(), final_connection)
-
-    assert_connected_with_data(main_mock, connection_data(), second_transport_channel)
+    mock.verify()
 
 
 @patch("paramiko.SSHClient")
@@ -198,11 +172,4 @@ def assert_connected_with_data(sshclient_mock: Mock, connection: ConnectionData,
         key_filename=connection.keyfile,
         pkey=connection.key,
         sock=channel
-    )
-
-
-def assert_channel_opened(transport, connection):
-    transport.open_channel.assert_called_with(
-        "direct-tcpip", (connection.hostname,
-                         connection.port), ('', 0)
     )

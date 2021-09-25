@@ -26,3 +26,14 @@ class CommandExecutor(ABC):
     @abstractmethod
     def exec_command(self, cmd: str) -> RunningCommand:
         pass
+
+    @abstractmethod
+    def close(self) -> None:
+        pass
+
+
+class CommandExecutorFactory(ABC):
+
+    @abstractmethod
+    def create_executor(self) -> CommandExecutor:
+        pass

@@ -1,10 +1,12 @@
+from test.testdoubles.paramiko_sshclient_mockutil import (
+    get_blocking_channel_exit_status_ready_func, make_close,
+    make_get_transport)
 from unittest.mock import Mock, patch
+
 import pytest
 from hpcrocket.core.slurmrunner import SlurmJob, SlurmRunner, SlurmTask
-from hpcrocket.ssh.sshexecutor import ConnectionData, SSHExecutor
-
-from test.paramiko_sshclient_mockutil import make_get_transport, make_close, get_blocking_channel_exit_status_ready_func
-
+from hpcrocket.ssh.connectiondata import ConnectionData
+from hpcrocket.ssh.sshexecutor import SSHExecutor
 
 patcher = patch("paramiko.SSHClient")
 

@@ -1,4 +1,4 @@
-from hpcrocket.ssh.sshexecutor import ConnectionData
+from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.cli import parse_cli_args

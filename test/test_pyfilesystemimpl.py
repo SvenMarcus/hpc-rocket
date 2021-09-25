@@ -2,13 +2,13 @@ from test.sshfilesystem_assertions import (
     assert_sshfs_connected_with_connection_data,
     assert_sshfs_connected_with_keyfile_from_connection_data,
     assert_sshfs_connected_with_private_key_from_connection_data)
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
-from hpcrocket.local.localfilesystem import LocalFilesystem
+from hpcrocket.pyfilesystem.localfilesystem import LocalFilesystem
+from hpcrocket.pyfilesystem.sshfilesystem import SSHFilesystem
+from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
-from hpcrocket.ssh.sshexecutor import ConnectionData
-from hpcrocket.ssh.sshfilesystem import SSHFilesystem
 
 
 @pytest.fixture

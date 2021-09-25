@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 from hpcrocket.core.environmentpreparation import CopyInstruction
-from hpcrocket.ssh.sshexecutor import ConnectionData
+from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 @dataclass

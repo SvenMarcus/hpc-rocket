@@ -1,20 +1,12 @@
-from dataclasses import dataclass
 from typing import List, Optional
 
 import paramiko as pm
 import paramiko.channel as channel
-from hpcrocket.core.executor import CommandExecutor, RunningCommand
+from hpcrocket.core.executor import (CommandExecutor, CommandExecutorFactory,
+                                     RunningCommand)
+from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
-
-
-@dataclass
-class ConnectionData:
-    hostname: str
-    username: str
-    password: Optional[str] = None
-    keyfile: Optional[str] = None
-    key: Optional[str] = None
-    port: int = 22
 
 
 class RemoteCommand(RunningCommand):
@@ -65,7 +57,7 @@ class SSHExecutor(CommandExecutor):
         except Exception as err:
             raise SSHError(str(err)) from err
 
-    def disconnect(self):
+    def close(self):
         self._client.close()
         self._is_connected = False
 
@@ -80,6 +72,19 @@ class SSHExecutor(CommandExecutor):
     @property
     def client(self) -> pm.SSHClient:
         return self._client
+
+
+class SSHExecutorFactory(CommandExecutorFactory):
+
+    def __init__(self, options: LaunchOptions) -> None:
+        self._options = options
+
+    def create_executor(self) -> CommandExecutor:
+        connection = ConnectionData.with_resolved_keyfile(self._options.connection)
+        proxyjumps = [ConnectionData.with_resolved_keyfile(proxy) for proxy in self._options.proxyjumps]
+        executor = SSHExecutor()
+        executor.connect(connection, proxyjumps=proxyjumps)
+        return executor
 
 
 def build_channel_with_proxyjumps(connection: ConnectionData, proxyjumps: List[ConnectionData]) -> Optional[pm.Channel]:
@@ -111,6 +116,7 @@ def _make_sshclient_and_connect(connection: ConnectionData, channel=None):
     sshclient = _make_sshclient()
     _connect_client(sshclient, connection, channel)
     return sshclient
+
 
 def _make_sshclient():
     sshclient = pm.SSHClient()

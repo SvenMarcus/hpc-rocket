@@ -1,25 +1,27 @@
 import argparse
+from abc import ABC, abstractmethod
 from typing import Dict, List
-from hpcrocket.ssh.sshexecutor import ConnectionData
 
 import yaml
 
 from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 def parse_cli_args(args) -> LaunchOptions:
     parser = _setup_parser()
-
     config = parser.parse_args(args)
-    if "configfile" in config:
-        return _parse_yaml_configuration(config.configfile)
 
-    return _parse_cli_configuration(config)
+    options_parser: Configuration = (YamlConfiguration(config.configfile)
+                                     if "configfile" in config
+                                     else CliConfiguration(config))
+
+    return options_parser.parse()
 
 
 def _setup_parser():
-    parser = argparse.ArgumentParser("hpclaunch")
+    parser = argparse.ArgumentParser("hpc-rocket")
     subparsers = parser.add_subparsers()
 
     _setup_yaml_parser(subparsers)
@@ -43,47 +45,61 @@ def _setup_yaml_parser(subparsers):
     yaml_parser.add_argument("configfile", type=str)
 
 
-def _parse_cli_configuration(config):
-    return LaunchOptions(
-        config.jobfile,
-        connection=ConnectionData(
-            hostname=config.host,
-            username=config.user,
-            password=config.password,
-            key=config.private_key,
-            keyfile=config.keyfile
-        ))
+class Configuration(ABC):
+
+    @abstractmethod
+    def parse(self) -> LaunchOptions:
+        pass
 
 
-def _parse_yaml_configuration(path: str) -> LaunchOptions:
-    with open(path, "r") as file:
-        config = yaml.load(file, Loader=yaml.SafeLoader)
+class CliConfiguration(Configuration):
 
+    def __init__(self, namespace: argparse.Namespace) -> None:
+        self._namespace = namespace
+
+    def parse(self) -> LaunchOptions:
         return LaunchOptions(
-            sbatch=config["sbatch"],
-            copy_files=_collect_copy_instructions(config.get("copy", [])),
-            clean_files=config.get("clean", []),
-            collect_files=_collect_copy_instructions(config.get("collect", [])),
-            connection=_connection_data_from_dict(config),
-            proxyjumps=_collect_proxyjumps(config.get("proxyjumps", []))
+            self._namespace.jobfile,
+            connection=ConnectionData(
+                hostname=self._namespace.host,
+                username=self._namespace.user,
+                password=self._namespace.password,
+                key=self._namespace.private_key,
+                keyfile=self._namespace.keyfile
+            ))
+
+
+class YamlConfiguration(Configuration):
+
+    def __init__(self, path: str) -> None:
+        self._path = path
+
+    def parse(self) -> LaunchOptions:
+        with open(self._path, "r") as file:
+            config = yaml.load(file, Loader=yaml.SafeLoader)
+
+            return LaunchOptions(
+                sbatch=config["sbatch"],
+                copy_files=self._collect_copy_instructions(config.get("copy", [])),
+                clean_files=config.get("clean", []),
+                collect_files=self._collect_copy_instructions(config.get("collect", [])),
+                connection=self._connection_data_from_dict(config),
+                proxyjumps=self._collect_proxyjumps(config.get("proxyjumps", []))
+            )
+
+    def _connection_data_from_dict(self, config):
+        return ConnectionData(
+            hostname=config["host"],
+            username=config["user"],
+            keyfile=config.get("private_keyfile"),
+            password=str(config.get("password"))
         )
 
+    def _collect_proxyjumps(self, proxyjumps: List[Dict[str, str]]):
+        return [self._connection_data_from_dict(proxy) for proxy in proxyjumps]
 
-def _connection_data_from_dict(config):
-    return ConnectionData(
-        hostname=config["host"],
-        username=config["user"],
-        keyfile=config.get("private_keyfile"),
-        password=str(config.get("password"))
-    )
-
-
-def _collect_proxyjumps(proxyjumps: List[Dict[str, str]]):
-    return [_connection_data_from_dict(proxy) for proxy in proxyjumps]
-
-
-def _collect_copy_instructions(copy_list):
-    return [CopyInstruction(cp["from"],
-                            cp["to"],
-                            cp.get("overwrite", False))
-            for cp in copy_list]
+    def _collect_copy_instructions(self, copy_list):
+        return [CopyInstruction(cp["from"],
+                                cp["to"],
+                                cp.get("overwrite", False))
+                for cp in copy_list]

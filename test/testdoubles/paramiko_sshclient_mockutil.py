@@ -42,12 +42,12 @@ def get_blocking_channel_exit_status_ready_func(stdout, exit_code=0):
     """
     Returns a channel.exit_status_ready() methods the needs to be called twice before it returns True and sets the exit status to the given value
     """
-    counter = {'count': 0}
-
+    counter = 0
     def exit_status_ready():
-        counter['count'] += 1
-        if counter['count'] == 2:
+        nonlocal counter
+        counter += 1
+        if counter == 2:
             stdout.channel.exit_status = exit_code
-        return counter['count'] == 2
+        return counter == 2
 
     return exit_status_ready
