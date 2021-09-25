@@ -1,8 +1,8 @@
-from abc import abstractmethod
-from typing import List, Protocol
+from abc import ABC, abstractmethod
+from typing import List
 
 
-class RunningCommand(Protocol):
+class RunningCommand(ABC):
 
     @abstractmethod
     def wait_until_exit(self) -> int:
@@ -21,7 +21,7 @@ class RunningCommand(Protocol):
         pass
 
 
-class CommandExecutor(Protocol):
+class CommandExecutor(ABC):
 
     @abstractmethod
     def exec_command(self, cmd: str) -> RunningCommand:
@@ -32,7 +32,7 @@ class CommandExecutor(Protocol):
         pass
 
 
-class CommandExecutorFactory(Protocol):
+class CommandExecutorFactory(ABC):
 
     @abstractmethod
     def create_executor(self) -> CommandExecutor:

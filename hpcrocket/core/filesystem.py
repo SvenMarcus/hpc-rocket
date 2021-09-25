@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Protocol
 
 
-class FilesystemFactory(Protocol):
+class FilesystemFactory(ABC):
 
     @abstractmethod
     def create_local_filesystem(self) -> 'Filesystem':
@@ -13,7 +12,7 @@ class FilesystemFactory(Protocol):
         pass
 
 
-class Filesystem(Protocol):
+class Filesystem(ABC):
     """
     Abstract base class for all Filesystems
     """

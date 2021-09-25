@@ -1,5 +1,6 @@
 import argparse
-from typing import Dict, List, Protocol
+from abc import ABC, abstractmethod
+from typing import Dict, List
 
 import yaml
 
@@ -44,8 +45,9 @@ def _setup_yaml_parser(subparsers):
     yaml_parser.add_argument("configfile", type=str)
 
 
-class Configuration(Protocol):
+class Configuration(ABC):
 
+    @abstractmethod
     def parse(self) -> LaunchOptions:
         pass
 
