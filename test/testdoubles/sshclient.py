@@ -160,9 +160,9 @@ class ProxyJumpVerifyingSSHClient(SuccessfulSlurmCmdSSHClient):
         max_packet_size: Optional[int] = None
         timeout: Optional[int] = None
 
-        def assert_connected_to(self, hostname, port):
+        def assert_points_to(self, host: ConnectionData):
             assert self.kind == "direct-tcpip"
-            assert self.dest_addr == (hostname, port)
+            assert self.dest_addr == (host.hostname, host.port)
             assert self.src_addr == ('', 0)
 
     class TransportStub:
@@ -198,6 +198,6 @@ class ProxyJumpVerifyingSSHClient(SuccessfulSlurmCmdSSHClient):
         assert no_channel is None, "First connection should not have a channel"
 
         path_from_2nd_proxy_to_end = self.expected_path[1:]
-        proxies_and_channels = zip(path_from_2nd_proxy_to_end, self._recorded_channels)
-        for proxy, channel in proxies_and_channels:
-            channel.assert_connected_to(proxy.hostname, proxy.port)
+        channels_and_proxies = zip(self._recorded_channels, path_from_2nd_proxy_to_end)
+        for nth_channel, n_plus_1th_proxy in channels_and_proxies:
+            nth_channel.assert_points_to(n_plus_1th_proxy)
