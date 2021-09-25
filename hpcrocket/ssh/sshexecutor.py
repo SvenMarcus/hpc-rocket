@@ -4,7 +4,7 @@ import paramiko as pm
 import paramiko.channel as channel
 from hpcrocket.core.executor import (CommandExecutor, CommandExecutorFactory,
                                      RunningCommand)
-
+from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
 
@@ -76,7 +76,7 @@ class SSHExecutor(CommandExecutor):
 
 class SSHExecutorFactory(CommandExecutorFactory):
 
-    def __init__(self, options: 'LaunchOptions') -> None:
+    def __init__(self, options: LaunchOptions) -> None:
         self._options = options
 
     def create_executor(self) -> CommandExecutor:
