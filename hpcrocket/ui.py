@@ -5,13 +5,13 @@ from rich.live import Live
 from rich.spinner import Spinner
 from rich.table import Table
 
-from hpcrocket.core.slurmrunner import SlurmJob
+from hpcrocket.core.slurmbatchjob import SlurmJobStatus
 
 
 class UI(ABC):
 
     @abstractmethod
-    def update(self, job: SlurmJob) -> None:
+    def update(self, job: SlurmJobStatus) -> None:
         pass
 
     @abstractmethod
@@ -33,7 +33,7 @@ class UI(ABC):
 
 class NullUI(UI):
 
-    def update(self, job: SlurmJob) -> None:
+    def update(self, job: SlurmJobStatus) -> None:
         pass
 
     def error(self, text: str) -> None:
@@ -65,7 +65,7 @@ class RichUI(UI):
     def __exit__(self, *args, **kwargs):
         self._rich_live.stop()
 
-    def update(self, job: SlurmJob) -> None:
+    def update(self, job: SlurmJobStatus) -> None:
         self._rich_live.update(self._make_table(job))
 
     def error(self, text: str) -> None:
@@ -83,7 +83,7 @@ class RichUI(UI):
     def launch(self, text: str) -> None:
         self._rich_live.console.print(":rocket: ", text, style="bold yellow", emoji=True)
 
-    def _make_table(self, job: SlurmJob) -> Table:
+    def _make_table(self, job: SlurmJobStatus) -> Table:
         table = Table(style="bold")
         table.add_column("ID")
         table.add_column("Name")

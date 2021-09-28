@@ -1,15 +1,15 @@
 from typing import List
 
-from hpcrocket.core.slurmrunner import SlurmJob, SlurmTask
+from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmTaskStatus
 
 
-def job_with_state(state: str, sub_tasks: List[SlurmTask] = None) -> SlurmJob:
+def job_with_state(state: str, sub_tasks: List[SlurmTaskStatus] = None) -> SlurmJobStatus:
     if sub_tasks is None:
         sub_tasks = []
 
-    tasks = [SlurmTask("123456", "MyJob", state)]
+    tasks = [SlurmTaskStatus("123456", "MyJob", state)]
     tasks.extend(sub_tasks)
-    return SlurmJob("123456", "MyJob", state, tasks=tasks)
+    return SlurmJobStatus("123456", "MyJob", state, tasks=tasks)
 
 
 def test__given_completed_job__completed_should_be_true():
@@ -57,8 +57,8 @@ def test__given_failed_slurm_job__pending_and_running_and_success_should_be_fals
 def test__given_completed_job_with_failed_sub_task__success_should_be_false():
     sut = job_with_state("COMPLETED",
                          sub_tasks=[
-                             SlurmTask("123457", "SubTask", "COMPLETED"),
-                             SlurmTask("123458", "SubTask", "FAILED"),
+                             SlurmTaskStatus("123457", "SubTask", "COMPLETED"),
+                             SlurmTaskStatus("123458", "SubTask", "FAILED"),
                          ])
 
     assert sut.success == False

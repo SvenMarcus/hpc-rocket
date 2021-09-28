@@ -3,14 +3,15 @@ from test.application.fixtures import *
 from test.application.launchoptions import *
 from test.slurmoutput import get_success_lines
 from test.testdoubles.filesystem import DummyFilesystemFactory
-from test.testdoubles.sshclient import (
-    ChannelFileStub, ChannelStub, DelayedChannelSpy,
-    ProxyJumpVerifyingSSHClient, SSHClientMock)
+from test.testdoubles.sshclient import (ChannelFileStub, ChannelStub,
+                                        DelayedChannelSpy,
+                                        ProxyJumpVerifyingSSHClient,
+                                        SSHClientMock)
 from unittest.mock import DEFAULT, Mock, call
 
 import pytest
 from hpcrocket.core.application import Application
-from hpcrocket.core.slurmrunner import SlurmJob, SlurmTask
+from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmTaskStatus
 from hpcrocket.ssh.errors import SSHError
 from hpcrocket.ssh.sshexecutor import SSHExecutorFactory
 
@@ -163,17 +164,17 @@ def mark_as_done_after_scancel(channel):
 
 
 def completed_slurm_job():
-    return SlurmJob(
+    return SlurmJobStatus(
         id="1603353",
         name="PyFluidsTest",
         state="COMPLETED",
         tasks=[
-            SlurmTask("1603353", "PyFluidsTest", "COMPLETED"),
-            SlurmTask("1603353.bat+", "batch", "COMPLETED"),
-            SlurmTask("1603353.ext+",  "extern", "COMPLETED"),
-            SlurmTask("1603353.0", "singularity", "COMPLETED"),
-            SlurmTask("1603353.1", "singularity", "COMPLETED"),
-            SlurmTask("1603353.2", "singularity", "COMPLETED"),
-            SlurmTask("1603353.3", "singularity", "COMPLETED")
+            SlurmTaskStatus("1603353", "PyFluidsTest", "COMPLETED"),
+            SlurmTaskStatus("1603353.bat+", "batch", "COMPLETED"),
+            SlurmTaskStatus("1603353.ext+",  "extern", "COMPLETED"),
+            SlurmTaskStatus("1603353.0", "singularity", "COMPLETED"),
+            SlurmTaskStatus("1603353.1", "singularity", "COMPLETED"),
+            SlurmTaskStatus("1603353.2", "singularity", "COMPLETED"),
+            SlurmTaskStatus("1603353.3", "singularity", "COMPLETED")
         ]
     )

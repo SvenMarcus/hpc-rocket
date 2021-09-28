@@ -3,7 +3,7 @@ from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.executor import CommandExecutorFactory
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
-from hpcrocket.core.slurmrunner import SlurmJob, SlurmRunner
+from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher
 
@@ -14,8 +14,8 @@ class Application:
         self._executor_factory = executor_factory
         self._fs_factory = filesystem_factory
         self._ui = ui
-        self._latest_job_update: SlurmJob
-        self._runner: SlurmRunner
+        self._latest_job_update: SlurmJobStatus
+        self._batchjob: SlurmBatchJob
         self._watcher: JobWatcher
         self._jobid: str
 
@@ -31,8 +31,8 @@ class Application:
         if not success:
             return 1
 
-        self._runner = SlurmRunner(executor)
-        self._launch_job(self._runner, options)
+        self._batchjob = SlurmBatchJob(executor, options.sbatch)
+        self._launch_job(self._batchjob, options)
         self._wait_for_job_completion(options)
 
         self._collect_results(env_prep)
@@ -55,16 +55,15 @@ class Application:
 
         return True
 
-    def _launch_job(self, runner: SlurmRunner, options: LaunchOptions) -> None:
+    def _launch_job(self, runner: SlurmBatchJob, options: LaunchOptions) -> None:
         self._ui.launch("Launching job")
-        self._jobid = runner.sbatch(options.sbatch)
+        self._jobid = runner.submit()
         self._ui.success(f"Job {self._jobid} launched")
 
     def _wait_for_job_completion(self, options: LaunchOptions) -> None:
-        self._watcher = JobWatcher(self._runner)
+        self._watcher = self._batchjob.get_watcher()
 
-        self._watcher.watch(self._jobid,
-                            self._poll_callback,
+        self._watcher.watch(self._poll_callback,
                             options.poll_interval)
 
         self._watcher.wait_until_done()
@@ -86,7 +85,7 @@ class Application:
         env_prep.collect()
         self._ui.success("Done")
 
-    def _get_exit_code_for_job(self, job: SlurmJob) -> int:
+    def _get_exit_code_for_job(self, job: SlurmJobStatus) -> int:
         if job.success:
             return 0
 
@@ -104,17 +103,17 @@ class Application:
 
         return env_prep
 
-    def _poll_callback(self, job: SlurmJob) -> None:
+    def _poll_callback(self, job: SlurmJobStatus) -> None:
         self._latest_job_update = job
         self._ui.update(job)
 
     def cancel(self) -> int:
         try:
             self._ui.info(f"Canceling job {self._jobid}")
-            self._runner.scancel(self._jobid)
+            self._batchjob.cancel()
             self._watcher.stop()
             self._ui.error("Job canceled")
-            job = self._runner.poll_status(self._jobid)
+            job = self._batchjob.poll_status()
             self._ui.update(job)
         except Exception as err:
             self._ui.error("An error occured while canceling the job:")

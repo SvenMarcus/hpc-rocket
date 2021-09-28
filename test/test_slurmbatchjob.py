@@ -1,9 +1,10 @@
+from hpcrocket.watcher.jobwatcher import JobWatcher
 from unittest.mock import MagicMock, Mock
 
 import pytest
 from hpcrocket.core.executor import CommandExecutor, RunningCommand
-from hpcrocket.core.slurmrunner import (SlurmError, SlurmRunner,
-                                        SlurmTask)
+from hpcrocket.core.slurmbatchjob import (SlurmError, SlurmBatchJob,
+                                          SlurmTaskStatus)
 
 
 @pytest.fixture
@@ -15,25 +16,24 @@ def executor_spy():
     yield executor_spy
 
 
-def make_sut(executor) -> SlurmRunner:
-    return SlurmRunner(executor)
+def make_sut(executor, batch_script) -> SlurmBatchJob:
+    return SlurmBatchJob(executor, batch_script)
 
 
-def test__when_running_sbatch__should_execute_sbatch_with_executor(executor_spy: Mock):
-    sut = make_sut(executor_spy)
+def test__when_submitting__should_execute_sbatch_with_executor(executor_spy: Mock):
+    sut = make_sut(executor_spy, "myjobfile.job")
 
-    sut.sbatch("myjobfile.job")
+    sut.submit()
 
     executor_spy.exec_command.assert_called_with("sbatch myjobfile.job")
 
 
-def test__when_running_sbatch__should_parse_job_id_from_stdout(executor_spy: Mock):
-    sut = make_sut(executor_spy)
+def test__when_submitting__should_parse_job_id_from_stdout(executor_spy: Mock):
+    sut = make_sut(executor_spy, "myjobfile.job")
 
-    actual = sut.sbatch("myjobfile.job")
+    actual = sut.submit()
 
     assert actual == "123456"
-    assert "123456" in sut.active_jobs
 
 
 def test__when_sbatch_fails__should_throw_slurm_error(executor_spy: Mock):
@@ -44,61 +44,62 @@ def test__when_sbatch_fails__should_throw_slurm_error(executor_spy: Mock):
     )
     executor_spy.configure_mock(exec_command=lambda _: cmd_stub)
 
-    sut = make_sut(executor_spy)
+    sut = make_sut(executor_spy, "myjobfile.job")
 
     with pytest.raises(SlurmError) as exception_info:
-        sut.sbatch("myjobfile.job")
+        sut.submit()
 
     assert "failed" in str(exception_info.value)
 
 
-def test__when_running_scancel_on_started_job__should_execute_scancel_with_executor_and_remove_from_active_jobs(
+def test__when_canceling_submitted_job__should_execute_scancel_with_executor_and_remove_from_active_jobs(
         executor_spy: Mock):
-    sut = make_sut(executor_spy)
-    sut.sbatch("myjobfile.job")
+    sut = make_sut(executor_spy, "myjobfile.job")
+    sut.submit()
 
-    sut.scancel("123456")
-
-    executor_spy.exec_command.assert_called_with("scancel 123456")
-    assert "123456" not in sut.active_jobs
-
-
-def test__when_running_scancel_with_unknown_job_id__should_execute_scancel_with_executor(executor_spy: Mock):
-    sut = make_sut(executor_spy)
-
-    sut.scancel("123456")
+    sut.cancel()
 
     executor_spy.exec_command.assert_called_with("scancel 123456")
-    assert "123456" not in sut.active_jobs
 
 
-def test__when_scancel_fails__should_raise_slurm_error(executor_spy: Mock):
+def test__when_canceling_unsubmitted_job__should_raise_slurmerror(executor_spy: Mock):
+    sut = make_sut(executor_spy, "myjobfile.job")
+
+    with pytest.raises(SlurmError):
+        sut.cancel()
+
+
+def test__given_submitted_job__when_canceling_fails__should_raise_slurm_error(executor_spy: Mock):
+    sut = make_sut(executor_spy, "myjobfile.job")
+    sut.submit()
+
     cmd = make_failing_running_command_stub()
     executor_spy.exec_command.return_value = cmd
 
-    sut = make_sut(executor_spy)
-
     with pytest.raises(SlurmError) as exception_info:
-        sut.scancel("123456")
+        sut.cancel()
 
     assert "failed" == str(exception_info.value)
 
 
-def test__when_polling_status__should_execute_sacct_with_id(executor_spy: Mock):
-    sut = make_sut(executor_spy)
+def test__given_submitted_job_when_polling_status__should_execute_sacct_with_id(executor_spy: Mock):
+    sut = make_sut(executor_spy, "myjobfile.job")
+    sut.submit()
 
-    sut.poll_status("123456")
+    sut.poll_status()
 
     executor_spy.exec_command.assert_called_with(
         "sacct -j 123456 -o jobid,jobname%30,state --noheader")
 
 
 def test__when_polling_status__should_return_job_status(executor_spy: Mock):
+    sut = make_sut(executor_spy, "myjobfile.job")
+    sut.submit()
+
     cmd = make_command_with_output_from_file()
     executor_spy.exec_command.return_value = cmd
-    sut = make_sut(executor_spy)
 
-    actual = sut.poll_status("1603353")
+    actual = sut.poll_status()
 
     assert actual.id == "1603353"
     assert actual.name == "PyFluidsTest"
@@ -106,21 +107,38 @@ def test__when_polling_status__should_return_job_status(executor_spy: Mock):
 
 
 def test__when_polling_status_job_status_should_contain_all_tasks(executor_spy: Mock):
+    sut = make_sut(executor_spy, "myjobfile.job")
+    sut.submit()
+
     cmd = make_command_with_output_from_file()
     executor_spy.exec_command.return_value = cmd
-    sut = make_sut(executor_spy)
 
-    actual = sut.poll_status("1603353")
+    actual = sut.poll_status()
 
     assert actual.tasks == [
-        SlurmTask("1603353", "PyFluidsTest", "COMPLETED"),
-        SlurmTask("1603353.bat+", "batch", "COMPLETED"),
-        SlurmTask("1603353.ext+",  "extern", "COMPLETED"),
-        SlurmTask("1603353.0", "singularity", "COMPLETED"),
-        SlurmTask("1603353.1", "singularity", "COMPLETED"),
-        SlurmTask("1603353.2", "singularity", "COMPLETED"),
-        SlurmTask("1603353.3", "singularity", "COMPLETED")
+        SlurmTaskStatus("1603353", "PyFluidsTest", "COMPLETED"),
+        SlurmTaskStatus("1603353.bat+", "batch", "COMPLETED"),
+        SlurmTaskStatus("1603353.ext+",  "extern", "COMPLETED"),
+        SlurmTaskStatus("1603353.0", "singularity", "COMPLETED"),
+        SlurmTaskStatus("1603353.1", "singularity", "COMPLETED"),
+        SlurmTaskStatus("1603353.2", "singularity", "COMPLETED"),
+        SlurmTaskStatus("1603353.3", "singularity", "COMPLETED")
     ]
+
+
+def test__given_unsubmitted_job__when_polling_status__should_raise_slurmerror(executor_spy: Mock):
+    sut = make_sut(executor_spy, "myjobfile.job")
+
+    with pytest.raises(SlurmError):
+        sut.poll_status()
+
+
+def test__given_submitted_job__when_gettings_watcher__should_return_jobwatcher(executor_spy: Mock):
+    sut = make_sut(executor_spy, "myjobfile.job")
+
+    actual = sut.get_watcher()
+
+    assert isinstance(actual, JobWatcher)
 
 
 def make_running_command_stub():

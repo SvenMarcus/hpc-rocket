@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from hpcrocket.watcher.jobwatcher import JobWatcher
 from typing import List, Tuple
 
 from hpcrocket.core.executor import CommandExecutor
@@ -11,15 +12,15 @@ class SlurmError(RuntimeError):
 
 
 @dataclass
-class SlurmTask:
+class SlurmTaskStatus:
     id: str
     name: str
     state: str
 
 
 @dataclass
-class SlurmJob(SlurmTask):
-    tasks: List[SlurmTask]
+class SlurmJobStatus(SlurmTaskStatus):
+    tasks: List[SlurmTaskStatus]
 
     @property
     def is_pending(self) -> bool:
@@ -40,59 +41,60 @@ class SlurmJob(SlurmTask):
                     for task in self.tasks))
 
 
-class SlurmRunner:
+class SlurmBatchJob:
 
-    def __init__(self, executor: CommandExecutor):
+    def __init__(self, executor: CommandExecutor, filename: str):
         self._executor = executor
-        self._active_jobs: List[str] = []
+        self._filename = filename
+        self._job_id: str = ""
 
-    def sbatch(self, filename: str) -> str:
-        cmd = self._executor.exec_command("sbatch " + filename)
+    def submit(self) -> str:
+        cmd = self._executor.exec_command("sbatch " + self._filename)
         self._wait_for_success_or_raise(cmd)
         out = cmd.stdout()[0]
-        job_id = out.split()[-1]
-        self._active_jobs.append(job_id)
-        return job_id
+        self._job_id = out.split()[-1]
 
-    def scancel(self, jobid: str) -> None:
-        cmd = self._executor.exec_command("scancel " + jobid)
-        cmd.wait_until_exit()
+        return self._job_id
+
+    def cancel(self) -> None:
+        self._raise_if_not_submitted()
+        cmd = self._executor.exec_command("scancel " + self._job_id)
         self._wait_for_success_or_raise(cmd)
 
-        try:
-            self._active_jobs.remove(jobid)
-        except ValueError:
-            pass
-
-    def poll_status(self, jobid: str) -> SlurmJob:
+    def poll_status(self) -> SlurmJobStatus:
+        self._raise_if_not_submitted()
         cmd = self._executor.exec_command(
-            f"sacct -j {jobid} -o jobid,jobname%30,state --noheader")
+            f"sacct -j {self._job_id} -o jobid,jobname%30,state --noheader")
         cmd.wait_until_exit()
         main_task, tasks = self._collect_slurm_tasks(cmd.stdout())
 
-        return SlurmJob(id=main_task.id,
+        return SlurmJobStatus(id=main_task.id,
                         name=main_task.name,
                         state=main_task.state,
                         tasks=tasks)
 
-    @property
-    def active_jobs(self) -> List[str]:
-        return self._active_jobs
+    def get_watcher(self) -> JobWatcher:
+        return JobWatcher(self)
+
+
+    def _raise_if_not_submitted(self):
+        if not self._job_id:
+            raise SlurmError("Job has not been submitted")
 
     def _wait_for_success_or_raise(self, cmd):
         cmd.wait_until_exit()
         if cmd.exit_status != 0:
             raise SlurmError(cmd.stderr())
 
-    def _collect_slurm_tasks(self, output: List[str]) -> Tuple[SlurmTask, List[SlurmTask]]:
-        main_task: SlurmTask
-        tasks: List[SlurmTask] = []
+    def _collect_slurm_tasks(self, output: List[str]) -> Tuple[SlurmTaskStatus, List[SlurmTaskStatus]]:
+        main_task: SlurmTaskStatus
+        tasks: List[SlurmTaskStatus] = []
         for index, line in enumerate(output):
             if not line:
                 continue
 
             task_str_list = line.split()
-            task = SlurmTask(task_str_list[0],
+            task = SlurmTaskStatus(task_str_list[0],
                              task_str_list[1], task_str_list[2])
             if index == 0:
                 main_task = task

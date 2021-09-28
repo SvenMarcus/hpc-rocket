@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
-from hpcrocket.core.slurmrunner import SlurmJob, SlurmRunner
+from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmBatchJob
 from hpcrocket.watcher.watcherthread import WatcherThread
 
 
@@ -10,7 +10,7 @@ def test__given_completed_job__when_polling__should_trigger_callback():
     runner = runner_returning_job_with_state("COMPLETED")
     callback, call_capture = callback_and_capture()
 
-    sut = WatcherThread(runner, "123456", callback, interval=0)
+    sut = WatcherThread(runner, callback, interval=0)
 
     sut.poll()
 
@@ -24,7 +24,7 @@ def test__given_running_job__when_polling_and_job_completes_after_second_poll__s
 
     callback, call_capture = callback_and_capture()
 
-    sut = WatcherThread(runner, "123456", callback, interval=0)
+    sut = WatcherThread(runner, callback, interval=0)
 
     sut.poll()
 
@@ -37,7 +37,7 @@ def test__given_running_job__when_polling_and_job_completes_after_third__should_
                                                 next_job=completed_job())
 
     callback, call_capture = callback_and_capture()
-    sut = WatcherThread(runner, "123456", callback, interval=0)
+    sut = WatcherThread(runner, callback, interval=0)
 
     sut.poll()
 
@@ -50,7 +50,7 @@ def test__given_pending_job__when_polling_and_job_completes_after_second_poll__s
                                                 next_job=completed_job())
 
     callback, call_capture = callback_and_capture()
-    sut = WatcherThread(runner, "123456", callback, interval=0)
+    sut = WatcherThread(runner, callback, interval=0)
 
     sut.poll()
 
@@ -64,7 +64,7 @@ def test__when_stopping_then_polling__should_not_trigger_callback():
 
     callback, call_capture = callback_and_capture()
 
-    sut = WatcherThread(runner, "123456", callback, interval=0)
+    sut = WatcherThread(runner, callback, interval=0)
 
     sut.stop()
     sut.poll()
@@ -75,7 +75,7 @@ def test__when_stopping_then_polling__should_not_trigger_callback():
 def test__after_polling_completed_job__is_done_should_be_true():
     runner = runner_returning_job_with_state("COMPLETED")
 
-    sut = WatcherThread(runner, "123456", lambda _: None, interval=0)
+    sut = WatcherThread(runner, lambda _: None, interval=0)
 
     sut.poll()
 
@@ -93,7 +93,7 @@ def test__given_running_job__when_checking_is_done_until_completion__should_be_f
         sut = context['sut']
         context['done'].append(sut.is_done())
 
-    sut = WatcherThread(runner, "123456", callback, interval=0)
+    sut = WatcherThread(runner, callback, interval=0)
     context['sut'] = sut
 
     sut.poll()
@@ -112,7 +112,7 @@ def test__given_running_job__when_checking_is_done_until_canceled__should_be_fal
         sut = context['sut']
         context['done'].append(sut.is_done())
 
-    sut = WatcherThread(runner, "123456", callback, interval=0)
+    sut = WatcherThread(runner, callback, interval=0)
     context['sut'] = sut
 
     sut.poll()
@@ -126,14 +126,14 @@ def test__given_running_job__when_polling__should_only_poll_in_given_interval():
     poll_status = make_poll_status_with_job_change_after_calls(
         call_count=2, next_job=completed_job())
 
-    def timerecording_wrapper(jobid):
+    def timerecording_wrapper():
         call_times.append(datetime.now())
-        return poll_status(jobid)
+        return poll_status()
 
-    runner = Mock(SlurmRunner)
+    runner = Mock(SlurmBatchJob)
     runner.configure_mock(poll_status=timerecording_wrapper)
 
-    sut = WatcherThread(runner, "123456", lambda _: None, interval=0.1)
+    sut = WatcherThread(runner, lambda _: None, interval=0.1)
 
     sut.poll()
 
@@ -149,20 +149,20 @@ def callback_and_capture():
 
 
 def make_poll_status(state: str):
-    def poll_status(_: str):
-        return SlurmJob(id="123456", name="MyJob", state=state, tasks=[])
+    def poll_status():
+        return SlurmJobStatus(id="123456", name="MyJob", state=state, tasks=[])
 
     return poll_status
 
 
 def runner_returning_job_with_state(state):
-    runner_mock = Mock(spec=SlurmRunner)
+    runner_mock = Mock(spec=SlurmBatchJob)
     runner_mock.configure_mock(poll_status=make_poll_status(state))
     return runner_mock
 
 
-def runner_with_job_change_after_calls(calls: int, initial_job: SlurmJob, next_job: SlurmJob):
-    runner_mock = Mock(spec=SlurmRunner)
+def runner_with_job_change_after_calls(calls: int, initial_job: SlurmJobStatus, next_job: SlurmJobStatus):
+    runner_mock = Mock(spec=SlurmBatchJob)
     poll_status = make_poll_status_with_job_change_after_calls(
         calls, initial_job=initial_job, next_job=next_job)
 
@@ -170,10 +170,10 @@ def runner_with_job_change_after_calls(calls: int, initial_job: SlurmJob, next_j
     return runner_mock
 
 
-def make_poll_status_with_job_change_after_calls(call_count: int, next_job: SlurmJob, initial_job=None):
+def make_poll_status_with_job_change_after_calls(call_count: int, next_job: SlurmJobStatus, initial_job=None):
     call_capture = {'calls': 0}
 
-    def poll_status(jobid):
+    def poll_status():
         calls = call_capture['calls'] + 1
         call_capture['calls'] = calls
         if calls == call_count:
@@ -185,16 +185,16 @@ def make_poll_status_with_job_change_after_calls(call_count: int, next_job: Slur
 
 
 def completed_job():
-    return SlurmJob(id="123456", name="MyJob", state="COMPLETED", tasks=[])
+    return SlurmJobStatus(id="123456", name="MyJob", state="COMPLETED", tasks=[])
 
 
 def canceled_job():
-    return SlurmJob(id="123456", name="MyJob", state="CANCELED", tasks=[])
+    return SlurmJobStatus(id="123456", name="MyJob", state="CANCELED", tasks=[])
 
 
 def running_job():
-    return SlurmJob(id="123456", name="MyJob", state="RUNNING", tasks=[])
+    return SlurmJobStatus(id="123456", name="MyJob", state="RUNNING", tasks=[])
 
 
 def pending_job():
-    return SlurmJob(id="123456", name="MyJob", state="PENDING", tasks=[])
+    return SlurmJobStatus(id="123456", name="MyJob", state="PENDING", tasks=[])

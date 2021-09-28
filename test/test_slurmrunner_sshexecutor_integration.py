@@ -4,7 +4,7 @@ from test.testdoubles.paramiko_sshclient_mockutil import (
 from unittest.mock import Mock, patch
 
 import pytest
-from hpcrocket.core.slurmrunner import SlurmJob, SlurmRunner, SlurmTask
+from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmBatchJob, SlurmTaskStatus
 from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.sshexecutor import SSHExecutor
 
@@ -42,9 +42,9 @@ def configure_sshclient_fake(patched, cmd_output_file: str):
 def test__when_calling_sbatch__should_return_job_id(sbatch_sshclient_fake):
     executor = SSHExecutor()
     executor.connect(ConnectionData("cluster.example.com", "user", password="123456"))
-    runner = SlurmRunner(executor)
+    sut = SlurmBatchJob(executor, "myjob.job")
 
-    jobid = runner.sbatch("myjob.job")
+    jobid = sut.submit()
 
     assert jobid == "123456"
 
@@ -52,20 +52,21 @@ def test__when_calling_sbatch__should_return_job_id(sbatch_sshclient_fake):
 def test__when_polling_job__should_return_slurm_job_with_matching_data(sshclient_poll_running_job_fake):
     executor = SSHExecutor()
     executor.connect(ConnectionData("cluster.example.com", "user", password="123456"))
-    runner = SlurmRunner(executor)
+    sut = SlurmBatchJob(executor, "myjob.job")
+    sut.submit()
 
-    actual = runner.poll_status("123456")
+    actual = sut.poll_status()
 
-    assert actual == SlurmJob(
+    assert actual == SlurmJobStatus(
         id="1603376",
         name="PyFluidsTest",
         state="RUNNING",
         tasks=[
-            SlurmTask("1603376", "PyFluidsTest", "RUNNING"),
-            SlurmTask("1603376.ext+",  "extern", "RUNNING"),
-            SlurmTask("1603376.0", "singularity", "COMPLETED"),
-            SlurmTask("1603376.1", "singularity", "COMPLETED"),
-            SlurmTask("1603376.2", "singularity", "RUNNING"),
+            SlurmTaskStatus("1603376", "PyFluidsTest", "RUNNING"),
+            SlurmTaskStatus("1603376.ext+",  "extern", "RUNNING"),
+            SlurmTaskStatus("1603376.0", "singularity", "COMPLETED"),
+            SlurmTaskStatus("1603376.1", "singularity", "COMPLETED"),
+            SlurmTaskStatus("1603376.2", "singularity", "RUNNING"),
         ]
     )
 
