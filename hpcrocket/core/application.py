@@ -1,3 +1,5 @@
+from typing import Optional
+
 from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.executor import CommandExecutorFactory
@@ -14,46 +16,39 @@ class Application:
         self._executor_factory = executor_factory
         self._fs_factory = filesystem_factory
         self._ui = ui
-        self._latest_job_update: SlurmJobStatus
+        self._latest_job_update: Optional[SlurmJobStatus] = None
+        self._env_prep: EnvironmentPreparation
         self._batchjob: SlurmBatchJob
         self._watcher: JobWatcher
         self._jobid: str
 
     def run(self, options: LaunchOptions) -> int:
         try:
-            executor = self._executor_factory.create_executor()
-            env_prep = self._create_env_preparation(options)
+            self._run_workflow(options)
+        except (FileNotFoundError, FileExistsError) as err:
+            self._perform_rollback_on_error(err)
         except Exception as err:
             self._ui.error(get_error_message(err))
-            return 1
+        finally:
+            return self._get_exit_code_for_job()
 
-        success = self._try_env_preparation(env_prep)
-        if not success:
-            return 1
+    def _run_workflow(self, options):
+        executor = self._executor_factory.create_executor()
+        self._env_prep = self._create_env_preparation(options)
+        self._try_env_preparation()
+        self._run_batchjob(options, executor)
+        self._post_run_cleanup()
+        executor.close()
 
+    def _run_batchjob(self, options, executor):
         self._batchjob = SlurmBatchJob(executor, options.sbatch)
         self._launch_job(self._batchjob, options)
         self._wait_for_job_completion(options)
 
-        self._collect_results(env_prep)
-        self._clean_remote_environment(env_prep)
-        executor.close()
-
-        return self._get_exit_code_for_job(self._latest_job_update)
-
-    def _try_env_preparation(self, env_prep: EnvironmentPreparation) -> bool:
-        try:
-            self._ui.info("Preparing remote environment")
-            env_prep.prepare()
-            self._ui.success("Done")
-        except (FileNotFoundError, FileExistsError) as err:
-            self._ui.error(get_error_message(err))
-            self._ui.info("Performing rollback")
-            env_prep.rollback()
-            self._ui.success("Done")
-            return False
-
-        return True
+    def _try_env_preparation(self) -> None:
+        self._ui.info("Preparing remote environment")
+        self._env_prep.prepare()
+        self._ui.success("Done")
 
     def _launch_job(self, runner: SlurmBatchJob, options: LaunchOptions) -> None:
         self._ui.launch("Launching job")
@@ -75,18 +70,29 @@ class Application:
         else:
             self._ui.error("Job failed")
 
-    def _clean_remote_environment(self, env_prep: EnvironmentPreparation):
-        self._ui.info("Cleaning up remote environment")
-        env_prep.clean()
+    def _perform_rollback_on_error(self, err):
+        self._ui.error(get_error_message(err))
+        self._ui.info("Performing rollback")
+        self._env_prep.rollback()
         self._ui.success("Done")
+
+    def _post_run_cleanup(self) -> None:
+        self._collect_results(self._env_prep)
+        self._clean_remote_environment(self._env_prep)
 
     def _collect_results(self, env_prep: EnvironmentPreparation):
         self._ui.info("Collecting results")
         env_prep.collect()
         self._ui.success("Done")
 
-    def _get_exit_code_for_job(self, job: SlurmJobStatus) -> int:
-        if job.success:
+    def _clean_remote_environment(self, env_prep: EnvironmentPreparation):
+        self._ui.info("Cleaning up remote environment")
+        env_prep.clean()
+        self._ui.success("Done")
+
+    def _get_exit_code_for_job(self) -> int:
+        status = self._latest_job_update
+        if status and status.success:
             return 0
 
         return 1

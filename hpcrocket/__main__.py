@@ -10,7 +10,6 @@ from hpcrocket.ui import RichUI
 
 def main():
     cli_args = parse_cli_args(sys.argv[1:])
-    exit_code = 0
     with RichUI() as ui:
         executor_factory = SSHExecutorFactory(cli_args)
         filesystem_factory = PyFilesystemFactory(cli_args)
@@ -20,9 +19,7 @@ def main():
             sys.exit(app.cancel())
 
         signal.signal(signal.SIGINT, on_cancel)
-        exit_code = app.run(cli_args)
-
-    sys.exit(exit_code)
+        sys.exit(app.run(cli_args))
 
 
 main()

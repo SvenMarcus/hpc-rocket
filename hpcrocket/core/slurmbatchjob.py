@@ -19,7 +19,10 @@ class SlurmTaskStatus:
 
 
 @dataclass
-class SlurmJobStatus(SlurmTaskStatus):
+class SlurmJobStatus:
+    id: str
+    name: str
+    state: str
     tasks: List[SlurmTaskStatus]
 
     @property
