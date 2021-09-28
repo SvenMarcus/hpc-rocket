@@ -42,17 +42,19 @@ class RemoteCommand(RunningCommand):
 
 class SSHExecutor(CommandExecutor):
 
-    def __init__(self) -> None:
+    def __init__(self, connection: ConnectionData, proxyjumps: List[ConnectionData] = None) -> None:
         self._is_connected = False
         self._client = _make_sshclient()
+        self._connection = connection
+        self._proxyjumps = proxyjumps or []
 
     def load_host_keys_from_file(self, hostfile: str) -> None:
         self._client.load_host_keys(hostfile)
 
-    def connect(self, connection: ConnectionData, proxyjumps: List[ConnectionData] = None):
+    def connect(self):
         try:
-            channel = build_channel_with_proxyjumps(connection, proxyjumps or [])
-            _connect_client(self._client, connection, channel=channel)
+            channel = build_channel_with_proxyjumps(self._connection, self._proxyjumps)
+            _connect_client(self._client, self._connection, channel=channel)
             self._is_connected = True
         except Exception as err:
             raise SSHError(str(err)) from err
@@ -82,8 +84,7 @@ class SSHExecutorFactory(CommandExecutorFactory):
     def create_executor(self) -> CommandExecutor:
         connection = ConnectionData.with_resolved_keyfile(self._options.connection)
         proxyjumps = [ConnectionData.with_resolved_keyfile(proxy) for proxy in self._options.proxyjumps]
-        executor = SSHExecutor()
-        executor.connect(connection, proxyjumps=proxyjumps)
+        executor = SSHExecutor(connection, proxyjumps=proxyjumps)
         return executor
 
 

@@ -20,6 +20,9 @@ class SlurmJobExecutorStub(CommandExecutor):
         elif cmd.startswith("sacct"):
             return self.sacct_cmd
 
+    def connect(self) -> None:
+        pass
+
     def close(self) -> None:
         pass
 

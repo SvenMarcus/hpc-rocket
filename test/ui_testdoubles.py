@@ -1,7 +1,7 @@
 import sys
 from typing import TextIO
 
-from hpcrocket.core.slurmrunner import SlurmJob
+from hpcrocket.core.slurmbatchjob import SlurmJobStatus
 from hpcrocket.ui import UI
 
 
@@ -29,5 +29,5 @@ class PrintLoggingUI(UI):
     def success(self, text: str) -> None:
         print(text, file=self._file)
 
-    def update(self, job: SlurmJob) -> None:
+    def update(self, job: SlurmJobStatus) -> None:
         print(job, file=self._file)
