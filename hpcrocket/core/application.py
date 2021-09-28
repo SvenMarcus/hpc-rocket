@@ -33,12 +33,11 @@ class Application:
         return self._get_exit_code_for_job()
 
     def _run_workflow(self, options):
-        executor = self._executor_factory.create_executor()
-        self._env_prep = self._create_env_preparation(options)
-        self._try_env_preparation()
-        self._run_batchjob(options, executor)
-        self._post_run_cleanup()
-        executor.close()
+        with self._executor_factory.create_executor() as executor:
+            self._env_prep = self._create_env_preparation(options)
+            self._try_env_preparation()
+            self._run_batchjob(options, executor)
+            self._post_run_cleanup()
 
     def _run_batchjob(self, options, executor):
         self._batchjob = SlurmBatchJob(executor, options.sbatch)

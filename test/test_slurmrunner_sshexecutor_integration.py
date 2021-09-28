@@ -1,11 +1,12 @@
+from test.application.launchoptions import main_connection
 from test.testdoubles.paramiko_sshclient_mockutil import (
     get_blocking_channel_exit_status_ready_func, make_close,
     make_get_transport)
 from unittest.mock import Mock, patch
 
 import pytest
-from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmBatchJob, SlurmTaskStatus
-from hpcrocket.ssh.connectiondata import ConnectionData
+from hpcrocket.core.slurmbatchjob import (SlurmBatchJob, SlurmJobStatus,
+                                          SlurmTaskStatus)
 from hpcrocket.ssh.sshexecutor import SSHExecutor
 
 patcher = patch("paramiko.SSHClient")
@@ -40,8 +41,8 @@ def configure_sshclient_fake(patched, cmd_output_file: str):
 
 
 def test__when_calling_sbatch__should_return_job_id(sbatch_sshclient_fake):
-    executor = SSHExecutor()
-    executor.connect(ConnectionData("cluster.example.com", "user", password="123456"))
+    executor = SSHExecutor(main_connection())
+    executor.connect()
     sut = SlurmBatchJob(executor, "myjob.job")
 
     jobid = sut.submit()
@@ -50,8 +51,8 @@ def test__when_calling_sbatch__should_return_job_id(sbatch_sshclient_fake):
 
 
 def test__when_polling_job__should_return_slurm_job_with_matching_data(sshclient_poll_running_job_fake):
-    executor = SSHExecutor()
-    executor.connect(ConnectionData("cluster.example.com", "user", password="123456"))
+    executor = SSHExecutor(main_connection())
+    executor.connect()
     sut = SlurmBatchJob(executor, "myjob.job")
     sut.submit()
 

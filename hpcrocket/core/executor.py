@@ -23,8 +23,19 @@ class RunningCommand(ABC):
 
 class CommandExecutor(ABC):
 
+    def __enter__(self) -> 'CommandExecutor':
+        self.connect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
+
     @abstractmethod
     def exec_command(self, cmd: str) -> RunningCommand:
+        pass
+
+    @abstractmethod
+    def connect(self) -> None:
         pass
 
     @abstractmethod

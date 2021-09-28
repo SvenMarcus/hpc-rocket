@@ -28,6 +28,9 @@ class CallOrderVerification(CommandExecutor, Filesystem):
         self.log.append(executable)
         return self.commands_by_executable[executable]()
 
+    def connect(self) -> None:
+        pass
+
     def close(self) -> None:
         pass
 

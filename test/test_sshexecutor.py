@@ -31,9 +31,9 @@ def proxy_connection_data(proxy_index=1):
 def test__given_connection_data__when_connecting__should_connect_client(sshclient_class):
     sshclient_instance = sshclient_class.return_value
 
-    sut = SSHExecutor()
+    sut = SSHExecutor(connection_data())
 
-    sut.connect(connection_data())
+    sut.connect()
 
     assert_connected_with_data(sshclient_instance, connection_data())
 
@@ -43,23 +43,23 @@ def test__when_connection_fails__should_raise_ssherror(sshclient_class):
     sshclient_instance = sshclient_class.return_value
     sshclient_instance.connect.side_effect = paramiko.AuthenticationException
 
-    sut = SSHExecutor()
+    sut = SSHExecutor(connection_data())
 
     with pytest.raises(SSHError):
-        sut.connect(connection_data())
+        sut.connect()
 
 
 @patch("paramiko.SSHClient")
 def test__given_new_client__is_connected__should_be_false(sshclient_class):
-    sut = SSHExecutor()
+    sut = SSHExecutor(connection_data())
 
     assert not sut.is_connected
 
 
 @patch("paramiko.SSHClient")
 def test__given_connected_client__is_connected__should_be_true(sshclient_class):
-    sut = SSHExecutor()
-    sut.connect(connection_data())
+    sut = SSHExecutor(connection_data())
+    sut.connect()
 
     assert sut.is_connected
 
@@ -69,9 +69,9 @@ def test__when_connection_fails__is_connected__should_be_false(sshclient_class):
     sshclient_instance = sshclient_class.return_value
     sshclient_instance.connect.side_effect = paramiko.AuthenticationException
 
-    sut = SSHExecutor()
+    sut = SSHExecutor(connection_data())
     with pytest.raises(SSHError):
-        sut.connect(connection_data())
+        sut.connect()
 
     assert not sut.is_connected
 
@@ -80,8 +80,8 @@ def test__when_connection_fails__is_connected__should_be_false(sshclient_class):
 def test__given_connected_client__when_disconnecting__should_disconnect(sshclient_class):
     sshclient_instance = sshclient_class.return_value
 
-    sut = SSHExecutor()
-    sut.connect(connection_data())
+    sut = SSHExecutor(connection_data())
+    sut.connect()
 
     sut.close()
 
@@ -94,8 +94,8 @@ def test__given_connected_client__when_executing_command__should_execute_command
     sshclient_instance = sshclient_class.return_value
     sshclient_instance.exec_command.return_value = (Mock(), Mock(), Mock())
 
-    sut = SSHExecutor()
-    sut.connect(connection_data())
+    sut = SSHExecutor(connection_data())
+    sut.connect()
 
     sut.exec_command("dummycmd")
 
@@ -107,8 +107,8 @@ def test__given_connected_client__when_executing_command__should_return_remote_c
     sshclient_instance = sshclient_class.return_value
     sshclient_instance.exec_command.return_value = (Mock(), Mock(), Mock())
 
-    sut = SSHExecutor()
-    sut.connect(connection_data())
+    sut = SSHExecutor(connection_data())
+    sut.connect()
 
     actual = sut.exec_command("dummycmd")
 
@@ -120,8 +120,8 @@ def test__given_proxyjump__when_connecting__should_connect_to_destination_throug
     mock = ProxyJumpVerifyingSSHClient(connection_data(), [proxy_connection_data()])
     sshclient_class.return_value = mock
 
-    sut = SSHExecutor()
-    sut.connect(connection_data(), proxyjumps=[proxy_connection_data()])
+    sut = SSHExecutor(connection_data(), proxyjumps=[proxy_connection_data()])
+    sut.connect()
 
     mock.verify()
 
@@ -132,8 +132,8 @@ def test__given_two_proxyjumps__when_connecting__should_connect_to_proxies_then_
     mock = ProxyJumpVerifyingSSHClient(connection_data(), jumps)
     sshclient_class.return_value = mock
 
-    sut = SSHExecutor()
-    sut.connect(connection_data(), proxyjumps=jumps)
+    sut = SSHExecutor(connection_data(), proxyjumps=jumps)
+    sut.connect()
 
     mock.verify()
 
@@ -145,10 +145,10 @@ def test__given_proxyjump__when_connection_to_proxy_fails__should_raise_ssherror
 
     sshclient_class.return_value = proxy_mock
 
-    sut = SSHExecutor()
+    sut = SSHExecutor(connection_data(), proxyjumps=[proxy_connection_data()])
 
     with pytest.raises(SSHError):
-        sut.connect(connection_data(), proxyjumps=[proxy_connection_data()])
+        sut.connect()
 
 
 def proxy_mock_with_transport(proxy_index=1):
