@@ -6,9 +6,8 @@ from unittest.mock import Mock
 
 from hpcrocket.core.application import Application
 from hpcrocket.core.environmentpreparation import CopyInstruction
-from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory
+from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory, RunningCommand
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
-from hpcrocket.ssh.sshexecutor import RemoteCommand
 
 
 class CallOrderVerification(CommandExecutor, Filesystem):
@@ -24,7 +23,7 @@ class CallOrderVerification(CommandExecutor, Filesystem):
     def __getattr__(self, name: str) -> Any:
         return Mock(name=name)
 
-    def exec_command(self, command: str) -> RemoteCommand:
+    def exec_command(self, command: str) -> RunningCommand:
         executable = command.split()[0]
         self.log.append(executable)
         return self.commands_by_executable[executable]()
