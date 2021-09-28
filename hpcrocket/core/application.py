@@ -29,8 +29,8 @@ class Application:
             self._perform_rollback_on_error(err)
         except Exception as err:
             self._ui.error(get_error_message(err))
-        finally:
-            return self._get_exit_code_for_job()
+
+        return self._get_exit_code_for_job()
 
     def _run_workflow(self, options):
         executor = self._executor_factory.create_executor()
