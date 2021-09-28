@@ -5,3 +5,6 @@ exclude_lines =
 
     # Don't complain about abstract methods, they aren't run:
     @(abc\.)?abstractmethod
+
+    # Ignore type checking line for cyclic imports
+    if TYPE_CHECKING:

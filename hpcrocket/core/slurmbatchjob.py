@@ -72,13 +72,12 @@ class SlurmBatchJob:
         main_task, tasks = self._collect_slurm_tasks(cmd.stdout())
 
         return SlurmJobStatus(id=main_task.id,
-                        name=main_task.name,
-                        state=main_task.state,
-                        tasks=tasks)
+                              name=main_task.name,
+                              state=main_task.state,
+                              tasks=tasks)
 
     def get_watcher(self) -> JobWatcher:
         return JobWatcher(self)
-
 
     def _raise_if_not_submitted(self):
         if not self._job_id:
@@ -98,7 +97,7 @@ class SlurmBatchJob:
 
             task_str_list = line.split()
             task = SlurmTaskStatus(task_str_list[0],
-                             task_str_list[1], task_str_list[2])
+                                   task_str_list[1], task_str_list[2])
             if index == 0:
                 main_task = task
 
