@@ -20,6 +20,8 @@ class SlurmJobExecutorStub(CommandExecutor):
         elif cmd.startswith("sacct"):
             return self.sacct_cmd
 
+        raise ValueError(cmd)
+
     def connect(self) -> None:
         pass
 
@@ -41,7 +43,6 @@ class CompletedSlurmJobCommandStub(RunningCommand):
 
     def stderr(self) -> List[str]:
         return []
-
 
 
 class FailedSlurmJobCommandStub(RunningCommand):

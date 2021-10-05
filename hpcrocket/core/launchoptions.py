@@ -1,13 +1,24 @@
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from typing import List
 
 from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol  # type: ignore
+
+
+class BaseOptions(Protocol):
+    connection: ConnectionData
+    proxyjumps: List[ConnectionData]
+
+
 @dataclass
 class LaunchOptions:
-
     sbatch: str
     connection: ConnectionData
     proxyjumps: List[ConnectionData] = field(default_factory=lambda: [])
@@ -15,3 +26,17 @@ class LaunchOptions:
     clean_files: List[str] = field(default_factory=lambda: [])
     collect_files: List[CopyInstruction] = field(default_factory=lambda: [])
     poll_interval: int = 5
+    watch: bool = True
+
+
+@dataclass
+class JobBasedOptions:
+
+    class Action(Enum):
+        watch = auto()
+        status = auto()
+
+    jobid: str
+    action: Action
+    connection: ConnectionData
+    proxyjumps: List[ConnectionData] = field(default_factory=lambda: [])
