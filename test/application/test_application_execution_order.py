@@ -17,8 +17,9 @@ class CallOrderVerification(CommandExecutor, Filesystem):
         "sacct": CompletedSlurmJobCommandStub
     }
 
-    def __init__(self):
+    def __init__(self, expected):
         self.log = []
+        self.expected = expected
 
     def __getattr__(self, name: str) -> Any:
         return Mock(name=name)
@@ -44,40 +45,65 @@ class CallOrderVerification(CommandExecutor, Filesystem):
         return False
 
     def __call__(self) -> None:
-        assert self.log == [
-            "copy myfile.txt mycopy.txt",
-            "sbatch",
-            "sacct",
-            "copy mycopy.txt mycollect.txt",
-            "delete mycopy.txt",
-        ]
+        assert self.log == self.expected
 
 
 class CallOrderVerificationFactory(CommandExecutorFactory, FilesystemFactory):
 
     def __init__(self) -> None:
-        self.verifier = CallOrderVerification()
+        self.verifier = None
 
     def create_executor(self):
         return self.verifier
 
     def create_local_filesystem(self) -> 'Filesystem':
-        return self.verifier
+        return self.verifier  # type: ignore
 
     def create_ssh_filesystem(self) -> 'Filesystem':
-        return self.verifier
+        return self.verifier  # type: ignore
 
 
-def test__given_config_with_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_collect_then_clean():
-    options = options_with_files_to_copy_collect_and_clean(
-        [CopyInstruction("myfile.txt", "mycopy.txt")],
-        [CopyInstruction("mycopy.txt", "mycollect.txt")],
-        ["mycopy.txt"]
+def test__given_launchoptions_with_watch_disabled_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_exit():
+    opts = options(
+        copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
+        collect=[CopyInstruction("mycopy.txt", "mycollect.txt")],
+        clean=["mycopy.txt"],
+        watch=False
     )
 
     factory = CallOrderVerificationFactory()
+    factory.verifier = CallOrderVerification([
+        "copy myfile.txt mycopy.txt",
+        "sbatch"
+    ])
+
     sut = Application(factory, factory, Mock())
 
-    sut.run(options)
+    sut.run(opts)
+
+    factory.verifier()
+
+
+
+def test__given_launchoptions_with_watch_enabled_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_collect_then_clean():
+    opts = options(
+        copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
+        collect=[CopyInstruction("mycopy.txt", "mycollect.txt")],
+        clean=["mycopy.txt"],
+        watch=True
+    )
+
+    factory = CallOrderVerificationFactory()
+    factory.verifier = CallOrderVerification([
+        "copy myfile.txt mycopy.txt",
+        "sbatch",
+        "sacct",
+        "copy mycopy.txt mycollect.txt",
+        "delete mycopy.txt",
+    ])
+
+    sut = Application(factory, factory, Mock())
+
+    sut.run(opts)
 
     factory.verifier()

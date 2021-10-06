@@ -13,7 +13,7 @@ def parse_cli_args(args) -> LaunchOptions:
     parser = _setup_parser()
     config = parser.parse_args(args)
 
-    options_parser: Configuration = (YamlConfiguration(config.configfile)
+    options_parser: Configuration = (YamlConfiguration(config.configfile, config.watch)
                                      if "configfile" in config
                                      else CliConfiguration(config))
 
@@ -40,9 +40,10 @@ def _setup_cli_parser(subparsers):
     run_parser.add_argument("--keyfile", type=str, help="The path to a file containing a private SSH key")
 
 
-def _setup_yaml_parser(subparsers):
+def _setup_yaml_parser(subparsers: argparse._SubParsersAction):
     yaml_parser = subparsers.add_parser("launch", help="Configure HPC Rocket from a configuration file")
     yaml_parser.add_argument("configfile", type=str)
+    yaml_parser.add_argument("--watch", default=False, dest="watch", action="store_true")
 
 
 class Configuration(ABC):
@@ -71,8 +72,9 @@ class CliConfiguration(Configuration):
 
 class YamlConfiguration(Configuration):
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, watch: bool) -> None:
         self._path = path
+        self._watch = watch
 
     def parse(self) -> LaunchOptions:
         with open(self._path, "r") as file:
@@ -80,6 +82,7 @@ class YamlConfiguration(Configuration):
 
             return LaunchOptions(
                 sbatch=config["sbatch"],
+                watch=self._watch,
                 copy_files=self._collect_copy_instructions(config.get("copy", [])),
                 clean_files=config.get("clean", []),
                 collect_files=self._collect_copy_instructions(config.get("collect", [])),

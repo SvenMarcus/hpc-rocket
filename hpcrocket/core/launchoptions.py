@@ -26,7 +26,7 @@ class LaunchOptions:
     clean_files: List[str] = field(default_factory=lambda: [])
     collect_files: List[CopyInstruction] = field(default_factory=lambda: [])
     poll_interval: int = 5
-    watch: bool = True
+    watch: bool = False
 
 
 @dataclass

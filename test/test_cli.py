@@ -36,6 +36,7 @@ def test__given_valid_args__should_return_matching_config():
 def test__given_valid_args_for_yaml__should_return_matching_config():
     config = parse_cli_args([
         "launch",
+        "--watch",
         "test/testconfig/config.yml"
     ])
 
@@ -72,4 +73,5 @@ def test__given_valid_args_for_yaml__should_return_matching_config():
             CopyInstruction("slurm.job", "slurm.job", True)],
         clean_files=["mycopy.txt", "slurm.job"],
         collect_files=[CopyInstruction("result.txt", "result.txt", True)],
+        watch=True
     )

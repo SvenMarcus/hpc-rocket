@@ -2,7 +2,7 @@ from typing import Optional
 
 from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.errors import get_error_message
-from hpcrocket.core.executor import CommandExecutorFactory
+from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
@@ -32,34 +32,37 @@ class Application:
 
         return self._get_exit_code_for_job()
 
-    def _run_workflow(self, options):
+    def _run_workflow(self, options: LaunchOptions):
         with self._executor_factory.create_executor() as executor:
             self._env_prep = self._create_env_preparation(options)
             self._try_env_preparation()
             self._run_batchjob(options, executor)
-            self._post_run_cleanup()
+            self._wait_for_job_if_watching(options)
 
-    def _run_batchjob(self, options, executor):
+    def _run_batchjob(self, options: LaunchOptions, executor: CommandExecutor):
         self._batchjob = SlurmBatchJob(executor, options.sbatch)
-        self._launch_job(self._batchjob, options)
-        self._wait_for_job_completion(options)
+        self._launch_job(self._batchjob)
 
     def _try_env_preparation(self) -> None:
         self._ui.info("Preparing remote environment")
         self._env_prep.prepare()
         self._ui.success("Done")
 
-    def _launch_job(self, runner: SlurmBatchJob, options: LaunchOptions) -> None:
+    def _launch_job(self, runner: SlurmBatchJob) -> None:
         self._ui.launch("Launching job")
         self._jobid = runner.submit()
         self._ui.success(f"Job {self._jobid} launched")
 
-    def _wait_for_job_completion(self, options: LaunchOptions) -> None:
+    def _wait_for_job_if_watching(self, options):
+        if not options.watch:
+            return
+
+        self._wait_for_job_completion(options.poll_interval)
+        self._post_run_cleanup()
+
+    def _wait_for_job_completion(self, poll_interval: int) -> None:
         self._watcher = self._batchjob.get_watcher()
-
-        self._watcher.watch(self._poll_callback,
-                            options.poll_interval)
-
+        self._watcher.watch(self._poll_callback, poll_interval)
         self._watcher.wait_until_done()
         self._display_job_result()
 

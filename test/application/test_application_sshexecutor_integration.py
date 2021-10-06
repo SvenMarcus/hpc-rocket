@@ -22,7 +22,7 @@ def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient
                                                                        expected_keyfile: str):
 
     connection = replace(main_connection(), keyfile=input_keyfile)
-    valid_options = replace(options(), connection=connection)
+    valid_options = options(connection=connection)
 
     sshclient_mock = SSHClientMock(
         launch_options=valid_options,
@@ -59,34 +59,34 @@ def test__given_ssh_connection_not_available_for_executor__when_running__should_
     ui_spy = Mock()
     sut = Application(SSHExecutorFactory(options()), DummyFilesystemFactory(), ui_spy)
 
-    sut.run(options())
+    sut.run(options(watch=True))
 
     ssh_client_mock.exec_command.assert_not_called()
     ui_spy.error.assert_called_once_with(f"SSHError: {main_connection().hostname}")
 
 
-@ pytest.mark.usefixtures("successful_sshclient_stub")
+@pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_zero():
     sut = Application(SSHExecutorFactory(options()), DummyFilesystemFactory(), Mock())
 
-    actual = sut.run(options())
+    actual = sut.run(options(watch=True))
 
     assert actual == 0
 
 
-@ pytest.mark.usefixtures("failing_sshclient_stub")
+@pytest.mark.usefixtures("failing_sshclient_stub")
 def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one():
 
-    sut = Application(SSHExecutorFactory(options()), DummyFilesystemFactory(), Mock())
+    sut = Application(SSHExecutorFactory(options(watch=True)), DummyFilesystemFactory(), Mock())
 
-    actual = sut.run(options())
+    actual = sut.run(options(watch=True))
 
     assert actual == 1
 
 
 def test__given_valid_config__when_running_long_running_job__should_wait_for_completion(sshclient_type_mock):
 
-    sut = Application(SSHExecutorFactory(options()), DummyFilesystemFactory(), Mock())
+    sut = Application(SSHExecutorFactory(options(watch=True)), DummyFilesystemFactory(), Mock())
 
     channel_spy = DelayedChannelSpy(exit_code=1, calls_until_exit=2)
     sshclient_type_mock.return_value = CmdSpecificSSHClientStub({
@@ -97,18 +97,18 @@ def test__given_valid_config__when_running_long_running_job__should_wait_for_com
         )
     })
 
-    actual = sut.run(options())
+    actual = sut.run(options(watch=True))
 
     assert actual == 0
     assert channel_spy.times_called == 2
 
 
-@ pytest.mark.usefixtures("successful_sshclient_stub")
+@pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_ui__when_running__should_update_ui_after_polling():
     ui_spy = Mock()
-    sut = Application(SSHExecutorFactory(options()), DummyFilesystemFactory(), ui_spy)
+    sut = Application(SSHExecutorFactory(options(watch=True)), DummyFilesystemFactory(), ui_spy)
 
-    _ = sut.run(options())
+    _ = sut.run(options(watch=True))
 
     ui_spy.update.assert_called_with(completed_slurm_job())
 
@@ -116,7 +116,7 @@ def test__given_ui__when_running__should_update_ui_after_polling():
 def test__given_running_application__when_canceling_after_polling_job__should_cancel_job(sshclient_type_mock):
     from threading import Thread
 
-    sut = Application(SSHExecutorFactory(options()), DummyFilesystemFactory(), Mock())
+    sut = Application(SSHExecutorFactory(options(watch=True)), DummyFilesystemFactory(), Mock())
 
     long_running = int(1e10)
     sacct_channel = ChannelFileStub(
@@ -135,7 +135,7 @@ def test__given_running_application__when_canceling_after_polling_job__should_ca
 
     sshclient_type_mock.return_value = sshclient_mock
 
-    thread = Thread(target=lambda: sut.run(options()))
+    thread = Thread(target=lambda: sut.run(options(watch=True)))
     thread.start()
     wait_until_first_job_poll(sshclient_mock)
 

@@ -124,7 +124,7 @@ def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_m
 @ pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem(osfs_type_mock,
                                                                                                 sshfs_type_mock):
-    options = options_with_files_to_copy([
+    opts = options(copy=[
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
     ])
@@ -132,9 +132,9 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
     osfs_type_mock.create("myfile.txt")
     osfs_type_mock.create("otherfile.gif")
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(options), Mock())
+    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), Mock())
 
-    sut.run(options)
+    sut.run(opts)
 
     assert sshfs_type_mock.exists(f"{HOME_DIR}/mycopy.txt")
     assert sshfs_type_mock.exists(f"{HOME_DIR}/copy.gif")
@@ -143,16 +143,17 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
 @ pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_clean__when_running__should_remove_files_from_remote_filesystem(osfs_type_mock,
                                                                                                      sshfs_type_mock):
-    options = options_with_files_to_copy_and_clean(
-        [CopyInstruction("myfile.txt", "mycopy.txt")],
-        ["mycopy.txt"]
+    opts = options(
+        watch=True,
+        copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
+        clean=["mycopy.txt"]
     )
 
     osfs_type_mock.return_value.create("myfile.txt")
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(options), Mock())
+    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), Mock())
 
-    sut.run(options)
+    sut.run(opts)
 
     assert not sshfs_type_mock.return_value.exists(f"{HOME_DIR}/mycopy.txt")
 
@@ -160,18 +161,19 @@ def test__given_config_with_files_to_clean__when_running__should_remove_files_fr
 @ pytest.mark.usefixtures("successful_sshclient_stub")
 def test__given_config_with_files_to_collect__when_running__should_collect_files_from_remote_filesystem_after_completing_job_and_before_cleaning(osfs_type_mock,
                                                                                                                                                  sshfs_type_mock):
-    options = options_with_files_to_copy_collect_and_clean(
-        files_to_copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
-        files_to_clean=["mycopy.txt"],
-        files_to_collect=[CopyInstruction("mycopy.txt", "mycopy.txt")]
+    opts = options(
+        watch=True,
+        copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
+        clean=["mycopy.txt"],
+        collect=[CopyInstruction("mycopy.txt", "mycopy.txt")]
     )
 
     local_fs = osfs_type_mock.return_value
     local_fs.create("myfile.txt")
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(options), Mock())
+    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), Mock())
 
-    sut.run(options)
+    sut.run(opts)
 
     sshfs = sshfs_type_mock.return_value
     assert local_fs.exists("mycopy.txt")
@@ -181,16 +183,19 @@ def test__given_config_with_files_to_collect__when_running__should_collect_files
 @ pytest.mark.usefixtures("sshclient_type_mock")
 def test__given_config_with_non_existing_file_to_copy__when_running__should_perform_rollback_and_exit(osfs_type_mock,
                                                                                                       sshfs_type_mock):
-    options = options_with_files_to_copy([
-        CopyInstruction("myfile.txt", "mycopy.txt"),
-        CopyInstruction("otherfile.gif", "copy.gif")
-    ])
+    opts = options(
+        watch=True,
+        copy=[
+            CopyInstruction("myfile.txt", "mycopy.txt"),
+            CopyInstruction("otherfile.gif", "copy.gif")
+        ]
+    )
 
     osfs_type_mock.return_value.create("myfile.txt")
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(options), Mock())
+    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), Mock())
 
-    exit_code = sut.run(options)
+    exit_code = sut.run(opts)
 
     assert not sshfs_type_mock.return_value.exists(f"{HOME_DIR}/mycopy.txt")
     assert not sshfs_type_mock.return_value.exists(f"{HOME_DIR}/copy.gif")
@@ -200,7 +205,7 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_perf
 @ pytest.mark.usefixtures("sshclient_type_mock", "sshfs_type_mock")
 def test__given_config_with_non_existing_file_to_copy__when_running__should_print_to_ui(osfs_type_mock):
 
-    options = options_with_files_to_copy([
+    opts = options(copy=[
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
     ])
@@ -208,9 +213,9 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_prin
     osfs_type_mock.return_value.create("myfile.txt")
 
     ui_spy = Mock()
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(options), ui_spy)
+    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), ui_spy)
 
-    sut.run(options)
+    sut.run(opts)
 
     assert call.error(
         "FileNotFoundError: otherfile.gif") in ui_spy.method_calls
@@ -219,7 +224,7 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_prin
 @ pytest.mark.usefixtures("sshclient_type_mock")
 def test__given_config_with_already_existing_file_to_copy__when_running__should_perform_rollback_and_exit(
         osfs_type_mock, sshfs_type_mock):
-    options = options_with_files_to_copy([
+    opts = options(copy=[
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
     ])
@@ -229,9 +234,9 @@ def test__given_config_with_already_existing_file_to_copy__when_running__should_
 
     sshfs_type_mock.return_value.create(f"{HOME_DIR}/copy.gif")
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(options), Mock())
+    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), Mock())
 
-    exit_code = sut.run(options)
+    exit_code = sut.run(opts)
 
     assert not sshfs_type_mock.return_value.exists(f"{HOME_DIR}/mycopy.txt")
     assert sshfs_type_mock.return_value.exists(f"{HOME_DIR}/copy.gif")
