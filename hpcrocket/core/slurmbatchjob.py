@@ -89,7 +89,7 @@ class SlurmBatchJob:
             raise SlurmError(cmd.stderr())
 
     def _collect_slurm_tasks(self, output: List[str]) -> Tuple[SlurmTaskStatus, List[SlurmTaskStatus]]:
-        main_task: SlurmTaskStatus
+        main_task = SlurmTaskStatus("", "", "")
         tasks: List[SlurmTaskStatus] = []
         for index, line in enumerate(output):
             if not line:

@@ -50,39 +50,7 @@ def test__given_options_with_proxy_jumps__when_running__should_connect_to_execut
     sut.run(options_with_proxy())
 
     mock.verify()
-
-
-def test__given_ssh_connection_not_available_for_executor__when_running__should_log_error_and_exit(sshclient_type_mock):
-    ssh_client_mock = sshclient_type_mock.return_value
-    ssh_client_mock.connect.side_effect = SSHError(main_connection().hostname)
-
-    ui_spy = Mock()
-    sut = Application(SSHExecutorFactory(options()), DummyFilesystemFactory(), ui_spy)
-
-    sut.run(options(watch=True))
-
-    ssh_client_mock.exec_command.assert_not_called()
-    ui_spy.error.assert_called_once_with(f"SSHError: {main_connection().hostname}")
-
-
-@pytest.mark.usefixtures("successful_sshclient_stub")
-def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_zero():
-    sut = Application(SSHExecutorFactory(options()), DummyFilesystemFactory(), Mock())
-
-    actual = sut.run(options(watch=True))
-
-    assert actual == 0
-
-
-@pytest.mark.usefixtures("failing_sshclient_stub")
-def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one():
-
-    sut = Application(SSHExecutorFactory(options(watch=True)), DummyFilesystemFactory(), Mock())
-
-    actual = sut.run(options(watch=True))
-
-    assert actual == 1
-
+    
 
 def test__given_valid_config__when_running_long_running_job__should_wait_for_completion(sshclient_type_mock):
 
@@ -101,66 +69,6 @@ def test__given_valid_config__when_running_long_running_job__should_wait_for_com
 
     assert actual == 0
     assert channel_spy.times_called == 2
-
-
-@pytest.mark.usefixtures("successful_sshclient_stub")
-def test__given_ui__when_running__should_update_ui_after_polling():
-    ui_spy = Mock()
-    sut = Application(SSHExecutorFactory(options(watch=True)), DummyFilesystemFactory(), ui_spy)
-
-    _ = sut.run(options(watch=True))
-
-    ui_spy.update.assert_called_with(completed_slurm_job())
-
-
-def test__given_running_application__when_canceling_after_polling_job__should_cancel_job(sshclient_type_mock):
-    from threading import Thread
-
-    sut = Application(SSHExecutorFactory(options(watch=True)), DummyFilesystemFactory(), Mock())
-
-    long_running = int(1e10)
-    sacct_channel = ChannelFileStub(
-        lines=get_success_lines(),
-        channel=DelayedChannelSpy(calls_until_exit=long_running)
-    )
-
-    sshclient_mock = Mock(wraps=CmdSpecificSSHClientStub({
-        "sbatch": ChannelFileStub(lines=["1234"]),
-        "sacct": sacct_channel,
-        "scancel": ChannelFileStub(lines=[])
-    }))
-
-    sshclient_mock.exec_command.side_effect = mark_as_done_after_scancel(
-        sacct_channel)
-
-    sshclient_type_mock.return_value = sshclient_mock
-
-    thread = Thread(target=lambda: sut.run(options(watch=True)))
-    thread.start()
-    wait_until_first_job_poll(sshclient_mock)
-
-    actual = sut.cancel()
-
-    thread.join()
-
-    assert call.exec_command("scancel 1234") in sshclient_mock.method_calls
-    assert actual == 130
-
-
-def wait_until_first_job_poll(sshclient_mock):
-    args_list = sshclient_mock.exec_command.call_args_list
-    while not any(args[0].startswith("sacct") for args, _ in args_list):
-        continue
-
-
-def mark_as_done_after_scancel(channel):
-    def _mark_cmd_as_done_after_scancel(command):
-        if command.startswith("scancel"):
-            channel._channel = ChannelStub()
-
-        return DEFAULT
-
-    return _mark_cmd_as_done_after_scancel
 
 
 def completed_slurm_job():

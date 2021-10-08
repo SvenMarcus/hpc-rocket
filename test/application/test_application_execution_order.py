@@ -1,6 +1,6 @@
+from hpcrocket.core.launchoptions import JobBasedOptions
 from test.application.launchoptions import *
-from test.testdoubles.executor import (
-    CompletedSlurmJobCommandStub, SlurmJobSubmittedCommandStub)
+from test.testdoubles.executor import SlurmJobExecutorSpy
 from typing import Any
 from unittest.mock import Mock
 
@@ -10,14 +10,10 @@ from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory, Run
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 
 
-class CallOrderVerification(CommandExecutor, Filesystem):
-
-    commands_by_executable = {
-        "sbatch": SlurmJobSubmittedCommandStub,
-        "sacct": CompletedSlurmJobCommandStub
-    }
+class CallOrderVerification(SlurmJobExecutorSpy, Filesystem):
 
     def __init__(self, expected):
+        super().__init__()
         self.log = []
         self.expected = expected
 
@@ -27,7 +23,7 @@ class CallOrderVerification(CommandExecutor, Filesystem):
     def exec_command(self, command: str) -> RunningCommand:
         executable = command.split()[0]
         self.log.append(executable)
-        return self.commands_by_executable[executable]()
+        return super().exec_command(command)
 
     def connect(self) -> None:
         pass
@@ -51,7 +47,7 @@ class CallOrderVerification(CommandExecutor, Filesystem):
 class CallOrderVerificationFactory(CommandExecutorFactory, FilesystemFactory):
 
     def __init__(self) -> None:
-        self.verifier = None
+        self.verifier = CallOrderVerification([])
 
     def create_executor(self):
         return self.verifier
@@ -72,17 +68,16 @@ def test__given_launchoptions_with_watch_disabled_files_to_copy_collect_and_clea
     )
 
     factory = CallOrderVerificationFactory()
-    factory.verifier = CallOrderVerification([
+    factory.verifier.expected = [
         "copy myfile.txt mycopy.txt",
         "sbatch"
-    ])
+    ]
 
     sut = Application(factory, factory, Mock())
 
     sut.run(opts)
 
     factory.verifier()
-
 
 
 def test__given_launchoptions_with_watch_enabled_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_collect_then_clean():
@@ -94,13 +89,30 @@ def test__given_launchoptions_with_watch_enabled_files_to_copy_collect_and_clean
     )
 
     factory = CallOrderVerificationFactory()
-    factory.verifier = CallOrderVerification([
+    factory.verifier.expected = [
         "copy myfile.txt mycopy.txt",
         "sbatch",
         "sacct",
         "copy mycopy.txt mycollect.txt",
         "delete mycopy.txt",
-    ])
+    ]
+
+    sut = Application(factory, factory, Mock())
+
+    sut.run(opts)
+
+    factory.verifier()
+
+
+def test__given_job_options_with_status_action__should_only_poll_job_status():
+    opts = JobBasedOptions(
+        jobid="1234",
+        action=JobBasedOptions.Action.status,
+        connection=main_connection()
+    )
+
+    factory = CallOrderVerificationFactory()
+    factory.verifier.expected = ["sacct"]
 
     sut = Application(factory, factory, Mock())
 

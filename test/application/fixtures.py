@@ -28,26 +28,6 @@ def sshclient_type_mock():
     patcher.stop()
 
 
-@pytest.fixture
-def successful_sshclient_stub(sshclient_type_mock):
-    return make_successful_sshclient(sshclient_type_mock)
-
-
-def make_successful_sshclient(sshclient_type_mock):
-    wrapper_mock = Mock(wraps=CmdSpecificSSHClientStub.successful())
-    sshclient_type_mock.return_value = wrapper_mock
-
-    return wrapper_mock
-
-
-@pytest.fixture
-def failing_sshclient_stub(sshclient_type_mock):
-    wrapper_mock = Mock(wraps=CmdSpecificSSHClientStub.failing())
-    sshclient_type_mock.return_value = wrapper_mock
-
-    return wrapper_mock
-
-
 @pytest.fixture(autouse=True)
 def osfs_type_mock():
     patcher = patch("fs.osfs.OSFS")

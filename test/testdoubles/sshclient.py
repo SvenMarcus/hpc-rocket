@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from test.slurmoutput import get_error_lines, get_success_lines
+from test.slurmoutput import get_success_lines
 from typing import Dict, List, Optional, Tuple, Type
 from unittest.mock import Mock
 
@@ -62,9 +62,6 @@ class CmdSpecificSSHClientStub:
     def successful(cls: Type['CmdSpecificSSHClientStub']):
         return SuccessfulSlurmCmdSSHClient()
 
-    @classmethod
-    def failing(cls: Type['CmdSpecificSSHClientStub']):
-        return FailingSlurmCmdSSHClient()
 
     def __init__(self, cmd_to_channels: Dict[str, ChannelFileStub]):
         self.cmd_to_channels = cmd_to_channels
@@ -96,15 +93,6 @@ class SuccessfulSlurmCmdSSHClient(CmdSpecificSSHClientStub):
         super().__init__({
             "sbatch": ChannelFileStub(lines=["1234"]),
             "sacct": ChannelFileStub(lines=get_success_lines())
-        })
-
-
-class FailingSlurmCmdSSHClient(CmdSpecificSSHClientStub):
-
-    def __init__(self):
-        super().__init__({
-            "sbatch": ChannelFileStub(lines=["1234"]),
-            "sacct": ChannelFileStub(lines=get_error_lines())
         })
 
 

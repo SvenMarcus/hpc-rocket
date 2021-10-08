@@ -4,7 +4,7 @@ from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory
 from hpcrocket.core.filesystem import FilesystemFactory
-from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.core.launchoptions import JobBasedOptions, LaunchOptions
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher
@@ -34,6 +34,9 @@ class Application:
 
     def _run_workflow(self, options: LaunchOptions):
         with self._executor_factory.create_executor() as executor:
+            if isinstance(options, JobBasedOptions):
+                executor.exec_command(f"sacct -j {options.jobid}")
+
             self._env_prep = self._create_env_preparation(options)
             self._try_env_preparation()
             self._run_batchjob(options, executor)
