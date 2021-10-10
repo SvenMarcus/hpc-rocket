@@ -8,6 +8,7 @@ class RunningCommand(ABC):
     def wait_until_exit(self) -> int:
         pass
 
+    @property
     @abstractmethod
     def exit_status(self) -> int:
         pass

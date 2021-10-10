@@ -1,5 +1,5 @@
 import dataclasses
-from typing import List
+from typing import List, Optional
 from hpcrocket.core.environmentpreparation import CopyInstruction
 
 from hpcrocket.core.launchoptions import LaunchOptions
@@ -7,13 +7,13 @@ from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 def options(
-    copy: List[CopyInstruction] = None,
-    collect: List[CopyInstruction] = None,
-    clean: List[str] = None,
-    connection: ConnectionData = None,
-    proxyjumps: List[ConnectionData] = None,
+    copy: Optional[List[CopyInstruction]] = None,
+    collect: Optional[List[CopyInstruction]] = None,
+    clean: Optional[List[str]] = None,
+    connection: Optional[ConnectionData] = None,
+    proxyjumps: Optional[List[ConnectionData]] = None,
     watch: bool = False
-):
+) -> LaunchOptions:
     return LaunchOptions(
         connection=connection or main_connection(),
         proxyjumps=proxyjumps or [],
@@ -26,16 +26,16 @@ def options(
     )
 
 
-def options_with_proxy():
+def options_with_proxy() -> LaunchOptions:
     return options(proxyjumps=[proxy_connection()])
 
 
-def options_with_proxy_only_password():
+def options_with_proxy_only_password() -> LaunchOptions:
     return options(connection=main_connection_only_password(),
                    proxyjumps=[proxy_connection_only_password()])
 
 
-def main_connection():
+def main_connection() -> ConnectionData:
     return ConnectionData(
         hostname="example.com",
         username="myuser",
@@ -45,14 +45,14 @@ def main_connection():
     )
 
 
-def main_connection_only_password():
+def main_connection_only_password() -> ConnectionData:
     return dataclasses.replace(
         main_connection(),
         key=None,
         keyfile=None)
 
 
-def proxy_connection():
+def proxy_connection() -> ConnectionData:
     return ConnectionData(
         hostname="proxy1-host",
         username="proxy1-user",
@@ -61,7 +61,7 @@ def proxy_connection():
     )
 
 
-def proxy_connection_only_password():
+def proxy_connection_only_password() -> ConnectionData:
     return dataclasses.replace(
         proxy_connection(),
         key=None,

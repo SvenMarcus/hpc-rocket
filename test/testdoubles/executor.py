@@ -21,7 +21,6 @@ class CommandExecutorFactoryStub(CommandExecutorFactory):
     def create_executor(self) -> CommandExecutor:
         return self._return_value
 
-
 class CommandExecutorSpy(CommandExecutor):
 
     @dataclass
@@ -45,7 +44,7 @@ class CommandExecutorSpy(CommandExecutor):
     def exec_command(self, cmd: str) -> RunningCommand:
         split = cmd.split()
         self.commands.append(CommandExecutorSpy.Command(split[0], split[1:]))
-
+        return RunningCommandStub()
 
 class SlurmJobExecutorFactoryStub(CommandExecutorFactory):
 
@@ -82,6 +81,25 @@ class SlurmJobExecutorSpy(CommandExecutorSpy):
         pass
 
 
+class RunningCommandStub(RunningCommand):
+
+    def __init__(self, exit_code: int = 0) -> None:
+        self.exit_code = exit_code
+
+    @property
+    def exit_status(self) -> int:
+        return self.exit_code
+
+    def wait_until_exit(self) -> int:
+        return self.exit_code
+
+    def stderr(self) -> List[str]:
+        return None # type: ignore
+
+    def stdout(self) -> List[str]:
+        return None # type: ignore
+
+
 class SlurmJobCommandStub(RunningCommand):
 
     def wait_until_exit(self) -> int:
@@ -111,21 +129,6 @@ class InfiniteSlurmJobCommand(SlurmJobCommandStub):
 
     def mark_canceled(self):
         self._canceled = True
-
-class SlurmJobCommandStub(RunningCommand):
-
-    def wait_until_exit(self) -> int:
-        return 0
-
-    @property
-    def exit_status(self) -> int:
-        return 0
-
-    def stdout(self) -> List[str]:
-        return []
-
-    def stderr(self) -> List[str]:
-        return []
 
 
 class CompletedSlurmJobCommandStub(SlurmJobCommandStub):
