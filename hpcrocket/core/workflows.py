@@ -1,10 +1,14 @@
 from abc import abstractmethod
-from typing import Protocol
 
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol # type: ignore
 
 
 class Workflow(Protocol):
