@@ -9,7 +9,7 @@ from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
-def parse_cli_args(args) -> LaunchOptions:
+def parse_cli_args(args: List[str]) -> LaunchOptions:
     parser = _setup_parser()
     config = parser.parse_args(args)
 
@@ -20,7 +20,7 @@ def parse_cli_args(args) -> LaunchOptions:
     return options_parser.parse()
 
 
-def _setup_parser():
+def _setup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser("hpc-rocket")
     subparsers = parser.add_subparsers()
 
@@ -30,7 +30,7 @@ def _setup_parser():
     return parser
 
 
-def _setup_cli_parser(subparsers):
+def _setup_cli_parser(subparsers: argparse._SubParsersAction) -> None:
     run_parser = subparsers.add_parser("run", help="Configure HPC Rocket from the command line")
     run_parser.add_argument("jobfile", type=str, help="The name of the job file to run with sbatch")
     run_parser.add_argument("--host", type=str, required=True, help="Address of the remote machine")
@@ -40,7 +40,7 @@ def _setup_cli_parser(subparsers):
     run_parser.add_argument("--keyfile", type=str, help="The path to a file containing a private SSH key")
 
 
-def _setup_yaml_parser(subparsers: argparse._SubParsersAction):
+def _setup_yaml_parser(subparsers: argparse._SubParsersAction) -> None:
     yaml_parser = subparsers.add_parser("launch", help="Configure HPC Rocket from a configuration file")
     yaml_parser.add_argument("configfile", type=str)
     yaml_parser.add_argument("--watch", default=False, dest="watch", action="store_true")
@@ -90,7 +90,7 @@ class YamlConfiguration(Configuration):
                 proxyjumps=self._collect_proxyjumps(config.get("proxyjumps", []))
             )
 
-    def _connection_data_from_dict(self, config):
+    def _connection_data_from_dict(self, config: Dict[str, str]) -> ConnectionData:
         return ConnectionData(
             hostname=config["host"],
             username=config["user"],
@@ -98,11 +98,11 @@ class YamlConfiguration(Configuration):
             password=str(config.get("password"))
         )
 
-    def _collect_proxyjumps(self, proxyjumps: List[Dict[str, str]]):
+    def _collect_proxyjumps(self, proxyjumps: List[Dict[str, str]]) -> List[ConnectionData]:
         return [self._connection_data_from_dict(proxy) for proxy in proxyjumps]
 
-    def _collect_copy_instructions(self, copy_list):
+    def _collect_copy_instructions(self, copy_list: List[Dict[str, str]]) -> List[CopyInstruction]:
         return [CopyInstruction(cp["from"],
                                 cp["to"],
-                                cp.get("overwrite", False))
+                                bool(cp.get("overwrite", False)))
                 for cp in copy_list]

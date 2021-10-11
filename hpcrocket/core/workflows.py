@@ -35,5 +35,5 @@ class LaunchWorkflow(Workflow):
 
         return 1
 
-    def _callback(self, new_status: SlurmJobStatus):
+    def _callback(self, new_status: SlurmJobStatus) -> None:
         self._job_status = new_status

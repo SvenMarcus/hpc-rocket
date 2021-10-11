@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any
 from rich import box
 
 from rich.console import RenderableType
@@ -55,7 +56,7 @@ class RichUI(UI):
     def __init__(self) -> None:
         self._rich_live: Live
 
-    def __enter__(self):
+    def __enter__(self) -> 'RichUI':
         self._rich_live = Live(
             Spinner("bouncingBar", ""),
             refresh_per_second=16)
@@ -63,7 +64,7 @@ class RichUI(UI):
         self._rich_live.start()
         return self
 
-    def __exit__(self, *args, **kwargs):
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
         self._rich_live.stop()
 
     def update(self, job: SlurmJobStatus) -> None:

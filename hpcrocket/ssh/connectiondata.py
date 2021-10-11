@@ -17,13 +17,13 @@ class ConnectionData:
         return ConnectionData._resolve_keyfile_in_connection(connection_data)
 
     @staticmethod
-    def _resolve_keyfile_in_connection(connection):
+    def _resolve_keyfile_in_connection(connection: 'ConnectionData') -> 'ConnectionData':
         keyfile = ConnectionData._resolve_keyfile_from_home_dir(connection.keyfile)
         connection = replace(connection, keyfile=keyfile)
         return connection
 
     @staticmethod
-    def _resolve_keyfile_from_home_dir(keyfile: str) -> Optional[str]:
+    def _resolve_keyfile_from_home_dir(keyfile: Optional[str]) -> Optional[str]:
         home_dir = os.environ["HOME"]
         if not keyfile:
             return None

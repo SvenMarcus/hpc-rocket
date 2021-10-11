@@ -17,7 +17,7 @@ class WatcherThread(threading.Thread):
         self.stop_event = threading.Event()
         self._done = False
 
-    def poll(self):
+    def poll(self) -> None:
         last_job = None
         while not self.stop_event.wait(self.interval):
             job = self.runner.poll_status()
@@ -30,8 +30,8 @@ class WatcherThread(threading.Thread):
             if self._done:
                 break
 
-    def stop(self):
+    def stop(self) -> None:
         self.stop_event.set()
 
-    def is_done(self):
+    def is_done(self) -> bool:
         return self._done

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from hpcrocket.watcher.jobwatcher import JobWatcher
 from typing import List
 
-from hpcrocket.core.executor import CommandExecutor
+from hpcrocket.core.executor import CommandExecutor, RunningCommand
 
 
 class SlurmError(RuntimeError):
@@ -91,11 +91,11 @@ class SlurmBatchJob:
     def get_watcher(self) -> JobWatcher:
         return JobWatcher(self)
 
-    def _raise_if_not_submitted(self):
+    def _raise_if_not_submitted(self) -> None:
         if not self._job_id:
             raise SlurmError("Job has not been submitted")
 
-    def _wait_for_success_or_raise(self, cmd):
+    def _wait_for_success_or_raise(self, cmd: RunningCommand) -> None:
         cmd.wait_until_exit()
         if cmd.exit_status != 0:
             raise SlurmError(cmd.stderr())
