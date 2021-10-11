@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Type
 
 
 class RunningCommand(ABC):
@@ -28,7 +28,7 @@ class CommandExecutor(ABC):
         self.connect()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Type[Exception], exc_val: Exception, exc_tb: str) -> None:
         self.close()
 
     @abstractmethod

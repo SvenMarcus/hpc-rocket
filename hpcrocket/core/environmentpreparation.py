@@ -88,7 +88,7 @@ class EnvironmentPreparation:
         for file in self._delete:
             self._try_delete(file)
 
-    def _try_delete(self, file) -> bool:
+    def _try_delete(self, file: str) -> bool:
         try:
             self._target_filesystem.delete(file)
         except FileNotFoundError as err:
@@ -141,7 +141,7 @@ class EnvironmentPreparation:
         Raises:
             FileNotFoundError: If a file to rollback is not found on the target filesystem
         """
-        deleted_files = []
+        deleted_files: List[str] = []
         for file in self._copied_files:
             deleted = self._try_delete(file)
             if deleted:

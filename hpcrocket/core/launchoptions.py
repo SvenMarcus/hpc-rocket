@@ -6,17 +6,6 @@ from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore
-
-
-class BaseOptions(Protocol):
-    connection: ConnectionData
-    proxyjumps: List[ConnectionData]
-
-
 @dataclass
 class LaunchOptions:
     sbatch: str

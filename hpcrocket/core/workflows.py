@@ -4,7 +4,7 @@ from typing import Protocol
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob
+from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 
 
 class Workflow(Protocol):
@@ -30,5 +30,5 @@ class LaunchWorkflow(Workflow):
 
         return 1
 
-    def _callback(self, new_status):
+    def _callback(self, new_status: SlurmJobStatus):
         self._job_status = new_status

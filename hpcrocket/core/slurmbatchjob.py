@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from hpcrocket.watcher.jobwatcher import JobWatcher
-from typing import List, Tuple
+from typing import List
 
 from hpcrocket.core.executor import CommandExecutor
 
@@ -23,19 +23,13 @@ class SlurmJobStatus:
 
     @classmethod
     def from_output(cls, output: List[str]) -> 'SlurmJobStatus':
-        main_task = SlurmTaskStatus("", "", "")
-        tasks: List[SlurmTaskStatus] = []
-        for index, line in enumerate(output):
-            if not line:
-                continue
+        tasks = [
+            SlurmTaskStatus(*line.split()[:3])
+            for line in output if line
+        ]
 
-            task_str_list = line.split()
-            task = SlurmTaskStatus(task_str_list[0],
-                                   task_str_list[1], task_str_list[2])
-            if index == 0:
-                main_task = task
-
-            tasks.append(task)
+        main_task = (tasks[0] if tasks
+                     else SlurmTaskStatus("", "", ""))
 
         return SlurmJobStatus(id=main_task.id,
                               name=main_task.name,

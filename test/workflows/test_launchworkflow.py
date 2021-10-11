@@ -1,11 +1,10 @@
 from test.application.launchoptions import options
-from test.testdoubles.executor import (FailedSlurmJobCommandStub,
-                                       InfiniteSlurmJobCommand, LongRunningSlurmJobExecutorSpy,
+from test.testdoubles.executor import (CommandExecutorSpy, FailedSlurmJobCommandStub,
+                                       LongRunningSlurmJobExecutorSpy,
                                        SlurmJobExecutorSpy,
                                        SuccessfulSlurmJobCommandStub)
 from test.testdoubles.filesystem import DummyFilesystemFactory
 
-import pytest
 from hpcrocket.core.workflows import LaunchWorkflow
 
 
@@ -47,6 +46,6 @@ def test__given_long_running_job__should_poll_job_status_until_finished():
     assert_correct_job_poll(executor, command_index=2)
 
 
-def assert_correct_job_poll(executor, command_index):
+def assert_correct_job_poll(executor: CommandExecutorSpy, command_index: int):
     assert executor.commands[command_index].cmd == "sacct"
     assert executor.commands[command_index].args[:2] == ["-j", "1234"]

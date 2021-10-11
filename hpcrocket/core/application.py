@@ -1,10 +1,10 @@
-from typing import Any, Callable, List, Tuple, Union
+from typing import Any, Callable, Union, cast
 from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import JobBasedOptions, LaunchOptions
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus, SlurmTaskStatus
+from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher
 
@@ -21,17 +21,15 @@ class Application:
         self._watcher: JobWatcher
         self._jobid: str
 
-    def run(self, options: LaunchOptions) -> int:
+    def run(self, options: Union[LaunchOptions, JobBasedOptions]) -> int:
         exit_code = 0
         try:
             with self._executor_factory.create_executor() as executor:
-                workflow_function: Callable[[CommandExecutor, Any], int]
                 if isinstance(options, JobBasedOptions):
-                    workflow_function = self._run_status_workflow
+                    exit_code = self._run_status_workflow(executor, options)
                 else:
-                    workflow_function = self._run_launch_workflow
+                    exit_code = self._run_launch_workflow(executor, options)
 
-                exit_code = workflow_function(executor, options)
         except Exception as err:
             self._ui.error(get_error_message(err))
             exit_code = 1
