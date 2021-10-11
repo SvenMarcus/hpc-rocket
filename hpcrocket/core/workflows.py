@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from typing import Optional
 
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory
@@ -23,7 +24,7 @@ class LaunchWorkflow(Workflow):
     def __init__(self, filesystem_factory: FilesystemFactory, options: LaunchOptions) -> None:
         self._filesystem_factory = filesystem_factory
         self._options = options
-        self._job_status = None
+        self._job_status: Optional[SlurmJobStatus] = None
 
     def run(self, executor: CommandExecutor) -> int:
         batch_job = SlurmBatchJob(executor, self._options.sbatch)
