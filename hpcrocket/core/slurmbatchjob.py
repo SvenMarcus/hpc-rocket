@@ -20,6 +20,28 @@ class SlurmTaskStatus:
 
 @dataclass
 class SlurmJobStatus:
+
+    @classmethod
+    def from_output(cls, output: List[str]) -> 'SlurmJobStatus':
+        main_task = SlurmTaskStatus("", "", "")
+        tasks: List[SlurmTaskStatus] = []
+        for index, line in enumerate(output):
+            if not line:
+                continue
+
+            task_str_list = line.split()
+            task = SlurmTaskStatus(task_str_list[0],
+                                   task_str_list[1], task_str_list[2])
+            if index == 0:
+                main_task = task
+
+            tasks.append(task)
+
+        return SlurmJobStatus(id=main_task.id,
+                              name=main_task.name,
+                              state=main_task.state,
+                              tasks=tasks)
+
     id: str
     name: str
     state: str
@@ -69,12 +91,8 @@ class SlurmBatchJob:
         cmd = self._executor.exec_command(
             f"sacct -j {self._job_id} -o jobid,jobname%30,state --noheader")
         cmd.wait_until_exit()
-        main_task, tasks = self._collect_slurm_tasks(cmd.stdout())
 
-        return SlurmJobStatus(id=main_task.id,
-                              name=main_task.name,
-                              state=main_task.state,
-                              tasks=tasks)
+        return SlurmJobStatus.from_output(cmd.stdout())
 
     def get_watcher(self) -> JobWatcher:
         return JobWatcher(self)
@@ -87,20 +105,3 @@ class SlurmBatchJob:
         cmd.wait_until_exit()
         if cmd.exit_status != 0:
             raise SlurmError(cmd.stderr())
-
-    def _collect_slurm_tasks(self, output: List[str]) -> Tuple[SlurmTaskStatus, List[SlurmTaskStatus]]:
-        main_task = SlurmTaskStatus("", "", "")
-        tasks: List[SlurmTaskStatus] = []
-        for index, line in enumerate(output):
-            if not line:
-                continue
-
-            task_str_list = line.split()
-            task = SlurmTaskStatus(task_str_list[0],
-                                   task_str_list[1], task_str_list[2])
-            if index == 0:
-                main_task = task
-
-            tasks.append(task)
-
-        return main_task, tasks

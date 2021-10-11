@@ -1,17 +1,20 @@
-import pytest
-
+from test.application.executor_filesystem_callorder import \
+    CallOrderVerificationFactory
 from test.application.launchoptions import main_connection, options
+from test.slurmoutput import completed_slurm_job
 from test.testdoubles.executor import (CommandExecutorFactoryStub,
                                        CommandExecutorSpy,
                                        FailedSlurmJobCommandStub,
                                        InfiniteSlurmJobCommand,
-                                       SlurmJobExecutorSpy)
+                                       SlurmJobExecutorSpy,
+                                       SuccessfulSlurmJobCommandStub)
 from test.testdoubles.filesystem import DummyFilesystemFactory
 from unittest.mock import Mock
 
+import pytest
 from hpcrocket.core.application import Application
+from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.core.executor import RunningCommand
-from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmTaskStatus
 from hpcrocket.ssh.errors import SSHError
 
 
@@ -27,21 +30,17 @@ class ConnectionFailingCommandExecutor(CommandExecutorSpy):
         pass
 
 
-def test__given_failing_ssh_connection__when_running__should_log_error_and_exit_with_code_1():
-    ui_spy = Mock()
+def test__given_valid_config__when_running__should_run_sbatch_with_executor():
+    executor = SlurmJobExecutorSpy()
+    sut = Application(CommandExecutorFactoryStub(executor), DummyFilesystemFactory(), Mock())
 
-    executor = ConnectionFailingCommandExecutor()
-    sut = Application(CommandExecutorFactoryStub(executor), DummyFilesystemFactory(), ui_spy)
+    sut.run(options())
 
-    actual = sut.run(options(watch=True))
-
-    ui_spy.error.assert_called_once_with(f"SSHError: {main_connection().hostname}")
-    assert executor.commands == []
-    assert actual == 1
+    assert str(executor.commands[0]) == f"sbatch {options().sbatch}"
 
 
 def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_zero():
-    executor = SlurmJobExecutorSpy()
+    executor = SlurmJobExecutorSpy(sacct_cmd=SuccessfulSlurmJobCommandStub())
     sut = Application(CommandExecutorFactoryStub(executor), DummyFilesystemFactory(), Mock())
 
     actual = sut.run(options(watch=True))
@@ -68,6 +67,19 @@ def test__given_ui__when_running__should_update_ui_after_polling():
     ui_spy.update.assert_called_with(completed_slurm_job())
 
 
+def test__given_failing_ssh_connection__when_running__should_log_error_and_exit_with_code_1():
+    ui_spy = Mock()
+
+    executor = ConnectionFailingCommandExecutor()
+    sut = Application(CommandExecutorFactoryStub(executor), DummyFilesystemFactory(), ui_spy)
+
+    actual = sut.run(options(watch=True))
+
+    ui_spy.error.assert_called_once_with(f"SSHError: {main_connection().hostname}")
+    assert executor.commands == []
+    assert actual == 1
+
+
 @pytest.mark.timeout(1)
 def test__given_infinite_running_job__when_canceling__should_cancel_job_and_exit_with_code_130():
     infinite_running_job = InfiniteSlurmJobCommand()
@@ -82,6 +94,51 @@ def test__given_infinite_running_job__when_canceling__should_cancel_job_and_exit
 
     thread.join()
     assert actual == 130
+
+
+def test__given_options_without_watch_and_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_exit():
+    opts = options(
+        copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
+        collect=[CopyInstruction("mycopy.txt", "mycollect.txt")],
+        clean=["mycopy.txt"],
+        watch=False
+    )
+
+    factory = CallOrderVerificationFactory()
+    factory.verifier.expected = [
+        "copy myfile.txt mycopy.txt",
+        "sbatch"
+    ]
+
+    sut = Application(factory, factory, Mock())
+
+    sut.run(opts)
+
+    factory.verifier()
+
+
+def test__given_launchoptions_with_watch_and_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_collect_then_clean():
+    opts = options(
+        copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
+        collect=[CopyInstruction("mycopy.txt", "mycollect.txt")],
+        clean=["mycopy.txt"],
+        watch=True
+    )
+
+    factory = CallOrderVerificationFactory()
+    factory.verifier.expected = [
+        "copy myfile.txt mycopy.txt",
+        "sbatch",
+        "sacct",
+        "copy mycopy.txt mycollect.txt",
+        "delete mycopy.txt",
+    ]
+
+    sut = Application(factory, factory, Mock())
+
+    sut.run(opts)
+
+    factory.verifier()
 
 
 def run_in_background(sut):
@@ -99,20 +156,3 @@ def wait_until_polled(executor: CommandExecutorSpy):
 
     while not was_polled():
         continue
-
-
-def completed_slurm_job():
-    return SlurmJobStatus(
-        id="1603353",
-        name="PyFluidsTest",
-        state="COMPLETED",
-        tasks=[
-            SlurmTaskStatus("1603353", "PyFluidsTest", "COMPLETED"),
-            SlurmTaskStatus("1603353.bat+", "batch", "COMPLETED"),
-            SlurmTaskStatus("1603353.ext+",  "extern", "COMPLETED"),
-            SlurmTaskStatus("1603353.0", "singularity", "COMPLETED"),
-            SlurmTaskStatus("1603353.1", "singularity", "COMPLETED"),
-            SlurmTaskStatus("1603353.2", "singularity", "COMPLETED"),
-            SlurmTaskStatus("1603353.3", "singularity", "COMPLETED")
-        ]
-    )

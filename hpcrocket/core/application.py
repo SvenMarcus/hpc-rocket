@@ -1,9 +1,10 @@
+from typing import Any, Callable, List, Tuple, Union
 from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import JobBasedOptions, LaunchOptions
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
+from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus, SlurmTaskStatus
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher
 
@@ -24,10 +25,13 @@ class Application:
         exit_code = 0
         try:
             with self._executor_factory.create_executor() as executor:
+                workflow_function: Callable[[CommandExecutor, Any], int]
                 if isinstance(options, JobBasedOptions):
-                    exit_code = self._run_status_workflow(executor, options)
+                    workflow_function = self._run_status_workflow
                 else:
-                    exit_code = self._run_launch_workflow(executor, options)
+                    workflow_function = self._run_launch_workflow
+
+                exit_code = workflow_function(executor, options)
         except Exception as err:
             self._ui.error(get_error_message(err))
             exit_code = 1
@@ -36,7 +40,11 @@ class Application:
 
     def _run_status_workflow(self, executor: CommandExecutor, options: JobBasedOptions) -> int:
         cmd = executor.exec_command(f"sacct -j {options.jobid}")
-        return cmd.exit_status
+        exit_code = cmd.wait_until_exit()
+        job_status = SlurmJobStatus.from_output(cmd.stdout())
+        self._ui.update(job_status)
+
+        return exit_code
 
     def _run_launch_workflow(self, executor: CommandExecutor, options: LaunchOptions) -> int:
         self._env_prep = self._create_env_preparation(options)

@@ -1,8 +1,26 @@
 from dataclasses import dataclass, field
 
-from test.slurmoutput import get_error_lines, get_success_lines
+from test.slurmoutput import get_error_lines, get_running_lines, get_success_lines
 from typing import Callable, List
 from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory, RunningCommand
+
+
+DEFAULT_JOB_ID = "1234"
+SLURM_SBATCH_COMMAND = "sbatch"
+SLURM_SACCT_COMMAND = "sacct -j %s"
+SLURM_SCANCEL_COMMAND = "scancel %s"
+
+
+def is_sbatch(cmd: str):
+    return cmd.startswith(SLURM_SBATCH_COMMAND)
+
+
+def is_sacct(cmd: str, jobid: str):
+    return cmd.startswith(SLURM_SACCT_COMMAND % jobid)
+
+
+def is_scancel(cmd: str, jobid: str):
+    return cmd.startswith(SLURM_SCANCEL_COMMAND % jobid)
 
 
 class CommandExecutorFactoryStub(CommandExecutorFactory):
@@ -20,6 +38,7 @@ class CommandExecutorFactoryStub(CommandExecutorFactory):
 
     def create_executor(self) -> CommandExecutor:
         return self._return_value
+
 
 class CommandExecutorSpy(CommandExecutor):
 
@@ -43,8 +62,12 @@ class CommandExecutorSpy(CommandExecutor):
 
     def exec_command(self, cmd: str) -> RunningCommand:
         split = cmd.split()
-        self.commands.append(CommandExecutorSpy.Command(split[0], split[1:]))
+        self.log_command(split)
         return RunningCommandStub()
+
+    def log_command(self, split):
+        self.commands.append(CommandExecutorSpy.Command(split[0], split[1:]))
+
 
 class SlurmJobExecutorFactoryStub(CommandExecutorFactory):
 
@@ -54,23 +77,24 @@ class SlurmJobExecutorFactoryStub(CommandExecutorFactory):
 
 class SlurmJobExecutorSpy(CommandExecutorSpy):
 
-    def __init__(self, sacct_cmd: RunningCommand = None):
+    def __init__(self, sacct_cmd: RunningCommand = None, jobid: str = DEFAULT_JOB_ID):
         super().__init__()
-        self.sacct_cmd = sacct_cmd or CompletedSlurmJobCommandStub()
+        self.sacct_cmd = sacct_cmd or SuccessfulSlurmJobCommandStub()
         self.scancel_callback = lambda: None
+        self.jobid = jobid
 
     def on_scancel(self, callback: Callable):
-        self.scancel_callback = callback        
+        self.scancel_callback = callback
 
     def exec_command(self, cmd: str) -> RunningCommand:
         super().exec_command(cmd)
-        if cmd.startswith("sbatch"):
+        if is_sbatch(cmd):
             return SlurmJobSubmittedCommandStub()
-        elif cmd.startswith("sacct"):
+        elif is_sacct(cmd, self.jobid):
             return self.sacct_cmd
-        elif cmd.startswith("scancel"):
+        elif is_scancel(cmd, self.jobid):
             self.scancel_callback()
-            return SlurmJobCommandStub()
+            return RunningCommandStub()
 
         raise ValueError(cmd)
 
@@ -81,10 +105,28 @@ class SlurmJobExecutorSpy(CommandExecutorSpy):
         pass
 
 
+class LongRunningSlurmJobExecutorSpy(SlurmJobExecutorSpy):
+
+    def __init__(self, jobid: str = DEFAULT_JOB_ID):
+        super().__init__(sacct_cmd=SuccessfulSlurmJobCommandStub(), jobid=jobid)
+        self.sacct_running_cmd = RunningSlurmJobCommandStub()
+        self.calls = 0
+
+    def exec_command(self, cmd: str) -> RunningCommand:
+        if is_sacct(cmd, self.jobid) and self.calls < 2:
+            self.calls += 1
+            self.log_command(cmd.split())
+            return self.sacct_running_cmd
+
+        return super().exec_command(cmd)
+
+
 class RunningCommandStub(RunningCommand):
 
     def __init__(self, exit_code: int = 0) -> None:
         self.exit_code = exit_code
+        self.stdout_lines: List[str] = []
+        self.stderr_lines: List[str] = []
 
     @property
     def exit_status(self) -> int:
@@ -94,32 +136,49 @@ class RunningCommandStub(RunningCommand):
         return self.exit_code
 
     def stderr(self) -> List[str]:
-        return None # type: ignore
+        return self.stderr_lines
 
     def stdout(self) -> List[str]:
-        return None # type: ignore
+        return self.stdout_lines
 
 
-class SlurmJobCommandStub(RunningCommand):
+class AssertWaitRunningCommandStub(RunningCommandStub):
 
-    def wait_until_exit(self) -> int:
-        return 0
+    def __init__(self, exit_code: int = 0) -> None:
+        super().__init__(exit_code=exit_code)
+        self._waited = False
 
     @property
     def exit_status(self) -> int:
-        return 0
-
-    def stdout(self) -> List[str]:
-        return []
+        self.assert_waited_for_exit()
+        return super().exit_status
 
     def stderr(self) -> List[str]:
-        return []
+        self.assert_waited_for_exit()
+        return super().stderr()
+
+    def stdout(self) -> List[str]:
+        self.assert_waited_for_exit()
+        return super().stdout()
+
+    def assert_waited_for_exit(self):
+        assert self._waited, "Did not wait for exit"
+
+    def wait_until_exit(self) -> int:
+        self._waited = True
+        return super().exit_status
 
 
-class InfiniteSlurmJobCommand(SlurmJobCommandStub):
+class InfiniteSlurmJobCommand(RunningCommandStub):
 
     def __init__(self) -> None:
+        super().__init__(exit_code=0)
         self._canceled = False
+
+    @property
+    def exit_status(self) -> int:
+        assert self._canceled, f"{self:}: Exit status is not ready"
+        return 0
 
     def wait_until_exit(self) -> int:
         while not self._canceled:
@@ -131,36 +190,29 @@ class InfiniteSlurmJobCommand(SlurmJobCommandStub):
         self._canceled = True
 
 
-class CompletedSlurmJobCommandStub(SlurmJobCommandStub):
+class SuccessfulSlurmJobCommandStub(AssertWaitRunningCommandStub):
 
-    def stdout(self) -> List[str]:
-        return get_success_lines()
-
-
-class FailedSlurmJobCommandStub(SlurmJobCommandStub):
-
-    def wait_until_exit(self) -> int:
-        return 1
-
-    @property
-    def exit_status(self) -> int:
-        return 1
-
-    def stdout(self) -> List[str]:
-        return get_error_lines()
+    def __init__(self) -> None:
+        super().__init__(exit_code=0)
+        self.stdout_lines = get_success_lines()
 
 
-class SlurmJobSubmittedCommandStub(RunningCommand):
+class FailedSlurmJobCommandStub(AssertWaitRunningCommandStub):
 
-    def wait_until_exit(self) -> int:
-        return 0
+    def __init__(self) -> None:
+        super().__init__(exit_code=1)
+        self.stdout_lines = get_error_lines()
 
-    @property
-    def exit_status(self) -> int:
-        return 0
 
-    def stdout(self) -> List[str]:
-        return ["Submitted Job 1234"]
+class RunningSlurmJobCommandStub(AssertWaitRunningCommandStub):
 
-    def stderr(self) -> List[str]:
-        return []
+    def __init__(self, exit_code: int = 0) -> None:
+        super().__init__(exit_code=exit_code)
+        self.stdout_lines = get_running_lines()
+
+
+class SlurmJobSubmittedCommandStub(AssertWaitRunningCommandStub):
+
+    def __init__(self) -> None:
+        super().__init__(exit_code=0)
+        self.stdout_lines = [f"Submitted Job {DEFAULT_JOB_ID}"]
