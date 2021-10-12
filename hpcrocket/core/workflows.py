@@ -9,7 +9,7 @@ from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 try:
     from typing import Protocol
 except ImportError:
-    from typing_extensions import Protocol # type: ignore
+    from typing_extensions import Protocol  # type: ignore
 
 
 class Workflow(Protocol):
@@ -29,7 +29,17 @@ class LaunchWorkflow(Workflow):
     def run(self, executor: CommandExecutor) -> int:
         batch_job = SlurmBatchJob(executor, self._options.sbatch)
         batch_job.submit()
-        batch_job.get_watcher().watch(self._callback, self._options.poll_interval)
+
+        if not self._options.watch:
+            return 0
+
+        return self._wait_for_job_exit(batch_job)
+
+    def _wait_for_job_exit(self, batch_job: SlurmBatchJob) -> int:
+        watcher = batch_job.get_watcher()
+        watcher.watch(self._callback, self._options.poll_interval)
+        # watcher.wait_until_done()
+
         if self._job_status and self._job_status.success:
             return 0
 

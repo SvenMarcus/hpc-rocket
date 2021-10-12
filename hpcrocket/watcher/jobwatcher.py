@@ -1,10 +1,26 @@
-from typing import TYPE_CHECKING, Callable
+from abc import abstractmethod
+from typing import TYPE_CHECKING, Callable, Optional
 
 import hpcrocket.watcher.watcherthread as wt
 
 
 if TYPE_CHECKING:
     from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
+
+
+SlurmJobStatusCallback = Callable[['SlurmJobStatus'], None]
+WatcherThreadFactory = Callable[
+    ['SlurmBatchJob', SlurmJobStatusCallback, int],
+    wt.WatcherThread
+]
+
+
+def make_watcher_thread(
+        job: 'SlurmBatchJob',
+        callback: SlurmJobStatusCallback,
+        poll_interval: int) -> wt.WatcherThread:
+
+    return wt.WatcherThread(job, callback, poll_interval)
 
 
 class NotWatchingError(RuntimeError):
@@ -15,13 +31,13 @@ class NotWatchingError(RuntimeError):
 
 class JobWatcher:
 
-    def __init__(self, runner: 'SlurmBatchJob') -> None:
+    def __init__(self, runner: 'SlurmBatchJob', thread_factory: WatcherThreadFactory=make_watcher_thread) -> None:
         self.runner = runner
-        self.watching_thread: wt.WatcherThread = None  # type: ignore[assignment]
+        self.factory = thread_factory
+        self.watching_thread: wt.WatcherThread = None # type: ignore[assignment]
 
-    def watch(self, callback: Callable[['SlurmJobStatus'], None], poll_interval: int) -> None:
-        self.watching_thread = wt.WatcherThread(self.runner, callback, poll_interval)
-
+    def watch(self, callback: SlurmJobStatusCallback, poll_interval: int) -> None:
+        self.watching_thread = self.factory(self.runner, callback, poll_interval)
         self.watching_thread.start()
 
     def is_done(self) -> bool:

@@ -107,13 +107,14 @@ class SlurmJobExecutorSpy(CommandExecutorSpy):
 
 class LongRunningSlurmJobExecutorSpy(SlurmJobExecutorSpy):
 
-    def __init__(self, jobid: str = DEFAULT_JOB_ID):
+    def __init__(self, required_polls_until_done: int = 2, jobid: str = DEFAULT_JOB_ID):
         super().__init__(sacct_cmd=SuccessfulSlurmJobCommandStub(), jobid=jobid)
         self.sacct_running_cmd = RunningSlurmJobCommandStub()
         self.calls = 0
+        self.required_polls_until_done = required_polls_until_done
 
     def exec_command(self, cmd: str) -> RunningCommand:
-        if is_sacct(cmd, self.jobid) and self.calls < 2:
+        if is_sacct(cmd, self.jobid) and self.calls < self.required_polls_until_done:
             self.calls += 1
             self.log_command(cmd.split())
             return self.sacct_running_cmd

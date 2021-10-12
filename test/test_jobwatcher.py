@@ -1,19 +1,57 @@
-from unittest.mock import Mock, patch
+from typing import List
+from unittest.mock import Mock, call, patch
 
 import pytest
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob
-from hpcrocket.watcher.jobwatcher import JobWatcher, NotWatchingError
+from hpcrocket.watcher.jobwatcher import JobWatcher, NotWatchingError, SlurmJobStatusCallback, WatcherThreadFactory
+from hpcrocket.watcher.watcherthread import WatcherThread
+
+
+class WatcherThreadSpy:
+
+    def __init__(self, job: SlurmBatchJob, callback: SlurmJobStatusCallback, poll_interval: int) -> None:
+        self.job = job
+        self.callback = callback
+        self.poll_interval = poll_interval
+
+        self.done = False
+        self.running = False
+
+        self.call_log: List[str] = []
+
+    def is_running(self) -> bool:
+        return self.running
+
+    def start(self) -> None:
+        self.running = True
+        self.call_log.append("start")
+
+    def join(self) -> None:
+        self.call_log.append("join")
+
+    def stop(self) -> None:
+        self.running = False
+        self.call_log.append("stop")
+
+    def is_done(self) -> bool:
+        return self.done
+
+
+class WatcherFactoryStub:
+
+    def __init__(self, done_thread: bool = False) -> None:
+        self.thread_spy: WatcherThreadSpy = None  # type: ignore
+        self.done_thread = done_thread
+
+    def __call__(self, job: SlurmBatchJob, callback: SlurmJobStatusCallback, interval: int) -> WatcherThread:
+        self.thread_spy = WatcherThreadSpy(job, callback, interval)
+        self.thread_spy.done = self.done_thread
+        return self.thread_spy  # type: ignore
 
 
 @pytest.fixture
-def watcherthread_stub():
-    patcher = patch(
-        "hpcrocket.watcher.watcherthread.WatcherThread")
-    patched = patcher.start()
-
-    yield patched
-
-    patcher.stop()
+def thread_factory_stub():
+    return WatcherFactoryStub()
 
 
 @pytest.fixture
@@ -21,74 +59,63 @@ def runner_dummy():
     return Mock(SlurmBatchJob)
 
 
-def test__when_calling_watch__should_spawn_watcher_thread(watcherthread_stub: Mock, runner_dummy: Mock):
-    sut = JobWatcher(runner_dummy)
+def test__when_calling_watch__should_spawn_watcher_thread(thread_factory_stub: Mock, runner_dummy: Mock):
+    wrapped = Mock(wraps=thread_factory_stub)
+    sut = JobWatcher(runner_dummy, wrapped)
 
     def callback(_): return None
     sut.watch(callback, poll_interval=1)
 
-    watcherthread_stub.assert_called_with(
-        runner_dummy, callback, 1)
-
-    watcherthread_mock: Mock = watcherthread_stub.return_value
-    watcherthread_mock.start.assert_called_once()
+    wrapped.assert_called_with(runner_dummy, callback, 1)
+    assert thread_factory_stub.thread_spy.is_running()
 
 
-def test__given_watched_job__is_done_should_return_is_done_from_watcherthread(watcherthread_stub: Mock, runner_dummy: Mock):
-    watcherthread_mock: Mock = watcherthread_stub.return_value
-    watcherthread_mock.is_done.return_value = False
-
-    sut = JobWatcher(runner_dummy)
+@pytest.mark.parametrize("thread_done", [True, False])
+def test__given_watched_job__is_done_should_return_is_done_from_watcherthread(runner_dummy: Mock, thread_done: bool):
+    factory_stub = WatcherFactoryStub(thread_done)
+    sut = JobWatcher(runner_dummy, factory_stub)
     sut.watch(lambda _: None, poll_interval=1)
 
     actual = sut.is_done()
 
-    watcherthread_mock.is_done.assert_called_once()
-    assert actual == False
+    assert actual == thread_done
 
 
 def test__when_calling_is_done_before_watching__should_raise_not_watching_error(runner_dummy: Mock):
-    sut = JobWatcher(runner_dummy)
+    sut = JobWatcher(runner_dummy, WatcherFactoryStub())
 
     with pytest.raises(NotWatchingError):
         sut.is_done()
 
 
-def test__given_watched_job__when_stopping__should_stop_and_join_watch_thread(watcherthread_stub: Mock, runner_dummy: Mock):
-    calls = []
-    watcherthread_mock: Mock = watcherthread_stub.return_value
-    watcherthread_mock.configure_mock(
-        stop=lambda: calls.append("stop"),
-        join=lambda: calls.append("join")
-    )
-
-    sut = JobWatcher(runner_dummy)
+def test__given_watched_job__when_stopping__should_stop_and_join_watch_thread(
+        thread_factory_stub: Mock, runner_dummy: Mock):
+    sut = JobWatcher(runner_dummy, thread_factory_stub)
     sut.watch(lambda _: None, poll_interval=1)
 
     sut.stop()
 
-    assert calls == ["stop", "join"]
+    assert thread_factory_stub.thread_spy.call_log == ["start", "stop", "join"]
 
 
-def test__given_watched_job__when_waiting_until_done__should_call_join(watcherthread_stub: Mock, runner_dummy: Mock):
-    sut = JobWatcher(runner_dummy)
+def test__given_watched_job__when_waiting_until_done__should_call_join(thread_factory_stub: Mock, runner_dummy: Mock):
+    sut = JobWatcher(runner_dummy, thread_factory_stub)
     sut.watch(lambda _: None, poll_interval=1)
 
     sut.wait_until_done()
 
-    watcherthread_mock: Mock = watcherthread_stub.return_value
-    watcherthread_mock.join.assert_called_once()
+    assert thread_factory_stub.thread_spy.call_log == ["start", "join"]
 
 
 def test__when_calling_wait_until_done_before_watching__should_raise_not_watching_error(runner_dummy: Mock):
-    sut = JobWatcher(runner_dummy)
+    sut = JobWatcher(runner_dummy, WatcherFactoryStub())
 
     with pytest.raises(NotWatchingError):
         sut.wait_until_done()
 
 
 def test__when_calling_stop_before_watching__should_raise_not_watching_error(runner_dummy: Mock):
-    sut = JobWatcher(runner_dummy)
+    sut = JobWatcher(runner_dummy, WatcherFactoryStub())
 
     with pytest.raises(NotWatchingError):
         sut.stop()
