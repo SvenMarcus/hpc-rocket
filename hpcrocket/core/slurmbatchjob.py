@@ -62,28 +62,28 @@ class SlurmJobStatus:
 
 class SlurmBatchJob:
 
-    def __init__(self, executor: CommandExecutor, filename: str):
+    def __init__(self, executor: CommandExecutor, filename: str, jobid: str = ""):
         self._executor = executor
         self._filename = filename
-        self._job_id: str = ""
+        self.jobid =  jobid
 
     def submit(self) -> str:
         cmd = self._executor.exec_command("sbatch " + self._filename)
         self._wait_for_success_or_raise(cmd)
         out = cmd.stdout()[0]
-        self._job_id = out.split()[-1]
+        self.jobid = out.split()[-1]
 
-        return self._job_id
+        return self.jobid
 
     def cancel(self) -> None:
         self._raise_if_not_submitted()
-        cmd = self._executor.exec_command("scancel " + self._job_id)
+        cmd = self._executor.exec_command("scancel " + self.jobid)
         self._wait_for_success_or_raise(cmd)
 
     def poll_status(self) -> SlurmJobStatus:
         self._raise_if_not_submitted()
         cmd = self._executor.exec_command(
-            f"sacct -j {self._job_id} -o jobid,jobname%30,state --noheader")
+            f"sacct -j {self.jobid} -o jobid,jobname%30,state --noheader")
         cmd.wait_until_exit()
 
         return SlurmJobStatus.from_output(cmd.stdout())
@@ -92,7 +92,7 @@ class SlurmBatchJob:
         return JobWatcher(self)
 
     def _raise_if_not_submitted(self) -> None:
-        if not self._job_id:
+        if not self.jobid:
             raise SlurmError("Job has not been submitted")
 
     def _wait_for_success_or_raise(self, cmd: RunningCommand) -> None:

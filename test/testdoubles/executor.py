@@ -89,7 +89,7 @@ class SlurmJobExecutorSpy(CommandExecutorSpy):
     def exec_command(self, cmd: str) -> RunningCommand:
         super().exec_command(cmd)
         if is_sbatch(cmd):
-            return SlurmJobSubmittedCommandStub()
+            return SlurmJobSubmittedCommandStub(self.jobid)
         elif is_sacct(cmd, self.jobid):
             return self.sacct_cmd
         elif is_scancel(cmd, self.jobid):
@@ -214,6 +214,6 @@ class RunningSlurmJobCommandStub(AssertWaitRunningCommandStub):
 
 class SlurmJobSubmittedCommandStub(AssertWaitRunningCommandStub):
 
-    def __init__(self) -> None:
+    def __init__(self, jobid) -> None:
         super().__init__(exit_code=0)
-        self.stdout_lines = [f"Submitted Job {DEFAULT_JOB_ID}"]
+        self.stdout_lines = [f"Submitted Job {jobid}"]
