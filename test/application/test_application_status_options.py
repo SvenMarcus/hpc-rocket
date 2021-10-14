@@ -71,7 +71,7 @@ def test__given_job_options_with_status_action__should_only_poll_job_status():
 
 
 def assert_sacct_executed_with_jobid(executor: SlurmJobExecutorSpy):
-    sacct_cmd = executor.commands[0]
+    sacct_cmd = executor.command_log[0]
 
     assert sacct_cmd.cmd == "sacct"
     assert sacct_cmd.args[:2] == ["-j", "1234"]

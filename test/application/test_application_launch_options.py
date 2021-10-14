@@ -36,7 +36,7 @@ def test__given_valid_config__when_running__should_run_sbatch_with_executor():
 
     sut.run(options())
 
-    assert str(executor.commands[0]) == f"sbatch {options().sbatch}"
+    assert str(executor.command_log[0]) == f"sbatch {options().sbatch}"
 
 
 def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_zero():
@@ -76,7 +76,7 @@ def test__given_failing_ssh_connection__when_running__should_log_error_and_exit_
     actual = sut.run(options(watch=True))
 
     ui_spy.error.assert_called_once_with(f"SSHError: {main_connection().hostname}")
-    assert executor.commands == []
+    assert executor.command_log == []
     assert actual == 1
 
 
@@ -152,7 +152,7 @@ def run_in_background(sut):
 def wait_until_polled(executor: CommandExecutorSpy):
     def was_polled():
         return any(logged_command.cmd.startswith("sacct")
-                   for logged_command in executor.commands)
+                   for logged_command in executor.command_log)
 
     while not was_polled():
         continue

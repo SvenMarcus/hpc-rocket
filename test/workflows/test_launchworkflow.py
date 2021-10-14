@@ -56,13 +56,13 @@ def test__given_options_without_watching__when_running__should_only_sbatch_then_
     sut.run(executor)
 
     assert_job_submitted(executor, opts)
-    assert len(executor.commands) == 1
+    assert len(executor.command_log) == 1
 
 
 def assert_job_submitted(executor: CommandExecutorSpy, opts: LaunchOptions):
-    assert str(executor.commands[0]) == f"sbatch {opts.sbatch}"
+    assert str(executor.command_log[0]) == f"sbatch {opts.sbatch}"
 
 
 def assert_correct_job_poll(executor: CommandExecutorSpy, command_index: int):
-    assert executor.commands[command_index].cmd == "sacct"
-    assert executor.commands[command_index].args[:2] == ["-j", "1234"]
+    assert executor.command_log[command_index].cmd == "sacct"
+    assert executor.command_log[command_index].args[:2] == ["-j", "1234"]

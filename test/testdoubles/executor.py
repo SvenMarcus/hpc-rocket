@@ -40,6 +40,20 @@ class CommandExecutorFactoryStub(CommandExecutorFactory):
         return self._return_value
 
 
+class CommandExecutorStub(CommandExecutor):
+
+    def __init__(self, command: RunningCommand) -> None:
+        self.command = command
+
+    def exec_command(self, cmd: str) -> RunningCommand:
+        return self.command
+
+    def connect(self) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
 class CommandExecutorSpy(CommandExecutor):
 
     @dataclass
@@ -51,7 +65,7 @@ class CommandExecutorSpy(CommandExecutor):
             return f"{self.cmd} {' '.join(self.args)}"
 
     def __init__(self) -> None:
-        self.commands: List[CommandExecutorSpy.Command] = []
+        self.command_log: List[CommandExecutorSpy.Command] = []
         self.connected = False
 
     def connect(self) -> None:
@@ -66,7 +80,7 @@ class CommandExecutorSpy(CommandExecutor):
         return RunningCommandStub()
 
     def log_command(self, split):
-        self.commands.append(CommandExecutorSpy.Command(split[0], split[1:]))
+        self.command_log.append(CommandExecutorSpy.Command(split[0], split[1:]))
 
 
 class SlurmJobExecutorFactoryStub(CommandExecutorFactory):
