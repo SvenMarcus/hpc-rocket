@@ -39,7 +39,6 @@ def test__when_submitting_job__job_should_have_jobid():
 
 def test__when_submitting_job_fails__should_raise_slurmerror():
     executor = CommandExecutorStub(RunningCommandStub(exit_code=1))
-
     sut = SlurmController(executor)
 
     jobfile = "jobfile.job"
@@ -89,13 +88,11 @@ def test__when_canceling_job__should_call_scancel_on_executor():
 
 def test__when_canceling_job_fails__should_raise_slurmerror():
     executor = CommandExecutorStub(RunningCommandStub(exit_code=1))
-
     sut = SlurmController(executor)
 
     jobid = "1234"
     with pytest.raises(SlurmError):
         sut.cancel(jobid)
-
 
 
 def assert_job_submitted(executor: CommandExecutorSpy, file: str):
