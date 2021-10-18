@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from test.slurmoutput import get_error_lines, get_running_lines, get_success_lines
+from test.slurmoutput import get_failed_lines, get_running_lines, get_success_lines
 from typing import Callable, List
 from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory, RunningCommand
 
@@ -31,7 +31,7 @@ class CommandExecutorFactoryStub(CommandExecutorFactory):
 
     @classmethod
     def with_executor_spy(cls):
-        return CommandExecutorFactoryStub(CommandExecutorSpy())
+        return CommandExecutorFactoryStub(LoggingCommandExecutorSpy())
 
     def __init__(self, executor) -> None:
         self._return_value = executor
@@ -54,7 +54,7 @@ class CommandExecutorStub(CommandExecutor):
     def close(self) -> None:
         pass
 
-class CommandExecutorSpy(CommandExecutor):
+class LoggingCommandExecutorSpy(CommandExecutor):
 
     @dataclass
     class Command:
@@ -65,7 +65,7 @@ class CommandExecutorSpy(CommandExecutor):
             return f"{self.cmd} {' '.join(self.args)}"
 
     def __init__(self) -> None:
-        self.command_log: List[CommandExecutorSpy.Command] = []
+        self.command_log: List[LoggingCommandExecutorSpy.Command] = []
         self.connected = False
 
     def connect(self) -> None:
@@ -80,7 +80,7 @@ class CommandExecutorSpy(CommandExecutor):
         return RunningCommandStub()
 
     def log_command(self, split):
-        self.command_log.append(CommandExecutorSpy.Command(split[0], split[1:]))
+        self.command_log.append(LoggingCommandExecutorSpy.Command(split[0], split[1:]))
 
 
 class SlurmJobExecutorFactoryStub(CommandExecutorFactory):
@@ -89,7 +89,7 @@ class SlurmJobExecutorFactoryStub(CommandExecutorFactory):
         return SlurmJobExecutorSpy()
 
 
-class SlurmJobExecutorSpy(CommandExecutorSpy):
+class SlurmJobExecutorSpy(LoggingCommandExecutorSpy):
 
     def __init__(self, sacct_cmd: RunningCommand = None, jobid: str = DEFAULT_JOB_ID):
         super().__init__()
@@ -215,8 +215,8 @@ class SuccessfulSlurmJobCommandStub(AssertWaitRunningCommandStub):
 class FailedSlurmJobCommandStub(AssertWaitRunningCommandStub):
 
     def __init__(self) -> None:
-        super().__init__(exit_code=1)
-        self.stdout_lines = get_error_lines()
+        super().__init__(exit_code=0)
+        self.stdout_lines = get_failed_lines()
 
 
 class RunningSlurmJobCommandStub(AssertWaitRunningCommandStub):

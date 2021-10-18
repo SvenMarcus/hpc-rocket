@@ -5,8 +5,8 @@ from test.testdoubles.paramiko_sshclient_mockutil import (
 from unittest.mock import Mock, patch
 
 import pytest
-from hpcrocket.core.slurmbatchjob import (SlurmBatchJob, SlurmJobStatus,
-                                          SlurmTaskStatus)
+from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmTaskStatus
+from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.ssh.sshexecutor import SSHExecutor
 
 patcher = patch("paramiko.SSHClient")
@@ -43,20 +43,20 @@ def configure_sshclient_fake(patched, cmd_output_file: str):
 def test__when_calling_sbatch__should_return_job_id(sbatch_sshclient_fake):
     executor = SSHExecutor(main_connection())
     executor.connect()
-    sut = SlurmBatchJob(executor, "myjob.job")
+    sut = SlurmController(executor)
 
-    jobid = sut.submit()
+    actual = sut.submit("myjob.job")
 
-    assert jobid == "123456"
+    assert actual.jobid == "123456"
 
 
 def test__when_polling_job__should_return_slurm_job_with_matching_data(sshclient_poll_running_job_fake):
     executor = SSHExecutor(main_connection())
     executor.connect()
-    sut = SlurmBatchJob(executor, "myjob.job")
-    sut.submit()
+    sut = SlurmController(executor)
+    sut.submit("myjob.job")
 
-    actual = sut.poll_status()
+    actual = sut.poll_status("123456")
 
     assert actual == SlurmJobStatus(
         id="1603376",

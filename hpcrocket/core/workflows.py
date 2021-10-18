@@ -5,6 +5,7 @@ from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
+from hpcrocket.core.slurmcontroller import SlurmController
 
 try:
     from typing import Protocol
@@ -15,7 +16,7 @@ except ImportError:
 class Workflow(Protocol):
 
     @abstractmethod
-    def run(self, executor: CommandExecutor) -> int:
+    def run(self, controller: SlurmController) -> int:
         pass
 
 
@@ -26,9 +27,8 @@ class LaunchWorkflow(Workflow):
         self._options = options
         self._job_status: Optional[SlurmJobStatus] = None
 
-    def run(self, executor: CommandExecutor) -> int:
-        batch_job = SlurmBatchJob(executor, self._options.sbatch)
-        batch_job.submit()
+    def run(self, controller: SlurmController) -> int:
+        batch_job = controller.submit(self._options.sbatch)
 
         if not self._options.watch:
             return 0

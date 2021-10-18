@@ -7,7 +7,7 @@ from test.testdoubles.sshclient import (ChannelFileStub, ChannelStub,
                                         DelayedChannelSpy,
                                         ProxyJumpVerifyingSSHClient,
                                         SSHClientMock)
-from unittest.mock import DEFAULT, Mock, call
+from unittest.mock import Mock
 
 import pytest
 from hpcrocket.core.application import Application
@@ -56,7 +56,7 @@ def test__given_valid_config__when_running_long_running_job__should_wait_for_com
 
     sut = Application(SSHExecutorFactory(options(watch=True)), DummyFilesystemFactory(), Mock())
 
-    channel_spy = DelayedChannelSpy(exit_code=1, calls_until_exit=2)
+    channel_spy = DelayedChannelSpy(exit_code=0, calls_until_exit=2)
     sshclient_type_mock.return_value = CmdSpecificSSHClientStub({
         "sbatch": ChannelFileStub(lines=["1234"]),
         "sacct": ChannelFileStub(
@@ -69,20 +69,3 @@ def test__given_valid_config__when_running_long_running_job__should_wait_for_com
 
     assert actual == 0
     assert channel_spy.times_called == 2
-
-
-def completed_slurm_job():
-    return SlurmJobStatus(
-        id="1603353",
-        name="PyFluidsTest",
-        state="COMPLETED",
-        tasks=[
-            SlurmTaskStatus("1603353", "PyFluidsTest", "COMPLETED"),
-            SlurmTaskStatus("1603353.bat+", "batch", "COMPLETED"),
-            SlurmTaskStatus("1603353.ext+",  "extern", "COMPLETED"),
-            SlurmTaskStatus("1603353.0", "singularity", "COMPLETED"),
-            SlurmTaskStatus("1603353.1", "singularity", "COMPLETED"),
-            SlurmTaskStatus("1603353.2", "singularity", "COMPLETED"),
-            SlurmTaskStatus("1603353.3", "singularity", "COMPLETED")
-        ]
-    )

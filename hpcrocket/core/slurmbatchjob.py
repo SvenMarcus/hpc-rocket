@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-from hpcrocket.watcher.jobwatcher import JobWatcher
-from typing import List
+from typing import TYPE_CHECKING, List
 
-from hpcrocket.core.executor import CommandExecutor, RunningCommand
+from hpcrocket.watcher.jobwatcher import JobWatcher
+
+if TYPE_CHECKING:
+    from hpcrocket.core.slurmcontroller import SlurmController
 
 
 class SlurmError(RuntimeError):
@@ -62,40 +64,15 @@ class SlurmJobStatus:
 
 class SlurmBatchJob:
 
-    def __init__(self, executor: CommandExecutor, filename: str, jobid: str = ""):
-        self._executor = executor
-        self._filename = filename
-        self.jobid =  jobid
-
-    def submit(self) -> str:
-        cmd = self._executor.exec_command("sbatch " + self._filename)
-        self._wait_for_success_or_raise(cmd)
-        out = cmd.stdout()[0]
-        self.jobid = out.split()[-1]
-
-        return self.jobid
+    def __init__(self, controller: 'SlurmController', jobid: str = ""):
+        self._controller = controller
+        self.jobid = jobid
 
     def cancel(self) -> None:
-        self._raise_if_not_submitted()
-        cmd = self._executor.exec_command("scancel " + self.jobid)
-        self._wait_for_success_or_raise(cmd)
+        self._controller.cancel(self.jobid)
 
     def poll_status(self) -> SlurmJobStatus:
-        self._raise_if_not_submitted()
-        cmd = self._executor.exec_command(
-            f"sacct -j {self.jobid} -o jobid,jobname%30,state --noheader")
-        cmd.wait_until_exit()
-
-        return SlurmJobStatus.from_output(cmd.stdout())
+        return self._controller.poll_status(self.jobid)
 
     def get_watcher(self) -> JobWatcher:
         return JobWatcher(self)
-
-    def _raise_if_not_submitted(self) -> None:
-        if not self.jobid:
-            raise SlurmError("Job has not been submitted")
-
-    def _wait_for_success_or_raise(self, cmd: RunningCommand) -> None:
-        cmd.wait_until_exit()
-        if cmd.exit_status != 0:
-            raise SlurmError(cmd.stderr())

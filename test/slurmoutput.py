@@ -7,7 +7,7 @@ def get_success_lines():
         return lines
 
 
-def get_error_lines():
+def get_failed_lines():
     with open("test/slurmoutput/sacct_completed_failed.txt", "r") as file:
         error_lines = file.readlines()
         return error_lines

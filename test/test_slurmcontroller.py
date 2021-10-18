@@ -1,5 +1,8 @@
+from test.slurm_assertions import (assert_job_canceled, assert_job_polled,
+                                   assert_job_submitted)
 from test.slurmoutput import completed_slurm_job
-from test.testdoubles.executor import CommandExecutorSpy, CommandExecutorStub, FailedSlurmJobCommandStub, RunningCommandStub, SlurmJobExecutorSpy
+from test.testdoubles.executor import (CommandExecutorStub, RunningCommandStub,
+                                       SlurmJobExecutorSpy)
 
 import pytest
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmError
@@ -93,19 +96,3 @@ def test__when_canceling_job_fails__should_raise_slurmerror():
     jobid = "1234"
     with pytest.raises(SlurmError):
         sut.cancel(jobid)
-
-
-def assert_job_submitted(executor: CommandExecutorSpy, file: str):
-    assert str(executor.command_log[0]) == f"sbatch {file}"
-
-
-def assert_job_polled(executor: CommandExecutorSpy, jobid: str):
-    first_command = executor.command_log[0]
-    assert first_command.cmd == f"sacct"
-    assert first_command.args[:2] == ["-j", jobid]
-
-
-def assert_job_canceled(executor: CommandExecutorSpy, jobid: str):
-    first_command = executor.command_log[0]
-    assert first_command.cmd == "scancel"
-    assert first_command.args == [jobid]

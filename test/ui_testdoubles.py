@@ -20,6 +20,9 @@ class PrintLoggingUI(UI):
         sys.stdout = self._stdout_backup
         self._file.close()
 
+    def launch(self, text: str) -> None:
+        print(text, file=self._file)
+
     def info(self, text: str) -> None:
         print(text, file=self._file)
 

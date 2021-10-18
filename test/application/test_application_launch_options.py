@@ -3,12 +3,13 @@ from test.application.executor_filesystem_callorder import \
 from test.application.launchoptions import main_connection, options
 from test.slurmoutput import completed_slurm_job
 from test.testdoubles.executor import (CommandExecutorFactoryStub,
-                                       CommandExecutorSpy,
+                                       LoggingCommandExecutorSpy,
                                        FailedSlurmJobCommandStub,
                                        InfiniteSlurmJobCommand,
                                        SlurmJobExecutorSpy,
                                        SuccessfulSlurmJobCommandStub)
 from test.testdoubles.filesystem import DummyFilesystemFactory
+from test.ui_testdoubles import PrintLoggingUI
 from unittest.mock import Mock
 
 import pytest
@@ -18,7 +19,7 @@ from hpcrocket.core.executor import RunningCommand
 from hpcrocket.ssh.errors import SSHError
 
 
-class ConnectionFailingCommandExecutor(CommandExecutorSpy):
+class ConnectionFailingCommandExecutor(LoggingCommandExecutorSpy):
 
     def connect(self) -> None:
         raise SSHError(main_connection().hostname)
@@ -93,6 +94,7 @@ def test__given_infinite_running_job__when_canceling__should_cancel_job_and_exit
     actual = sut.cancel()
 
     thread.join()
+    
     assert actual == 130
 
 
@@ -149,9 +151,9 @@ def run_in_background(sut):
     return thread
 
 
-def wait_until_polled(executor: CommandExecutorSpy):
+def wait_until_polled(executor: LoggingCommandExecutorSpy):
     def was_polled():
-        return any(logged_command.cmd.startswith("sacct")
+        return any(logged_command.cmd == "sacct"
                    for logged_command in executor.command_log)
 
     while not was_polled():

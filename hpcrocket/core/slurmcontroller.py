@@ -12,7 +12,7 @@ class SlurmController:
         cmd = self._execute_and_wait_or_raise_on_error(f"sbatch {jobfile}")
         jobid = self._parse_jobid(cmd)
 
-        return SlurmBatchJob(self._executor, jobfile, jobid)
+        return SlurmBatchJob(self, jobid)
 
     def poll_status(self, jobid: str) -> SlurmJobStatus:
         cmd = self._execute_and_wait_or_raise_on_error(f"sacct -j {jobid} -o jobid,jobname%30,state --noheader")
@@ -25,7 +25,7 @@ class SlurmController:
         cmd = self._executor.exec_command(command)
         exit_code = cmd.wait_until_exit()
         if exit_code != 0:
-            raise SlurmError()
+            raise SlurmError(cmd)
 
         return cmd
     

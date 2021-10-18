@@ -1,10 +1,12 @@
-from typing import Any, Callable, Union, cast
+from typing import Union
+
 from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import JobBasedOptions, LaunchOptions
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
+from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher
 
@@ -25,10 +27,11 @@ class Application:
         exit_code = 0
         try:
             with self._executor_factory.create_executor() as executor:
+                controller = SlurmController(executor)
                 if isinstance(options, JobBasedOptions):
-                    exit_code = self._run_status_workflow(executor, options)
+                    exit_code = self._run_status_workflow(controller, options)
                 else:
-                    exit_code = self._run_launch_workflow(executor, options)
+                    exit_code = self._run_launch_workflow(controller, options)
 
         except Exception as err:
             self._ui.error(get_error_message(err))
@@ -36,28 +39,22 @@ class Application:
 
         return exit_code
 
-    def _run_status_workflow(self, executor: CommandExecutor, options: JobBasedOptions) -> int:
-        cmd = executor.exec_command(f"sacct -j {options.jobid}")
-        exit_code = cmd.wait_until_exit()
-        job_status = SlurmJobStatus.from_output(cmd.stdout())
+    def _run_status_workflow(self, controller: SlurmController, options: JobBasedOptions) -> int:
+        job_status = controller.poll_status(options.jobid)
         self._ui.update(job_status)
 
-        return exit_code
+        return 0
 
-    def _run_launch_workflow(self, executor: CommandExecutor, options: LaunchOptions) -> int:
+    def _run_launch_workflow(self, controller: SlurmController, options: LaunchOptions) -> int:
         self._env_prep = self._create_env_preparation(options)
         exit_code = self._try_env_preparation()
         if exit_code != 0:
             return exit_code
 
-        self._run_batchjob(options, executor)
+        self._launch_job(controller, options.sbatch)
         self._wait_for_job_if_watching(options)
 
         return self._get_exit_code_for_job()
-
-    def _run_batchjob(self, options: LaunchOptions, executor: CommandExecutor) -> None:
-        self._batchjob = SlurmBatchJob(executor, options.sbatch)
-        self._launch_job(self._batchjob)
 
     def _try_env_preparation(self) -> int:
         try:
@@ -70,10 +67,10 @@ class Application:
 
         return 0
 
-    def _launch_job(self, runner: SlurmBatchJob) -> None:
+    def _launch_job(self, runner: SlurmController, jobfile: str) -> None:
         self._ui.launch("Launching job")
-        self._jobid = runner.submit()
-        self._ui.success(f"Job {self._jobid} launched")
+        self._batchjob = runner.submit(jobfile)
+        self._ui.success(f"Job {self._batchjob.jobid} launched")
 
     def _wait_for_job_if_watching(self, options: LaunchOptions) -> None:
         if not options.watch:
@@ -139,7 +136,7 @@ class Application:
 
     def cancel(self) -> int:
         try:
-            self._ui.info(f"Canceling job {self._jobid}")
+            self._ui.info(f"Canceling job {self._batchjob.jobid}")
             self._batchjob.cancel()
             self._watcher.stop()
             self._ui.error("Job canceled")
