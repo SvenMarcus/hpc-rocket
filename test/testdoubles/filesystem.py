@@ -1,6 +1,8 @@
 from contextlib import contextmanager
+from typing import List, Optional, cast
 from unittest.mock import patch, DEFAULT
 
+from fs.copy import copy_file
 from fs.memoryfs import MemoryFS
 
 from hpcrocket.core.filesystem import FilesystemFactory, Filesystem
@@ -27,13 +29,36 @@ class DummyFilesystem(Filesystem):
         pass
 
 
-class MemoryFilesystemFactory(FilesystemFactory):
+class MemoryFilesystemFactoryStub(FilesystemFactory):
+
+    def __init__(self, local_fs: 'MemoryFilesystem' = None, ssh_fs: 'MemoryFilesystem' = None) -> None:
+        self.local_filesystem = local_fs or MemoryFilesystem()
+        self.ssh_filesystem = ssh_fs or MemoryFilesystem()
 
     def create_local_filesystem(self) -> 'Filesystem':
-        return MemoryFS()
+        return self.local_filesystem
 
     def create_ssh_filesystem(self) -> 'Filesystem':
-        return MemoryFS()
+        return self.ssh_filesystem
+
+
+class MemoryFilesystem(Filesystem):
+
+    def __init__(self, files: List[str] = []) -> None:
+        self._fs = MemoryFS()
+        for file in files:
+            self._fs.create(file)
+
+    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: Optional['Filesystem'] = None) -> None:
+        assert filesystem is None or isinstance(filesystem, MemoryFilesystem)
+        other = cast(MemoryFilesystem, filesystem)
+        copy_file(self._fs, source, other._fs, target)
+
+    def delete(self, path: str) -> None:
+        self._fs.remove(path)
+
+    def exists(self, path: str) -> bool:
+        return self._fs.exists(path)
 
 
 @contextmanager

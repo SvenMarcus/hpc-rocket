@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Optional
 
-from hpcrocket.core.executor import CommandExecutor
+from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
@@ -28,12 +28,28 @@ class LaunchWorkflow(Workflow):
         self._job_status: Optional[SlurmJobStatus] = None
 
     def run(self, controller: SlurmController) -> int:
-        batch_job = controller.submit(self._options.sbatch)
+        success = self._prepare_environment()
+        if not success:
+            return 1
 
+        batch_job = controller.submit(self._options.sbatch)
         if not self._options.watch:
             return 0
 
         return self._wait_for_job_exit(batch_job)
+
+    def _prepare_environment(self) -> bool:
+        local_fs = self._filesystem_factory.create_local_filesystem()
+        ssh_fs = self._filesystem_factory.create_ssh_filesystem()
+        env_prep = EnvironmentPreparation(local_fs, ssh_fs)
+        env_prep.files_to_copy(self._options.copy_files)
+        try:
+            env_prep.prepare()
+        except (FileExistsError, FileNotFoundError):
+            env_prep.rollback()
+            return False
+
+        return True
 
     def _wait_for_job_exit(self, batch_job: SlurmBatchJob) -> int:
         watcher = batch_job.get_watcher()
