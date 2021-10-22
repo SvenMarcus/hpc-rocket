@@ -2,7 +2,7 @@ from typing import Union
 
 from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.errors import get_error_message
-from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory
+from hpcrocket.core.executor import CommandExecutorFactory
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import JobBasedOptions, LaunchOptions
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
@@ -17,7 +17,7 @@ class Application:
         self._executor_factory = executor_factory
         self._fs_factory = filesystem_factory
         self._ui = ui
-        self._latest_job_update = SlurmJobStatus("", "", "", [])
+        self._latest_job_update = SlurmJobStatus.empty()
         self._env_prep: EnvironmentPreparation
         self._batchjob: SlurmBatchJob
         self._watcher: JobWatcher

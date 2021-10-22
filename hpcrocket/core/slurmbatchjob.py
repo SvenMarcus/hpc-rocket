@@ -24,6 +24,10 @@ class SlurmTaskStatus:
 class SlurmJobStatus:
 
     @classmethod
+    def empty(cls) -> 'SlurmJobStatus':
+        return SlurmJobStatus("", "", "", [])
+
+    @classmethod
     def from_output(cls, output: List[str]) -> 'SlurmJobStatus':
         tasks = [
             SlurmTaskStatus(*line.split()[:3])
