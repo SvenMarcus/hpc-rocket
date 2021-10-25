@@ -1,5 +1,6 @@
+from hpcrocket.ui import UI
 from test.testdoubles.filesystem import (DummyFilesystemFactory,
-                                         MemoryFilesystem,
+                                         MemoryFilesystemFake,
                                          MemoryFilesystemFactoryStub)
 from unittest.mock import DEFAULT, Mock, create_autospec
 
@@ -11,7 +12,7 @@ from hpcrocket.core.workflows.stages import PrepareStage
 
 def run_prepare_stage(filesystem_factory, files_to_copy):
     sut = PrepareStage(filesystem_factory, files_to_copy)
-    return sut()
+    return sut(Mock(spec=UI))
 
 
 def test__run_prepare_stage__should_return_true():

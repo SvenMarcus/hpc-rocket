@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 from test.application.launchoptions import options
 from test.slurm_assertions import assert_job_polled, assert_job_submitted
 from test.testdoubles.executor import (FailedSlurmJobCommandStub,
@@ -11,6 +13,7 @@ from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.stages import LaunchStage
+from hpcrocket.ui import UI
 
 
 @pytest.fixture
@@ -23,7 +26,7 @@ def run_launch_workflow(options: LaunchOptions, executor: CommandExecutor = None
     controller = SlurmController(executor)
     sut = LaunchStage(controller, options)
 
-    return sut()
+    return sut(Mock(spec=UI))
 
 
 def test__given_simple_launchoptions__when_running__should_run_sbatch_with_executor(executor_spy):

@@ -31,9 +31,9 @@ class DummyFilesystem(Filesystem):
 
 class MemoryFilesystemFactoryStub(FilesystemFactory):
 
-    def __init__(self, local_fs: 'MemoryFilesystem' = None, ssh_fs: 'MemoryFilesystem' = None) -> None:
-        self.local_filesystem = local_fs or MemoryFilesystem()
-        self.ssh_filesystem = ssh_fs or MemoryFilesystem()
+    def __init__(self, local_fs: 'MemoryFilesystemFake' = None, ssh_fs: 'MemoryFilesystemFake' = None) -> None:
+        self.local_filesystem = local_fs or MemoryFilesystemFake()
+        self.ssh_filesystem = ssh_fs or MemoryFilesystemFake()
 
     def create_local_filesystem(self) -> 'Filesystem':
         return self.local_filesystem
@@ -42,23 +42,31 @@ class MemoryFilesystemFactoryStub(FilesystemFactory):
         return self.ssh_filesystem
 
 
-class MemoryFilesystem(Filesystem):
+class MemoryFilesystemFake(Filesystem):
 
     def __init__(self, files: List[str] = []) -> None:
-        self._fs = MemoryFS()
-        for file in files:
-            self._fs.create(file)
+        self.files = set(files)
 
     def copy(self, source: str, target: str, overwrite: bool = False, filesystem: Optional['Filesystem'] = None) -> None:
-        assert filesystem is None or isinstance(filesystem, MemoryFilesystem)
-        other = cast(MemoryFilesystem, filesystem)
-        copy_file(self._fs, source, other._fs, target)
+        assert filesystem is None or isinstance(filesystem, MemoryFilesystemFake)
+
+        if not self.exists(source):
+            raise FileNotFoundError(source)
+
+        other = cast(MemoryFilesystemFake, filesystem)
+        if other.exists(target) and not overwrite:
+            raise FileExistsError(target)
+
+        other.files.add(target)
 
     def delete(self, path: str) -> None:
-        self._fs.remove(path)
-
+        if not self.exists(path):
+            raise FileNotFoundError(path)
+        
+        self.files.remove(path)
+        
     def exists(self, path: str) -> bool:
-        return self._fs.exists(path)
+        return path in self.files
 
 
 @contextmanager

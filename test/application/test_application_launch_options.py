@@ -93,8 +93,8 @@ def test__given_infinite_running_job__when_canceling__should_cancel_job_and_exit
     wait_until_polled(executor)
     actual = sut.cancel()
 
-    thread.join()
-    
+    thread.join(1)
+
     assert actual == 130
 
 
