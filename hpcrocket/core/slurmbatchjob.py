@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List
 
-from hpcrocket.watcher.jobwatcher import JobWatcher
+from hpcrocket.watcher.jobwatcher import JobWatcherFactory, JobWatcher, JobWatcherImpl
 
 if TYPE_CHECKING:
     from hpcrocket.core.slurmcontroller import SlurmController
@@ -68,8 +68,9 @@ class SlurmJobStatus:
 
 class SlurmBatchJob:
 
-    def __init__(self, controller: 'SlurmController', jobid: str = ""):
+    def __init__(self, controller: 'SlurmController', jobid: str = "", watcher_factory: JobWatcherFactory = None):
         self._controller = controller
+        self._watcher_factory = watcher_factory or JobWatcherImpl
         self.jobid = jobid
 
     def cancel(self) -> None:
@@ -79,4 +80,4 @@ class SlurmBatchJob:
         return self._controller.poll_status(self.jobid)
 
     def get_watcher(self) -> JobWatcher:
-        return JobWatcher(self)
+        return self._watcher_factory(self)

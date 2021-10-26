@@ -11,7 +11,7 @@ def assert_job_polled(executor: LoggingCommandExecutorSpy, jobid: str = DEFAULT_
     assert first_command.args[:2] == ["-j", jobid]
 
 
-def assert_job_canceled(executor: LoggingCommandExecutorSpy, jobid: str):
-    first_command = executor.command_log[0]
+def assert_job_canceled(executor: LoggingCommandExecutorSpy, jobid: str, command_index: int = 0):
+    first_command = executor.command_log[command_index]
     assert first_command.cmd == "scancel"
     assert first_command.args == [jobid]

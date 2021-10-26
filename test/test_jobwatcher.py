@@ -3,8 +3,8 @@ from unittest.mock import Mock, call, patch
 
 import pytest
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob
-from hpcrocket.watcher.jobwatcher import JobWatcher, NotWatchingError, SlurmJobStatusCallback, WatcherThreadFactory
-from hpcrocket.watcher.watcherthread import WatcherThread
+from hpcrocket.watcher.jobwatcher import JobWatcherImpl, NotWatchingError, SlurmJobStatusCallback, WatcherThreadFactory
+from hpcrocket.watcher.watcherthread import WatcherThreadImpl
 
 
 class WatcherThreadSpy:
@@ -43,7 +43,7 @@ class WatcherFactoryStub:
         self.thread_spy: WatcherThreadSpy = None  # type: ignore
         self.done_thread = done_thread
 
-    def __call__(self, job: SlurmBatchJob, callback: SlurmJobStatusCallback, interval: int) -> WatcherThread:
+    def __call__(self, job: SlurmBatchJob, callback: SlurmJobStatusCallback, interval: int) -> WatcherThreadImpl:
         self.thread_spy = WatcherThreadSpy(job, callback, interval)
         self.thread_spy.done = self.done_thread
         return self.thread_spy  # type: ignore
@@ -61,7 +61,7 @@ def runner_dummy():
 
 def test__when_calling_watch__should_spawn_watcher_thread(thread_factory_stub: Mock, runner_dummy: Mock):
     wrapped = Mock(wraps=thread_factory_stub)
-    sut = JobWatcher(runner_dummy, wrapped)
+    sut = JobWatcherImpl(runner_dummy, wrapped)
 
     def callback(_): return None
     sut.watch(callback, poll_interval=1)
@@ -73,7 +73,7 @@ def test__when_calling_watch__should_spawn_watcher_thread(thread_factory_stub: M
 @pytest.mark.parametrize("thread_done", [True, False])
 def test__given_watched_job__is_done_should_return_is_done_from_watcherthread(runner_dummy: Mock, thread_done: bool):
     factory_stub = WatcherFactoryStub(thread_done)
-    sut = JobWatcher(runner_dummy, factory_stub)
+    sut = JobWatcherImpl(runner_dummy, factory_stub)
     sut.watch(lambda _: None, poll_interval=1)
 
     actual = sut.is_done()
@@ -82,7 +82,7 @@ def test__given_watched_job__is_done_should_return_is_done_from_watcherthread(ru
 
 
 def test__when_calling_is_done_before_watching__should_raise_not_watching_error(runner_dummy: Mock):
-    sut = JobWatcher(runner_dummy, WatcherFactoryStub())
+    sut = JobWatcherImpl(runner_dummy, WatcherFactoryStub())
 
     with pytest.raises(NotWatchingError):
         sut.is_done()
@@ -90,7 +90,7 @@ def test__when_calling_is_done_before_watching__should_raise_not_watching_error(
 
 def test__given_watched_job__when_stopping__should_stop_and_join_watch_thread(
         thread_factory_stub: Mock, runner_dummy: Mock):
-    sut = JobWatcher(runner_dummy, thread_factory_stub)
+    sut = JobWatcherImpl(runner_dummy, thread_factory_stub)
     sut.watch(lambda _: None, poll_interval=1)
 
     sut.stop()
@@ -99,7 +99,7 @@ def test__given_watched_job__when_stopping__should_stop_and_join_watch_thread(
 
 
 def test__given_watched_job__when_waiting_until_done__should_call_join(thread_factory_stub: Mock, runner_dummy: Mock):
-    sut = JobWatcher(runner_dummy, thread_factory_stub)
+    sut = JobWatcherImpl(runner_dummy, thread_factory_stub)
     sut.watch(lambda _: None, poll_interval=1)
 
     sut.wait_until_done()
@@ -108,14 +108,14 @@ def test__given_watched_job__when_waiting_until_done__should_call_join(thread_fa
 
 
 def test__when_calling_wait_until_done_before_watching__should_raise_not_watching_error(runner_dummy: Mock):
-    sut = JobWatcher(runner_dummy, WatcherFactoryStub())
+    sut = JobWatcherImpl(runner_dummy, WatcherFactoryStub())
 
     with pytest.raises(NotWatchingError):
         sut.wait_until_done()
 
 
 def test__when_calling_stop_before_watching__should_raise_not_watching_error(runner_dummy: Mock):
-    sut = JobWatcher(runner_dummy, WatcherFactoryStub())
+    sut = JobWatcherImpl(runner_dummy, WatcherFactoryStub())
 
     with pytest.raises(NotWatchingError):
         sut.stop()

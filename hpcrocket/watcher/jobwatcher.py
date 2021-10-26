@@ -1,8 +1,7 @@
-from abc import abstractmethod
-from typing import TYPE_CHECKING, Callable, Optional
+from threading import Thread
+from typing import TYPE_CHECKING, Callable, Protocol
 
-import hpcrocket.watcher.watcherthread as wt
-
+from hpcrocket.watcher.watcherthread import WatcherThread, WatcherThreadImpl
 
 if TYPE_CHECKING:
     from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
@@ -11,16 +10,16 @@ if TYPE_CHECKING:
 SlurmJobStatusCallback = Callable[['SlurmJobStatus'], None]
 WatcherThreadFactory = Callable[
     ['SlurmBatchJob', SlurmJobStatusCallback, int],
-    wt.WatcherThread
+    WatcherThread
 ]
 
 
 def make_watcher_thread(
         job: 'SlurmBatchJob',
         callback: SlurmJobStatusCallback,
-        poll_interval: int) -> wt.WatcherThread:
+        poll_interval: int) -> WatcherThread:
 
-    return wt.WatcherThread(job, callback, poll_interval)
+    return WatcherThreadImpl(job, callback, poll_interval)
 
 
 class NotWatchingError(RuntimeError):
@@ -29,12 +28,27 @@ class NotWatchingError(RuntimeError):
         super().__init__(*args)
 
 
-class JobWatcher:
+class JobWatcher(Protocol):
 
-    def __init__(self, runner: 'SlurmBatchJob', thread_factory: WatcherThreadFactory=make_watcher_thread) -> None:
+    def watch(self, callback: SlurmJobStatusCallback, poll_interval: int) -> None:
+        pass
+
+    def wait_until_done(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        pass
+
+
+JobWatcherFactory = Callable[['SlurmBatchJob'], JobWatcher]
+
+
+class JobWatcherImpl:
+
+    def __init__(self, runner: 'SlurmBatchJob', thread_factory: WatcherThreadFactory = make_watcher_thread) -> None:
         self.runner = runner
         self.factory = thread_factory
-        self.watching_thread: wt.WatcherThread = None # type: ignore[assignment]
+        self.watching_thread: WatcherThread = None  # type: ignore[assignment]
 
     def watch(self, callback: SlurmJobStatusCallback, poll_interval: int) -> None:
         self.watching_thread = self.factory(self.runner, callback, poll_interval)
@@ -50,11 +64,19 @@ class JobWatcher:
         if self.watching_thread is None:
             raise NotWatchingError()
 
-        self.watching_thread.join()
+        self._try_join()
 
     def stop(self) -> None:
         if self.watching_thread is None:
             raise NotWatchingError()
 
         self.watching_thread.stop()
-        self.watching_thread.join()
+        self._try_join()
+
+    def _try_join(self):
+        try:
+            self.watching_thread.join()
+        except RuntimeError as err:
+            import logging
+            logging.warning(err)
+

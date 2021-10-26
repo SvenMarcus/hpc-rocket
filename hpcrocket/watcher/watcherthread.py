@@ -1,21 +1,43 @@
 import threading
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional, Union
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol  # type: ignore
+
 
 if TYPE_CHECKING:
     from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 
 
-class WatcherThread(threading.Thread):
+class WatcherThread(Protocol):
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def is_done(self) -> bool:
+        pass
+
+    def join(self):
+        pass
+
+
+class WatcherThreadImpl(threading.Thread):
 
     def __init__(self, runner: 'SlurmBatchJob',
                  callback: Callable[['SlurmJobStatus'], None],
                  interval: float):
-        super(WatcherThread, self).__init__(target=self.poll)
+        super(WatcherThreadImpl, self).__init__(target=self.poll)
         self.runner = runner
         self.callback = callback
         self.interval = interval
         self.stop_event = threading.Event()
         self._done = False
+        self._joined = False
 
     def poll(self) -> None:
         last_job = None

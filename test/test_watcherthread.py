@@ -3,14 +3,14 @@ from unittest.mock import Mock
 
 import pytest
 from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmBatchJob
-from hpcrocket.watcher.watcherthread import WatcherThread
+from hpcrocket.watcher.watcherthread import WatcherThreadImpl
 
 
 def test__given_completed_job__when_polling__should_trigger_callback():
     runner = runner_returning_job_with_state("COMPLETED")
     callback, call_capture = callback_and_capture()
 
-    sut = WatcherThread(runner, callback, interval=0)
+    sut = WatcherThreadImpl(runner, callback, interval=0)
 
     sut.poll()
 
@@ -24,7 +24,7 @@ def test__given_running_job__when_polling_and_job_completes_after_second_poll__s
 
     callback, call_capture = callback_and_capture()
 
-    sut = WatcherThread(runner, callback, interval=0)
+    sut = WatcherThreadImpl(runner, callback, interval=0)
 
     sut.poll()
 
@@ -37,7 +37,7 @@ def test__given_running_job__when_polling_and_job_completes_after_third__should_
                                                 next_job=completed_job())
 
     callback, call_capture = callback_and_capture()
-    sut = WatcherThread(runner, callback, interval=0)
+    sut = WatcherThreadImpl(runner, callback, interval=0)
 
     sut.poll()
 
@@ -50,7 +50,7 @@ def test__given_pending_job__when_polling_and_job_completes_after_second_poll__s
                                                 next_job=completed_job())
 
     callback, call_capture = callback_and_capture()
-    sut = WatcherThread(runner, callback, interval=0)
+    sut = WatcherThreadImpl(runner, callback, interval=0)
 
     sut.poll()
 
@@ -64,7 +64,7 @@ def test__when_stopping_then_polling__should_not_trigger_callback():
 
     callback, call_capture = callback_and_capture()
 
-    sut = WatcherThread(runner, callback, interval=0)
+    sut = WatcherThreadImpl(runner, callback, interval=0)
 
     sut.stop()
     sut.poll()
@@ -75,7 +75,7 @@ def test__when_stopping_then_polling__should_not_trigger_callback():
 def test__after_polling_completed_job__is_done_should_be_true():
     runner = runner_returning_job_with_state("COMPLETED")
 
-    sut = WatcherThread(runner, lambda _: None, interval=0)
+    sut = WatcherThreadImpl(runner, lambda _: None, interval=0)
 
     sut.poll()
 
@@ -93,7 +93,7 @@ def test__given_running_job__when_checking_is_done_until_completion__should_be_f
         sut = context['sut']
         context['done'].append(sut.is_done())
 
-    sut = WatcherThread(runner, callback, interval=0)
+    sut = WatcherThreadImpl(runner, callback, interval=0)
     context['sut'] = sut
 
     sut.poll()
@@ -112,7 +112,7 @@ def test__given_running_job__when_checking_is_done_until_canceled__should_be_fal
         sut = context['sut']
         context['done'].append(sut.is_done())
 
-    sut = WatcherThread(runner, callback, interval=0)
+    sut = WatcherThreadImpl(runner, callback, interval=0)
     context['sut'] = sut
 
     sut.poll()
@@ -133,7 +133,7 @@ def test__given_running_job__when_polling__should_only_poll_in_given_interval():
     runner = Mock(SlurmBatchJob)
     runner.configure_mock(poll_status=timerecording_wrapper)
 
-    sut = WatcherThread(runner, lambda _: None, interval=0.1)
+    sut = WatcherThreadImpl(runner, lambda _: None, interval=0.1)
 
     sut.poll()
 

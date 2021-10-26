@@ -8,7 +8,7 @@ from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.ui import UI
-from hpcrocket.watcher.jobwatcher import SlurmJobStatusCallback
+from hpcrocket.watcher.jobwatcher import JobWatcher, SlurmJobStatusCallback
 
 
 class LaunchStage:
@@ -16,19 +16,25 @@ class LaunchStage:
     def __init__(self, controller: SlurmController, options: LaunchOptions) -> None:
         self._controller = controller
         self._options = options
+        self._batch_job: Optional[SlurmBatchJob] = None
         self._job_status: Optional[SlurmJobStatus] = None
+        self._watcher: Optional[JobWatcher] = None
 
     def __call__(self, ui: UI) -> bool:
-        batch_job = self._controller.submit(self._options.sbatch)
+        self._batch_job = self._controller.submit(self._options.sbatch)
         if not self._options.watch:
             return True
 
-        return self._wait_for_job_exit(batch_job, ui)
+        return self._wait_for_job_exit(self._batch_job, ui)
+
+    def cancel(self):
+        self._batch_job.cancel()
+        self._watcher.stop()
 
     def _wait_for_job_exit(self, batch_job: SlurmBatchJob, ui: UI) -> bool:
-        watcher = batch_job.get_watcher()
-        watcher.watch(self._get_callback(ui), self._options.poll_interval)
-        watcher.wait_until_done()
+        self._watcher = batch_job.get_watcher()
+        self._watcher.watch(self._get_callback(ui), self._options.poll_interval)
+        self._watcher.wait_until_done()
 
         return (self._job_status is not None
                 and self._job_status.success)
@@ -50,6 +56,9 @@ class PrepareStage:
     def __call__(self, ui: UI) -> bool:
         env_prep = self._create_env_prep(ui)
         return self._try_prepare(env_prep, ui)
+
+    def cancel(self):
+        pass
 
     def _try_prepare(self, env_prep: EnvironmentPreparation, ui: UI) -> bool:
         try:
@@ -99,4 +108,18 @@ class FinalizeStage:
         env_prep.files_to_clean(self._clean)
         env_prep.clean()
 
+        return True
+
+    def cancel(self):
+        pass
+
+
+class StatusStage:
+
+    def __init__(self, controller: SlurmController, jobid: str) -> None:
+        self._controller = controller
+        self._jobid = jobid
+
+    def __call__(self, ui: UI) -> bool:
+        ui.update(self._controller.poll_status(self._jobid))
         return True

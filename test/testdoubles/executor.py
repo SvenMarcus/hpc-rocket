@@ -1,11 +1,10 @@
 from dataclasses import dataclass, field
 
-from test.slurmoutput import get_failed_lines, get_running_lines, get_success_lines
+from test.slurmoutput import get_failed_lines, get_running_lines, get_success_lines, DEFAULT_JOB_ID
 from typing import Callable, List
 from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory, RunningCommand
 
 
-DEFAULT_JOB_ID = "1234"
 SLURM_SBATCH_COMMAND = "sbatch"
 SLURM_SACCT_COMMAND = "sacct -j %s"
 SLURM_SCANCEL_COMMAND = "scancel %s"
