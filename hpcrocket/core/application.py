@@ -32,11 +32,6 @@ class Application:
         self._executor_factory = executor_factory
         self._workflow_factory = WorkflowFactory(filesystem_factory)
         self._ui = ui
-        self._latest_job_update = SlurmJobStatus.empty()
-        self._env_prep: EnvironmentPreparation
-        self._batchjob: SlurmBatchJob
-        self._watcher: JobWatcher
-        self._jobid: str
 
     def run(self, options: Union[LaunchOptions, JobBasedOptions]) -> int:
         try:
