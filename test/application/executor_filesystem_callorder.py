@@ -2,7 +2,7 @@ from test.testdoubles.executor import SlurmJobExecutorSpy
 from typing import Any
 from unittest.mock import Mock
 
-from hpcrocket.core.executor import CommandExecutorFactory, RunningCommand
+from hpcrocket.core.executor import RunningCommand
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 
 
@@ -40,13 +40,10 @@ class CallOrderVerification(SlurmJobExecutorSpy, Filesystem):
         assert self.log == self.expected
 
 
-class CallOrderVerificationFactory(CommandExecutorFactory, FilesystemFactory):
+class VerifierReturningFilesystemFactory(FilesystemFactory):
 
-    def __init__(self) -> None:
-        self.verifier = CallOrderVerification([])
-
-    def create_executor(self):
-        return self.verifier
+    def __init__(self, verifier: CallOrderVerification) -> None:
+        self.verifier = verifier
 
     def create_local_filesystem(self) -> 'Filesystem':
         return self.verifier

@@ -1,11 +1,8 @@
-from socket import socket
 from typing import List, Optional
 
 import paramiko as pm
 import paramiko.channel as channel
-from hpcrocket.core.executor import (CommandExecutor, CommandExecutorFactory,
-                                     RunningCommand)
-from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.core.executor import CommandExecutor, RunningCommand
 from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
 
@@ -75,18 +72,6 @@ class SSHExecutor(CommandExecutor):
     @property
     def client(self) -> pm.SSHClient:
         return self._client
-
-
-class SSHExecutorFactory(CommandExecutorFactory):
-
-    def __init__(self, options: LaunchOptions) -> None:
-        self._options = options
-
-    def create_executor(self) -> CommandExecutor:
-        connection = ConnectionData.with_resolved_keyfile(self._options.connection)
-        proxyjumps = [ConnectionData.with_resolved_keyfile(proxy) for proxy in self._options.proxyjumps]
-        executor = SSHExecutor(connection, proxyjumps=proxyjumps)
-        return executor
 
 
 def build_channel_with_proxyjumps(connection: ConnectionData, proxyjumps: List[ConnectionData]) -> Optional[pm.Channel]:

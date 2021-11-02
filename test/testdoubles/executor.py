@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from test.slurmoutput import get_failed_lines, get_running_lines, get_success_lines, DEFAULT_JOB_ID
 from typing import Callable, List
-from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory, RunningCommand
+from hpcrocket.core.executor import CommandExecutor, RunningCommand
 
 
 SLURM_SBATCH_COMMAND = "sbatch"
@@ -20,23 +20,6 @@ def is_sacct(cmd: str, jobid: str):
 
 def is_scancel(cmd: str, jobid: str):
     return cmd.startswith(SLURM_SCANCEL_COMMAND % jobid)
-
-
-class CommandExecutorFactoryStub(CommandExecutorFactory):
-
-    @classmethod
-    def with_slurm_executor_stub(cls, cmd: RunningCommand = None):
-        return CommandExecutorFactoryStub(SlurmJobExecutorSpy(cmd))
-
-    @classmethod
-    def with_executor_spy(cls):
-        return CommandExecutorFactoryStub(LoggingCommandExecutorSpy())
-
-    def __init__(self, executor) -> None:
-        self._return_value = executor
-
-    def create_executor(self) -> CommandExecutor:
-        return self._return_value
 
 
 class CommandExecutorStub(CommandExecutor):
@@ -80,12 +63,6 @@ class LoggingCommandExecutorSpy(CommandExecutor):
 
     def log_command(self, split):
         self.command_log.append(LoggingCommandExecutorSpy.Command(split[0], split[1:]))
-
-
-class SlurmJobExecutorFactoryStub(CommandExecutorFactory):
-
-    def create_executor(self) -> CommandExecutor:
-        return SlurmJobExecutorSpy()
 
 
 class SlurmJobExecutorSpy(LoggingCommandExecutorSpy):

@@ -14,6 +14,6 @@ class PyFilesystemFactory(FilesystemFactory):
         return LocalFilesystem(".")
 
     def create_ssh_filesystem(self) -> Filesystem:
-        connection = ConnectionData.with_resolved_keyfile(self._options.connection)
-        proxyjumps = [ConnectionData.with_resolved_keyfile(proxy) for proxy in self._options.proxyjumps]
+        connection = self._options.connection
+        proxyjumps = self._options.proxyjumps
         return SSHFilesystem(connection, proxyjumps)

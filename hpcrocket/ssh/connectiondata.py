@@ -12,15 +12,11 @@ class ConnectionData:
     key: Optional[str] = None
     port: int = 22
 
-    @staticmethod
-    def with_resolved_keyfile(connection_data: 'ConnectionData') -> 'ConnectionData':
-        return ConnectionData._resolve_keyfile_in_connection(connection_data)
+    def __post_init__(self) -> None:
+        self._resolve_keyfile()
 
-    @staticmethod
-    def _resolve_keyfile_in_connection(connection: 'ConnectionData') -> 'ConnectionData':
-        keyfile = ConnectionData._resolve_keyfile_from_home_dir(connection.keyfile)
-        connection = replace(connection, keyfile=keyfile)
-        return connection
+    def _resolve_keyfile(self) -> None:
+        self.keyfile = ConnectionData._resolve_keyfile_from_home_dir(self.keyfile)
 
     @staticmethod
     def _resolve_keyfile_from_home_dir(keyfile: Optional[str]) -> Optional[str]:
@@ -32,3 +28,4 @@ class ConnectionData:
             keyfile = keyfile.replace("~/", home_dir + "/", 1)
 
         return keyfile
+

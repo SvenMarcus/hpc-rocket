@@ -3,17 +3,19 @@ from test.application.fixtures import *
 from test.application.launchoptions import *
 from test.slurmoutput import get_success_lines
 from test.testdoubles.filesystem import DummyFilesystemFactory
-from test.testdoubles.sshclient import (ChannelFileStub, ChannelStub,
-                                        DelayedChannelSpy,
+from test.testdoubles.sshclient import (ChannelFileStub, DelayedChannelSpy,
                                         ProxyJumpVerifyingSSHClient,
                                         SSHClientMock)
 from unittest.mock import Mock
 
 import pytest
 from hpcrocket.core.application import Application
-from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmTaskStatus
-from hpcrocket.ssh.errors import SSHError
-from hpcrocket.ssh.sshexecutor import SSHExecutorFactory
+from hpcrocket.ssh.sshexecutor import SSHExecutor
+
+
+def make_sut(options, ui=None):
+    executor = SSHExecutor(options.connection, options.proxyjumps)
+    return Application(executor, DummyFilesystemFactory(), ui or Mock())
 
 
 @pytest.mark.parametrize(["input_keyfile", "expected_keyfile"], INPUT_AND_EXPECTED_KEYFILE_PATHS)
@@ -29,7 +31,7 @@ def test__given_valid_config__when_running__should_run_sbatch_over_ssh(sshclient
         private_keyfile_abspath=expected_keyfile)
 
     sshclient_type_mock.return_value = sshclient_mock
-    sut = Application(SSHExecutorFactory(valid_options), DummyFilesystemFactory(), Mock())
+    sut = make_sut(valid_options)
 
     sut.run(valid_options)
 
@@ -44,8 +46,7 @@ def test__given_options_with_proxy_jumps__when_running__should_connect_to_execut
         [cleaned_up_proxyconnection])
 
     sshclient_type_mock.return_value = mock
-
-    sut = Application(SSHExecutorFactory(options_with_proxy()), DummyFilesystemFactory(), Mock())
+    sut = make_sut(options_with_proxy())
 
     sut.run(options_with_proxy())
 
@@ -53,9 +54,6 @@ def test__given_options_with_proxy_jumps__when_running__should_connect_to_execut
     
 
 def test__given_valid_config__when_running_long_running_job__should_wait_for_completion(sshclient_type_mock):
-
-    sut = Application(SSHExecutorFactory(options(watch=True)), DummyFilesystemFactory(), Mock())
-
     channel_spy = DelayedChannelSpy(exit_code=0, calls_until_exit=2)
     sshclient_type_mock.return_value = CmdSpecificSSHClientStub({
         "sbatch": ChannelFileStub(lines=["1234"]),
@@ -65,6 +63,8 @@ def test__given_valid_config__when_running_long_running_job__should_wait_for_com
         )
     })
 
+    sut = make_sut(options(watch=True))
+    
     actual = sut.run(options(watch=True))
 
     assert actual == 0

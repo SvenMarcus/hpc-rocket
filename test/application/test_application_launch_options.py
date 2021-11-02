@@ -1,15 +1,13 @@
-from test.application.executor_filesystem_callorder import \
-    CallOrderVerificationFactory
+from test.application.executor_filesystem_callorder import (
+    CallOrderVerification, VerifierReturningFilesystemFactory)
 from test.application.launchoptions import main_connection, options
 from test.slurmoutput import completed_slurm_job
-from test.testdoubles.executor import (CommandExecutorFactoryStub,
-                                       LoggingCommandExecutorSpy,
-                                       FailedSlurmJobCommandStub,
+from test.testdoubles.executor import (FailedSlurmJobCommandStub,
                                        InfiniteSlurmJobCommand,
+                                       LoggingCommandExecutorSpy,
                                        SlurmJobExecutorSpy,
                                        SuccessfulSlurmJobCommandStub)
 from test.testdoubles.filesystem import DummyFilesystemFactory
-from test.ui_testdoubles import PrintLoggingUI
 from unittest.mock import Mock
 
 import pytest
@@ -31,9 +29,20 @@ class ConnectionFailingCommandExecutor(LoggingCommandExecutorSpy):
         pass
 
 
+def make_sut(executor, ui=None):
+    return Application(executor, DummyFilesystemFactory(), ui or Mock())
+
+
+def make_sut_with_call_order_verification(expected_calls):
+    verifier = CallOrderVerification(expected_calls)
+    factory = VerifierReturningFilesystemFactory(verifier)
+    sut = Application(verifier, factory, Mock())
+    return sut, verifier
+
+
 def test__given_valid_config__when_running__should_run_sbatch_with_executor():
     executor = SlurmJobExecutorSpy()
-    sut = Application(CommandExecutorFactoryStub(executor), DummyFilesystemFactory(), Mock())
+    sut = make_sut(executor)
 
     sut.run(options())
 
@@ -42,7 +51,7 @@ def test__given_valid_config__when_running__should_run_sbatch_with_executor():
 
 def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_zero():
     executor = SlurmJobExecutorSpy(sacct_cmd=SuccessfulSlurmJobCommandStub())
-    sut = Application(CommandExecutorFactoryStub(executor), DummyFilesystemFactory(), Mock())
+    sut = make_sut(executor)
 
     actual = sut.run(options(watch=True))
 
@@ -51,7 +60,7 @@ def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_
 
 def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one():
     executor = SlurmJobExecutorSpy(sacct_cmd=FailedSlurmJobCommandStub())
-    sut = Application(CommandExecutorFactoryStub(executor), DummyFilesystemFactory(), Mock())
+    sut = make_sut(executor)
 
     actual = sut.run(options(watch=True))
 
@@ -60,8 +69,8 @@ def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one
 
 def test__given_ui__when_running__should_update_ui_after_polling():
     ui_spy = Mock()
-    factory = CommandExecutorFactoryStub.with_slurm_executor_stub()
-    sut = Application(factory, DummyFilesystemFactory(), ui_spy)
+    executor = SlurmJobExecutorSpy()
+    sut = make_sut(executor, ui_spy)
 
     _ = sut.run(options(watch=True))
 
@@ -72,7 +81,7 @@ def test__given_failing_ssh_connection__when_running__should_log_error_and_exit_
     ui_spy = Mock()
 
     executor = ConnectionFailingCommandExecutor()
-    sut = Application(CommandExecutorFactoryStub(executor), DummyFilesystemFactory(), ui_spy)
+    sut = make_sut(executor, ui_spy)
 
     actual = sut.run(options(watch=True))
 
@@ -107,17 +116,16 @@ def test__given_options_without_watch_and_files_to_copy_collect_and_clean__when_
         watch=False
     )
 
-    factory = CallOrderVerificationFactory()
-    factory.verifier.expected = [
+    expected = [
         "copy myfile.txt mycopy.txt",
         "sbatch"
     ]
 
-    sut = Application(factory, factory, Mock())
+    sut, verify = make_sut_with_call_order_verification(expected)
 
     sut.run(opts)
 
-    factory.verifier()
+    verify()
 
 
 def test__given_launchoptions_with_watch_and_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_collect_then_clean():
@@ -128,8 +136,7 @@ def test__given_launchoptions_with_watch_and_files_to_copy_collect_and_clean__wh
         watch=True
     )
 
-    factory = CallOrderVerificationFactory()
-    factory.verifier.expected = [
+    expected = [
         "copy myfile.txt mycopy.txt",
         "sbatch",
         "sacct",
@@ -137,11 +144,11 @@ def test__given_launchoptions_with_watch_and_files_to_copy_collect_and_clean__wh
         "delete mycopy.txt",
     ]
 
-    sut = Application(factory, factory, Mock())
+    sut, verify = make_sut_with_call_order_verification(expected)
 
     sut.run(opts)
 
-    factory.verifier()
+    verify()
 
 
 def run_in_background(sut):

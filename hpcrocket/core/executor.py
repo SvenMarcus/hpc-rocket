@@ -42,10 +42,3 @@ class CommandExecutor(ABC):
     @abstractmethod
     def close(self) -> None:
         pass
-
-
-class CommandExecutorFactory(ABC):
-
-    @abstractmethod
-    def create_executor(self) -> CommandExecutor:
-        pass

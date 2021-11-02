@@ -1,15 +1,12 @@
 from typing import Union
 
 import hpcrocket.core.workflows as workflows
-from hpcrocket.core.environmentpreparation import EnvironmentPreparation
 from hpcrocket.core.errors import get_error_message
-from hpcrocket.core.executor import CommandExecutor, CommandExecutorFactory
+from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import JobBasedOptions, LaunchOptions
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.ui import UI
-from hpcrocket.watcher.jobwatcher import JobWatcher
 
 
 class WorkflowFactory:
@@ -28,8 +25,8 @@ class WorkflowFactory:
 
 class Application:
 
-    def __init__(self, executor_factory: CommandExecutorFactory, filesystem_factory: FilesystemFactory, ui: UI) -> None:
-        self._executor_factory = executor_factory
+    def __init__(self, executor: CommandExecutor, filesystem_factory: FilesystemFactory, ui: UI) -> None:
+        self._executor = executor
         self._workflow_factory = WorkflowFactory(filesystem_factory)
         self._ui = ui
 
@@ -41,11 +38,11 @@ class Application:
             return 1
 
     def _run_workflow(self, options: Union[LaunchOptions, JobBasedOptions]) -> int:
-        with self._executor_factory.create_executor() as executor:
+        with self._executor as executor:
             controller = SlurmController(executor)
             workflow = self._workflow_factory(controller, options)
-            result = workflow.run(self._ui)
-            return 0 if result else 1
+            success = workflow.run(self._ui)
+            return 0 if success else 1
 
     def cancel(self) -> int:
         pass

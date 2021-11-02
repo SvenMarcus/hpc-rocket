@@ -6,7 +6,7 @@ from test.sshfilesystem_assertions import (
     assert_sshfs_connected_with_connection_data,
     assert_sshfs_connected_with_keyfile_from_connection_data,
     assert_sshfs_connected_with_password_from_connection_data)
-from test.testdoubles.executor import SlurmJobExecutorFactoryStub
+from test.testdoubles.executor import SlurmJobExecutorSpy
 from test.testdoubles.filesystem import sshfs_with_connection_fake
 from test.testdoubles.sshclient import ProxyJumpVerifyingSSHClient
 from unittest.mock import ANY, MagicMock, Mock, call
@@ -20,9 +20,12 @@ from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
 
 
+def make_sut(options, ui=None):
+    return Application(SlurmJobExecutorSpy(), PyFilesystemFactory(options), ui or Mock())
+
 
 def test__given_valid_config__when_running__should_open_local_fs_in_current_directory(osfs_type_mock):
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(options()), Mock())
+    sut = make_sut(options())
 
     sut.run(options())
 
@@ -30,7 +33,7 @@ def test__given_valid_config__when_running__should_open_local_fs_in_current_dire
 
 
 def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_credentials(sshfs_type_mock):
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(options()), Mock())
+    sut = make_sut(options())
 
     sut.run(options())
 
@@ -41,7 +44,7 @@ def test__given_ssh_connection_not_available_for_sshfs__when_running__should_log
     sshfs_type_mock.side_effect = SSHError(main_connection().hostname)
 
     ui_spy = Mock()
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(options()), ui_spy)
+    sut = make_sut(options(), ui_spy)
 
     sut.run(options())
 
@@ -62,7 +65,7 @@ def test__given_config_with_only_private_keyfile__when_running__should_login_to_
         poll_interval=0
     )
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(valid_options), Mock())
+    sut = make_sut(valid_options)
 
     sut.run(valid_options)
 
@@ -80,7 +83,7 @@ def test__given_config_with_only_password__when_running__should_login_to_sshfs_w
         poll_interval=0
     )
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(valid_options), Mock())
+    sut = make_sut(valid_options)
 
     sut.run(valid_options)
 
@@ -95,10 +98,7 @@ def test__given_config_with_proxy__when_running__should_login_to_sshfs_over_prox
     sshclient_type_mock.return_value = mock
 
     with sshfs_with_connection_fake(sshclient_type_mock.return_value):
-        sut = Application(
-            SlurmJobExecutorFactoryStub(),
-            PyFilesystemFactory(options_with_proxy_only_password()),
-            Mock())
+        sut = make_sut(options_with_proxy_only_password())
 
         sut.run(options_with_proxy_only_password())
 
@@ -106,7 +106,7 @@ def test__given_config_with_proxy__when_running__should_login_to_sshfs_over_prox
 
 
 def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_mock: MagicMock):
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(options()), Mock())
+    sut = make_sut(options())
 
     sut.run(options())
 
@@ -126,7 +126,7 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
     osfs_type_mock.create("myfile.txt")
     osfs_type_mock.create("otherfile.gif")
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), Mock())
+    sut = make_sut(opts)
 
     sut.run(opts)
 
@@ -144,7 +144,7 @@ def test__given_config_with_files_to_clean__when_running__should_remove_files_fr
 
     osfs_type_mock.return_value.create("myfile.txt")
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), Mock())
+    sut = make_sut(opts)
 
     sut.run(opts)
 
@@ -163,7 +163,7 @@ def test__given_config_with_files_to_collect__when_running__should_collect_files
     local_fs = osfs_type_mock.return_value
     local_fs.create("myfile.txt")
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), Mock())
+    sut = make_sut(opts)
 
     sut.run(opts)
 
@@ -185,7 +185,7 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_perf
 
     osfs_type_mock.return_value.create("myfile.txt")
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), Mock())
+    sut = make_sut(opts)
 
     exit_code = sut.run(opts)
 
@@ -205,7 +205,7 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_prin
     osfs_type_mock.return_value.create("myfile.txt")
 
     ui_spy = Mock()
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), ui_spy)
+    sut = make_sut(opts, ui_spy)
 
     sut.run(opts)
 
@@ -226,7 +226,7 @@ def test__given_config_with_already_existing_file_to_copy__when_running__should_
 
     sshfs_type_mock.return_value.create(f"{HOME_DIR}/copy.gif")
 
-    sut = Application(SlurmJobExecutorFactoryStub(), PyFilesystemFactory(opts), Mock())
+    sut = make_sut(opts)
 
     exit_code = sut.run(opts)
 
