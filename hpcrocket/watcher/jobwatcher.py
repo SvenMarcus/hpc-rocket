@@ -1,7 +1,13 @@
 from threading import Thread
-from typing import TYPE_CHECKING, Callable, Protocol
+from typing import TYPE_CHECKING, Callable
 
 from hpcrocket.watcher.watcherthread import WatcherThread, WatcherThreadImpl
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol  # type: ignore
+
 
 if TYPE_CHECKING:
     from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
@@ -79,4 +85,3 @@ class JobWatcherImpl:
         except RuntimeError as err:
             import logging
             logging.warning(err)
-

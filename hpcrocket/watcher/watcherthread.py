@@ -1,5 +1,5 @@
 import threading
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import TYPE_CHECKING, Callable
 
 try:
     from typing import Protocol
