@@ -97,7 +97,7 @@ def test__given_infinite_running_job__when_canceling__should_cancel_job_and_exit
     executor = SlurmJobExecutorSpy(sacct_cmd=infinite_running_job)
     executor.on_scancel(infinite_running_job.mark_canceled)
 
-    sut = Application(CommandExecutorFactoryStub(executor), DummyFilesystemFactory(), Mock())
+    sut = Application(executor, DummyFilesystemFactory(), Mock())
     thread = run_in_background(sut)
 
     wait_until_polled(executor)
