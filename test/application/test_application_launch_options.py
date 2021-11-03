@@ -89,7 +89,7 @@ def test__given_failing_ssh_connection__when_running__should_log_error_and_exit_
     assert executor.command_log == []
     assert actual == 1
 
-
+@pytest.mark.timeout(1)
 def test__given_infinite_running_job__when_canceling__should_cancel_job_and_exit_with_code_130():
     infinite_running_job = InfiniteSlurmJobCommand()
     executor = SlurmJobExecutorSpy(sacct_cmd=infinite_running_job)
