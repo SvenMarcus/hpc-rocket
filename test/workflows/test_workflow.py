@@ -1,6 +1,7 @@
+from typing import List
 from unittest.mock import Mock
 
-from hpcrocket.core.workflows.workflow import Workflow
+from hpcrocket.core.workflows.workflow import Stage, Workflow
 from hpcrocket.ui import UI
 
 
@@ -8,12 +9,19 @@ class StageSpy:
 
     def __init__(self) -> None:
         self.was_run = False
+        self.was_canceled = False
         self.received_ui: UI = None  # type: ignore[assignment]
+        self.run_callback = lambda: None
 
     def __call__(self, ui: UI) -> bool:
         self.was_run = True
         self.received_ui = ui
+        self.run_callback()
         return True
+
+    def cancel(self, ui: UI) -> None:
+        self.was_canceled = True
+
 
     def __bool__(self):
         return self.was_run
@@ -30,7 +38,7 @@ def ui_dummy():
     return Mock(spec=UI)
 
 
-def make_sut(stages):
+def make_sut(stages: List[Stage]):
     return Workflow(stages)
 
 
@@ -77,3 +85,30 @@ def test__given_workflow_with_stages__when_first_stage_fails__should_not_call_se
     sut.run(ui_dummy())
 
     assert second_stage.was_run is False
+
+
+def test__given_running_workflow_with_stage__when_canceling__should_call_cancel_on_stage():
+    stage = StageSpy()
+    sut = make_sut([stage])
+    
+    stage.run_callback = cancel_workflow(sut)
+
+    sut.run(ui_dummy())
+
+    assert stage.was_canceled is True
+
+
+def test__given_running_workflow_with_two_stages__when_canceling_during_first_stage__should_not_run_second_stage():
+    first_stage = StageSpy()
+    second_stage = StageSpy()
+    sut = make_sut([first_stage, second_stage])
+    
+    first_stage.run_callback = cancel_workflow(sut)
+
+    sut.run(ui_dummy())
+
+    assert second_stage.was_run is False
+
+
+def cancel_workflow(sut: Workflow):
+    return lambda: sut.cancel(ui_dummy())

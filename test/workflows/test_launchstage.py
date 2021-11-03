@@ -134,5 +134,5 @@ class StageCancelingRunningCommand(RunningSlurmJobCommandStub):
         self.sut: LaunchStage = None  # type: ignore
 
     def wait_until_exit(self) -> int:
-        self.sut.cancel()
+        self.sut.cancel(Mock())
         return super().wait_until_exit()

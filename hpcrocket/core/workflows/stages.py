@@ -27,9 +27,11 @@ class LaunchStage:
 
         return self._wait_for_job_exit(self._batch_job, ui)
 
-    def cancel(self):
+    def cancel(self, ui: UI):
+        ui.info(f"Canceling job {self._batch_job.jobid}")
         self._batch_job.cancel()
         self._watcher.stop()
+        ui.success(f"Canceled job {self._batch_job.jobid}")
 
     def _wait_for_job_exit(self, batch_job: SlurmBatchJob, ui: UI) -> bool:
         self._watcher = batch_job.get_watcher()
@@ -57,7 +59,7 @@ class PrepareStage:
         env_prep = self._create_env_prep(ui)
         return self._try_prepare(env_prep, ui)
 
-    def cancel(self):
+    def cancel(self, ui: UI):
         pass
 
     def _try_prepare(self, env_prep: EnvironmentPreparation, ui: UI) -> bool:
@@ -110,7 +112,7 @@ class FinalizeStage:
 
         return True
 
-    def cancel(self):
+    def cancel(self, ui: UI):
         pass
 
 
@@ -123,3 +125,6 @@ class StatusStage:
     def __call__(self, ui: UI) -> bool:
         ui.update(self._controller.poll_status(self._jobid))
         return True
+
+    def cancel(self, ui: UI):
+        pass
