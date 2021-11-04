@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 from test.application.launchoptions import options
 from test.slurm_assertions import assert_job_canceled, assert_job_polled, assert_job_submitted
-from test.testdoubles.executor import (DEFAULT_JOB_ID, FailedSlurmJobCommandStub, InfiniteSlurmJobCommand,
+from test.testdoubles.executor import (DEFAULT_JOB_ID, CommandExecutorStub, FailedSlurmJobCommandStub, InfiniteSlurmJobCommand,
                                        LongRunningSlurmJobExecutorSpy, RunningCommandStub, RunningSlurmJobCommandStub,
                                        SlurmJobExecutorSpy, SlurmJobSubmittedCommandStub, SuccessfulSlurmJobCommandStub)
 
@@ -14,7 +14,7 @@ import pytest
 from hpcrocket.core.executor import CommandExecutor, RunningCommand
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmcontroller import SlurmController
-from hpcrocket.core.workflows.stages import LaunchStage
+from hpcrocket.core.workflows.stages import LaunchStage, NoJobLaunchedError
 from hpcrocket.watcher.jobwatcher import JobWatcher, JobWatcherFactory, WatcherThreadFactory
 from hpcrocket.ui import UI
 
@@ -125,6 +125,15 @@ def test__given_infinite_running_workflow__when_canceling__should_call_cancel_on
     sut(Mock(spec=UI))
 
     assert_job_canceled(executor, DEFAULT_JOB_ID, command_index=-1)
+
+
+def test__when_canceling_before_running__should_raise_no_job_launched_error():
+    controller = SlurmController(CommandExecutorStub())
+    sut = LaunchStage(controller, options(watch=True))
+
+    with pytest.raises(NoJobLaunchedError):
+        sut.cancel(Mock())
+
 
 
 class StageCancelingRunningCommand(RunningSlurmJobCommandStub):

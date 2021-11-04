@@ -24,8 +24,8 @@ def is_scancel(cmd: str, jobid: str):
 
 class CommandExecutorStub(CommandExecutor):
 
-    def __init__(self, command: RunningCommand) -> None:
-        self.command = command
+    def __init__(self, command: RunningCommand = None) -> None:
+        self.command = command or RunningCommandStub()
 
     def exec_command(self, cmd: str) -> RunningCommand:
         return self.command
