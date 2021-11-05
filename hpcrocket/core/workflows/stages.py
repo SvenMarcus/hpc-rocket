@@ -22,10 +22,11 @@ class LaunchStage:
         self._options = options
         self._batch_job: Optional[SlurmBatchJob] = None
         self._job_status: Optional[SlurmJobStatus] = None
-        self._watcher: JobWatcher = None # type: ignore[assignment]
+        self._watcher: JobWatcher = None  # type: ignore[assignment]
 
     def __call__(self, ui: UI) -> bool:
         self._batch_job = self._controller.submit(self._options.sbatch)
+        ui.launch(f"Launched job {self._batch_job.jobid}")
         if not self._options.watch:
             return True
 
@@ -34,11 +35,11 @@ class LaunchStage:
     def cancel(self, ui: UI):
         self._raise_if_not_launched()
         batch_job = cast(SlurmBatchJob, self._batch_job)
-        
-        ui.info(f"Canceling job {batch_job.jobid}")   
-        batch_job.cancel()                            
-        self._watcher.stop()                                
-        ui.success(f"Canceled job {batch_job.jobid}") 
+
+        ui.info(f"Canceling job {batch_job.jobid}")
+        batch_job.cancel()
+        self._watcher.stop()
+        ui.success(f"Canceled job {batch_job.jobid}")
 
     def _raise_if_not_launched(self):
         if not self._batch_job:
@@ -75,7 +76,9 @@ class PrepareStage:
 
     def _try_prepare(self, env_prep: EnvironmentPreparation, ui: UI) -> bool:
         try:
+            ui.info("Copying files...")
             env_prep.prepare()
+            ui.success("Done")
         except (FileExistsError, FileNotFoundError) as err:
             self._do_rollback(env_prep, err, ui)
             return False
@@ -115,13 +118,22 @@ class FinalizeStage:
             ui
         )
 
-        env_prep.files_to_collect(self._collect)
-        env_prep.collect()
-
-        env_prep.files_to_clean(self._clean)
-        env_prep.clean()
+        self._collect_files(env_prep, ui)
+        self._clean_files(env_prep, ui)
 
         return True
+
+    def _collect_files(self, env_prep: EnvironmentPreparation, ui: UI):
+        env_prep.files_to_collect(self._collect)
+        ui.info("Collecting files...")
+        env_prep.collect()
+        ui.success("Done")
+
+    def _clean_files(self, env_prep: EnvironmentPreparation, ui: UI):
+        env_prep.files_to_clean(self._clean)
+        ui.info("Cleaning files...")
+        env_prep.clean()
+        ui.success("Done")
 
     def cancel(self, ui: UI):
         pass
