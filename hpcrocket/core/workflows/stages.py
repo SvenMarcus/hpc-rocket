@@ -1,5 +1,4 @@
 from typing import List, Optional, cast
-import typing
 
 from hpcrocket.core.environmentpreparation import (CopyInstruction,
                                                    EnvironmentPreparation)

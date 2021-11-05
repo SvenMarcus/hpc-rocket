@@ -1,108 +1,118 @@
 import argparse
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Any, Dict, List, Union
 
 import yaml
 
 from hpcrocket.core.environmentpreparation import CopyInstruction
-from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.core.launchoptions import Options, JobBasedOptions, LaunchOptions
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
-def parse_cli_args(args: List[str]) -> LaunchOptions:
+def parse_cli_args(args: List[str]) -> Options:
     parser = _setup_parser()
     config = parser.parse_args(args)
 
-    options_parser: Configuration = (YamlConfiguration(config.configfile, config.watch)
-                                     if "configfile" in config
-                                     else CliConfiguration(config))
+    print(config.command)
+    options_builder: _OptionBuilder
+    if config.command == "launch":
+        options_builder = _LaunchConfigurationParser(config.configfile, config.watch)
+    elif config.command == "status":
+        options_builder = _StatusConfigurationParser(config.configfile, config.jobid)
 
-    return options_parser.parse()
+    return options_builder.build()
 
 
 def _setup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser("hpc-rocket")
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(dest="command")
 
-    _setup_yaml_parser(subparsers)
-    _setup_cli_parser(subparsers)
+    _setup_launch_parser(subparsers)
+    _setup_status_parser(subparsers)
 
     return parser
 
 
-def _setup_cli_parser(subparsers: argparse._SubParsersAction) -> None:
-    run_parser = subparsers.add_parser("run", help="Configure HPC Rocket from the command line")
-    run_parser.add_argument("jobfile", type=str, help="The name of the job file to run with sbatch")
-    run_parser.add_argument("--host", type=str, required=True, help="Address of the remote machine")
-    run_parser.add_argument("--user", type=str, required=True, help="User on the remote machine")
-    run_parser.add_argument("--password", type=str, help="The password for the given user")
-    run_parser.add_argument("--private-key", type=str, help="A private SSH key")
-    run_parser.add_argument("--keyfile", type=str, help="The path to a file containing a private SSH key")
+def _setup_launch_parser(subparsers: argparse._SubParsersAction) -> None:
+    parser = subparsers.add_parser("launch", help="Launch a remote job")
+    parser.add_argument("configfile", type=str)
+    parser.add_argument("--watch", default=False, dest="watch", action="store_true")
 
 
-def _setup_yaml_parser(subparsers: argparse._SubParsersAction) -> None:
-    yaml_parser = subparsers.add_parser("launch", help="Configure HPC Rocket from a configuration file")
-    yaml_parser.add_argument("configfile", type=str)
-    yaml_parser.add_argument("--watch", default=False, dest="watch", action="store_true")
+def _setup_status_parser(subparsers: argparse._SubParsersAction) -> None:
+    parser = subparsers.add_parser("status", help="Check on a job's current status")
+    parser.add_argument("configfile", type=str, help="A config file containing the connection data")
+    parser.add_argument("jobid", type=str, help="The ID of the job you want to check")
 
 
-class Configuration(ABC):
+class _OptionBuilder(ABC):
 
     @abstractmethod
-    def parse(self) -> LaunchOptions:
+    def build(self) -> Options:
         pass
 
 
-class CliConfiguration(Configuration):
-
-    def __init__(self, namespace: argparse.Namespace) -> None:
-        self._namespace = namespace
-
-    def parse(self) -> LaunchOptions:
-        return LaunchOptions(
-            self._namespace.jobfile,
-            connection=ConnectionData(
-                hostname=self._namespace.host,
-                username=self._namespace.user,
-                password=self._namespace.password,
-                key=self._namespace.private_key,
-                keyfile=self._namespace.keyfile
-            ))
-
-
-class YamlConfiguration(Configuration):
+class _LaunchConfigurationParser(_OptionBuilder):
 
     def __init__(self, path: str, watch: bool) -> None:
         self._path = path
         self._watch = watch
 
-    def parse(self) -> LaunchOptions:
-        with open(self._path, "r") as file:
-            config = yaml.load(file, Loader=yaml.SafeLoader)
+    def build(self) -> Options:
+        config = _parse_yaml(self._path)
 
-            return LaunchOptions(
-                sbatch=config["sbatch"],
-                watch=self._watch,
-                copy_files=self._collect_copy_instructions(config.get("copy", [])),
-                clean_files=config.get("clean", []),
-                collect_files=self._collect_copy_instructions(config.get("collect", [])),
-                connection=self._connection_data_from_dict(config),
-                proxyjumps=self._collect_proxyjumps(config.get("proxyjumps", []))
-            )
-
-    def _connection_data_from_dict(self, config: Dict[str, str]) -> ConnectionData:
-        return ConnectionData(
-            hostname=config["host"],
-            username=config["user"],
-            keyfile=config.get("private_keyfile"),
-            password=str(config.get("password"))
+        return LaunchOptions(
+            sbatch=config["sbatch"],
+            watch=self._watch,
+            copy_files=self._collect_copy_instructions(config.get("copy", [])),
+            clean_files=config.get("clean", []),
+            collect_files=self._collect_copy_instructions(config.get("collect", [])),
+            **_connection_dict(config)  # type: ignore
         )
 
-    def _collect_proxyjumps(self, proxyjumps: List[Dict[str, str]]) -> List[ConnectionData]:
-        return [self._connection_data_from_dict(proxy) for proxy in proxyjumps]
-
-    def _collect_copy_instructions(self, copy_list: List[Dict[str, str]]) -> List[CopyInstruction]:
+    @staticmethod
+    def _collect_copy_instructions(copy_list: List[Dict[str, str]]) -> List[CopyInstruction]:
         return [CopyInstruction(cp["from"],
                                 cp["to"],
                                 bool(cp.get("overwrite", False)))
                 for cp in copy_list]
+
+
+class _StatusConfigurationParser(_OptionBuilder):
+
+    def __init__(self, path: str, jobid: str) -> None:
+        self._path = path
+        self._jobid = jobid
+
+    def build(self) -> Options:
+        config = _parse_yaml(self._path)
+        return JobBasedOptions(
+            self._jobid,
+            action=JobBasedOptions.Action.status,
+            **_connection_dict(config)  # type: ignore
+        )
+
+
+def _parse_yaml(path):
+    with open(path, "r") as file:
+        return yaml.load(file, Loader=yaml.SafeLoader)
+
+
+def _connection_dict(config: Dict[str, Any]) -> Dict[str, Union[ConnectionData, List[ConnectionData]]]:
+    return {
+        "connection": _connection_data_from_dict(config),
+        "proxyjumps": _collect_proxyjumps(config.get("proxyjumps", []))
+    }
+
+
+def _connection_data_from_dict(config: Dict[str, str]) -> ConnectionData:
+    return ConnectionData(
+        hostname=config["host"],
+        username=config["user"],
+        keyfile=config.get("private_keyfile"),
+        password=str(config.get("password"))
+    )
+
+
+def _collect_proxyjumps(proxyjumps: List[Dict[str, str]]) -> List[ConnectionData]:
+    return [_connection_data_from_dict(proxy) for proxy in proxyjumps]

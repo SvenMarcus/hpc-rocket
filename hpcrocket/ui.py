@@ -93,7 +93,7 @@ class RichUI(UI):
 
         for task in job.tasks:
             last_column: RenderableType = task.state
-            color = "grey"
+            color = "grey42"
             if task.state == "RUNNING":
                 color = "blue"
                 last_column = Spinner("arc", task.state)
