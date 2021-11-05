@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from typing import Any
+from rich import box
 
 from rich.console import RenderableType
 from rich.live import Live
@@ -54,7 +56,7 @@ class RichUI(UI):
     def __init__(self) -> None:
         self._rich_live: Live
 
-    def __enter__(self):
+    def __enter__(self) -> 'RichUI':
         self._rich_live = Live(
             Spinner("bouncingBar", ""),
             refresh_per_second=16)
@@ -62,7 +64,7 @@ class RichUI(UI):
         self._rich_live.start()
         return self
 
-    def __exit__(self, *args, **kwargs):
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
         self._rich_live.stop()
 
     def update(self, job: SlurmJobStatus) -> None:
@@ -84,15 +86,24 @@ class RichUI(UI):
         self._rich_live.console.print(":rocket: ", text, style="bold yellow", emoji=True)
 
     def _make_table(self, job: SlurmJobStatus) -> Table:
-        table = Table(style="bold")
+        table = Table(style="bold", box=box.MINIMAL)
         table.add_column("ID")
         table.add_column("Name")
         table.add_column("State")
 
         for task in job.tasks:
             last_column: RenderableType = task.state
+            color = "grey42"
             if task.state == "RUNNING":
-                last_column = Spinner("bouncingBar", task.state)
-            table.add_row(str(task.id), task.name, last_column)
+                color = "blue"
+                last_column = Spinner("arc", task.state)
+            elif task.state == "COMPLETED":
+                color = "green"
+                last_column =  f":heavy_check_mark: {task.state}"
+            elif task.state == "FAILED":
+                color = "red"
+                last_column = f":cross_mark: {task.state}"
+
+            table.add_row(str(task.id), task.name, last_column, style=color)
 
         return table

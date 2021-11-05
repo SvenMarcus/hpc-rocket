@@ -1,12 +1,13 @@
 from test.application.launchoptions import main_connection
+from test.slurmoutput import DEFAULT_JOB_ID, running_slurm_job
 from test.testdoubles.paramiko_sshclient_mockutil import (
     get_blocking_channel_exit_status_ready_func, make_close,
     make_get_transport)
 from unittest.mock import Mock, patch
 
 import pytest
-from hpcrocket.core.slurmbatchjob import (SlurmBatchJob, SlurmJobStatus,
-                                          SlurmTaskStatus)
+from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmTaskStatus
+from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.ssh.sshexecutor import SSHExecutor
 
 patcher = patch("paramiko.SSHClient")
@@ -43,33 +44,22 @@ def configure_sshclient_fake(patched, cmd_output_file: str):
 def test__when_calling_sbatch__should_return_job_id(sbatch_sshclient_fake):
     executor = SSHExecutor(main_connection())
     executor.connect()
-    sut = SlurmBatchJob(executor, "myjob.job")
+    sut = SlurmController(executor)
 
-    jobid = sut.submit()
+    actual = sut.submit("myjob.job")
 
-    assert jobid == "123456"
+    assert actual.jobid == DEFAULT_JOB_ID
 
 
 def test__when_polling_job__should_return_slurm_job_with_matching_data(sshclient_poll_running_job_fake):
     executor = SSHExecutor(main_connection())
     executor.connect()
-    sut = SlurmBatchJob(executor, "myjob.job")
-    sut.submit()
+    sut = SlurmController(executor)
+    sut.submit("myjob.job")
 
-    actual = sut.poll_status()
+    actual = sut.poll_status(DEFAULT_JOB_ID)
 
-    assert actual == SlurmJobStatus(
-        id="1603376",
-        name="PyFluidsTest",
-        state="RUNNING",
-        tasks=[
-            SlurmTaskStatus("1603376", "PyFluidsTest", "RUNNING"),
-            SlurmTaskStatus("1603376.ext+",  "extern", "RUNNING"),
-            SlurmTaskStatus("1603376.0", "singularity", "COMPLETED"),
-            SlurmTaskStatus("1603376.1", "singularity", "COMPLETED"),
-            SlurmTaskStatus("1603376.2", "singularity", "RUNNING"),
-        ]
-    )
+    assert actual == running_slurm_job()
 
 
 def make_exec_command(file: str):

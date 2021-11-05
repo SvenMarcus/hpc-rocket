@@ -2,9 +2,7 @@ from typing import List, Optional
 
 import paramiko as pm
 import paramiko.channel as channel
-from hpcrocket.core.executor import (CommandExecutor, CommandExecutorFactory,
-                                     RunningCommand)
-from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.core.executor import CommandExecutor, RunningCommand
 from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
 
@@ -42,7 +40,7 @@ class RemoteCommand(RunningCommand):
 
 class SSHExecutor(CommandExecutor):
 
-    def __init__(self, connection: ConnectionData, proxyjumps: List[ConnectionData] = None) -> None:
+    def __init__(self, connection: ConnectionData, proxyjumps: Optional[List[ConnectionData]] = None) -> None:
         self._is_connected = False
         self._client = _make_sshclient()
         self._connection = connection
@@ -51,7 +49,7 @@ class SSHExecutor(CommandExecutor):
     def load_host_keys_from_file(self, hostfile: str) -> None:
         self._client.load_host_keys(hostfile)
 
-    def connect(self):
+    def connect(self) -> None:
         try:
             channel = build_channel_with_proxyjumps(self._connection, self._proxyjumps)
             _connect_client(self._client, self._connection, channel=channel)
@@ -59,7 +57,7 @@ class SSHExecutor(CommandExecutor):
         except Exception as err:
             raise SSHError(str(err)) from err
 
-    def close(self):
+    def close(self) -> None:
         self._client.close()
         self._is_connected = False
 
@@ -74,18 +72,6 @@ class SSHExecutor(CommandExecutor):
     @property
     def client(self) -> pm.SSHClient:
         return self._client
-
-
-class SSHExecutorFactory(CommandExecutorFactory):
-
-    def __init__(self, options: LaunchOptions) -> None:
-        self._options = options
-
-    def create_executor(self) -> CommandExecutor:
-        connection = ConnectionData.with_resolved_keyfile(self._options.connection)
-        proxyjumps = [ConnectionData.with_resolved_keyfile(proxy) for proxy in self._options.proxyjumps]
-        executor = SSHExecutor(connection, proxyjumps=proxyjumps)
-        return executor
 
 
 def build_channel_with_proxyjumps(connection: ConnectionData, proxyjumps: List[ConnectionData]) -> Optional[pm.Channel]:
@@ -113,25 +99,25 @@ def _open_channel_to_next_host(next_connection: ConnectionData, proxy: pm.SSHCli
     return channel
 
 
-def _make_sshclient_and_connect(connection: ConnectionData, channel=None):
+def _make_sshclient_and_connect(connection: ConnectionData, channel: Optional[pm.Channel] = None) -> pm.SSHClient:
     sshclient = _make_sshclient()
     _connect_client(sshclient, connection, channel)
     return sshclient
 
 
-def _make_sshclient():
+def _make_sshclient() -> pm.SSHClient:
     sshclient = pm.SSHClient()
     sshclient.set_missing_host_key_policy(pm.AutoAddPolicy)
     return sshclient
 
 
-def _connect_client(sshclient, connection, channel):
+def _connect_client(sshclient: pm.SSHClient, connection: ConnectionData, channel: Optional[pm.Channel]) -> None:
     sshclient.connect(
         hostname=connection.hostname,
         username=connection.username,
         port=connection.port,
         key_filename=connection.keyfile,
         password=connection.password,
-        pkey=connection.key,  # type: ignore[arg-type]
-        sock=channel
+        pkey=connection.key, # type: ignore[arg-type]
+        sock=channel # type: ignore[arg-type]
     )

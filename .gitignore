@@ -1,3 +1,5 @@
+test_config_files/
+
 # Python
 .venv/
 __pycache__/

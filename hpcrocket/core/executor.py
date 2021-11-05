@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Type
 
 
 class RunningCommand(ABC):
@@ -8,6 +8,7 @@ class RunningCommand(ABC):
     def wait_until_exit(self) -> int:
         pass
 
+    @property
     @abstractmethod
     def exit_status(self) -> int:
         pass
@@ -27,7 +28,7 @@ class CommandExecutor(ABC):
         self.connect()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Type[Exception], exc_val: Exception, exc_tb: str) -> None:
         self.close()
 
     @abstractmethod
@@ -40,11 +41,4 @@ class CommandExecutor(ABC):
 
     @abstractmethod
     def close(self) -> None:
-        pass
-
-
-class CommandExecutorFactory(ABC):
-
-    @abstractmethod
-    def create_executor(self) -> CommandExecutor:
         pass

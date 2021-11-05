@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 
 class FilesystemFactory(ABC):
@@ -18,7 +19,7 @@ class Filesystem(ABC):
     """
 
     @abstractmethod
-    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: 'Filesystem' = None) -> None:
+    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: Optional['Filesystem'] = None) -> None:
         """Copies the `source` file to the `target` location. Can transfer between filesystems if `filesystem` argument is specified
 
         Args:
