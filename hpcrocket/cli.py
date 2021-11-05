@@ -13,12 +13,11 @@ def parse_cli_args(args: List[str]) -> Options:
     parser = _setup_parser()
     config = parser.parse_args(args)
 
-    print(config.command)
     options_builder: _OptionBuilder
     if config.command == "launch":
-        options_builder = _LaunchConfigurationParser(config.configfile, config.watch)
+        options_builder = _LaunchConfigurationBuilder(config.configfile, config.watch)
     elif config.command == "status":
-        options_builder = _StatusConfigurationParser(config.configfile, config.jobid)
+        options_builder = _StatusConfigurationBuilder(config.configfile, config.jobid)
 
     return options_builder.build()
 
@@ -52,7 +51,7 @@ class _OptionBuilder(ABC):
         pass
 
 
-class _LaunchConfigurationParser(_OptionBuilder):
+class _LaunchConfigurationBuilder(_OptionBuilder):
 
     def __init__(self, path: str, watch: bool) -> None:
         self._path = path
@@ -78,7 +77,7 @@ class _LaunchConfigurationParser(_OptionBuilder):
                 for cp in copy_list]
 
 
-class _StatusConfigurationParser(_OptionBuilder):
+class _StatusConfigurationBuilder(_OptionBuilder):
 
     def __init__(self, path: str, jobid: str) -> None:
         self._path = path
