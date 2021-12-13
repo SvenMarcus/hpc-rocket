@@ -21,7 +21,6 @@ class LaunchStage:
         self._controller = controller
         self._options = options
         self._batch_job: Optional[SlurmBatchJob] = None
-        self._watcher: JobWatcher = None  # type: ignore[assignment]
         self._watch_stage: WatchStage = None # type: ignore[assignment]
 
     def __call__(self, ui: UI) -> bool:
