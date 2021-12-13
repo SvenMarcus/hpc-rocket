@@ -21,8 +21,8 @@ class LaunchStage:
         self._controller = controller
         self._options = options
         self._batch_job: Optional[SlurmBatchJob] = None
-        self._job_status: Optional[SlurmJobStatus] = None
         self._watcher: JobWatcher = None  # type: ignore[assignment]
+        self._watch_stage: WatchStage = None # type: ignore[assignment]
 
     def __call__(self, ui: UI) -> bool:
         self._batch_job = self._controller.submit(self._options.sbatch)
@@ -38,7 +38,7 @@ class LaunchStage:
 
         ui.info(f"Canceling job {batch_job.jobid}")
         batch_job.cancel()
-        self._watcher.stop()
+        self._watch_stage.cancel(ui)
         ui.success(f"Canceled job {batch_job.jobid}")
 
     def _raise_if_not_launched(self):
@@ -46,8 +46,19 @@ class LaunchStage:
             raise NoJobLaunchedError("Canceled before a job was started")
 
     def _wait_for_job_exit(self, batch_job: SlurmBatchJob, ui: UI) -> bool:
-        self._watcher = batch_job.get_watcher()
-        self._watcher.watch(self._get_callback(ui), self._options.poll_interval)
+        self._watch_stage = WatchStage(batch_job, self._options.poll_interval)
+        return self._watch_stage(ui)
+
+
+class WatchStage:
+
+    def __init__(self, batch_job: SlurmBatchJob, poll_interval: int) -> None:
+        self._poll_interval = poll_interval
+        self._watcher: JobWatcher = batch_job.get_watcher()
+        self._job_status: Optional[SlurmJobStatus] = None
+
+    def __call__(self, ui: UI) -> bool:
+        self._watcher.watch(self._get_callback(ui), self._poll_interval)
         self._watcher.wait_until_done()
 
         return (self._job_status is not None
@@ -60,6 +71,8 @@ class LaunchStage:
 
         return callback
 
+    def cancel(self, ui: UI):
+        self._watcher.stop()
 
 class PrepareStage:
 
@@ -95,7 +108,8 @@ class PrepareStage:
         env_prep.files_to_copy(self._files)
         return env_prep
 
-    def _do_rollback(self, env_prep, err, ui):
+    @staticmethod
+    def _do_rollback(env_prep, err, ui):
         ui.error(get_error_message(err))
         ui.info("Performing rollback")
         env_prep.rollback()

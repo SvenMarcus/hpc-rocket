@@ -3,23 +3,21 @@ from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmTaskStatus
 # This Job ID is used in the test slurm output files
 DEFAULT_JOB_ID = "1603376"
 
+def _get_lines(filename):
+    with open(filename, "r") as file:
+        lines = file.readlines()
+        return [line.strip() for line in lines]
 
 def get_success_lines():
-    with open("test/slurmoutput/sacct_completed.txt", "r") as file:
-        lines = file.readlines()
-        return lines
+    return _get_lines("test/slurmoutput/sacct_completed.txt")
 
 
 def get_failed_lines():
-    with open("test/slurmoutput/sacct_completed_failed.txt", "r") as file:
-        error_lines = file.readlines()
-        return error_lines
+    return _get_lines("test/slurmoutput/sacct_completed_failed.txt")
 
 
 def get_running_lines():
-    with open("test/slurmoutput/sacct_running.txt", "r") as file:
-        lines = file.readlines()
-        return lines
+    return _get_lines("test/slurmoutput/sacct_running.txt")
 
 
 def running_slurm_job():

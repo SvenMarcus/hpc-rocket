@@ -4,7 +4,6 @@ from test.slurmoutput import get_failed_lines, get_running_lines, get_success_li
 from typing import Callable, List
 from hpcrocket.core.executor import CommandExecutor, RunningCommand
 
-
 SLURM_SBATCH_COMMAND = "sbatch"
 SLURM_SACCT_COMMAND = "sacct -j %s"
 SLURM_SCANCEL_COMMAND = "scancel %s"
@@ -36,8 +35,8 @@ class CommandExecutorStub(CommandExecutor):
     def close(self) -> None:
         pass
 
-class LoggingCommandExecutorSpy(CommandExecutor):
 
+class LoggingCommandExecutorSpy(CommandExecutor):
     @dataclass
     class Command:
         cmd: str
@@ -97,19 +96,19 @@ class SlurmJobExecutorSpy(LoggingCommandExecutorSpy):
 
 class LongRunningSlurmJobExecutorSpy(SlurmJobExecutorSpy):
 
-    def __init__(self, required_polls_until_done: int = 2, jobid: str = DEFAULT_JOB_ID):
-        super().__init__(sacct_cmd=SuccessfulSlurmJobCommandStub(), jobid=jobid)
-        self.sacct_running_cmd = RunningSlurmJobCommandStub()
-        self.calls = 0
-        self.required_polls_until_done = required_polls_until_done
+    def __init__(self, required_polls_until_done: int = 2,
+                 jobid: str = DEFAULT_JOB_ID,
+                 sacct_cmd: RunningCommand = None):
+
+        super().__init__(sacct_cmd=sacct_cmd or SuccessfulSlurmJobCommandStub(), jobid=jobid)
+        self.running_commands = iter([RunningSlurmJobCommandStub()] * required_polls_until_done)
 
     def exec_command(self, cmd: str) -> RunningCommand:
-        if is_sacct(cmd, self.jobid) and self.calls < self.required_polls_until_done:
-            self.calls += 1
-            self.log_command(cmd.split())
-            return self.sacct_running_cmd
+        if not is_sacct(cmd, self.jobid):
+            return super().exec_command(cmd)
 
-        return super().exec_command(cmd)
+        super_command = super().exec_command(cmd)
+        return next(self.running_commands, super_command)
 
 
 class RunningCommandStub(RunningCommand):
