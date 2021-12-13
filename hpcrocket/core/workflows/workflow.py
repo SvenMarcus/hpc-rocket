@@ -44,5 +44,14 @@ class Workflow:
         return True
 
     def cancel(self, ui: UI) -> None:
-        self._active_stage.cancel(ui)
+        self._raise_if_not_started()
+        self._active_stage.cancel(ui) # type: ignore
         self._canceled = True
+
+    def _raise_if_not_started(self):
+        if not self._active_stage:
+            raise WorkflowNotStartedError()
+
+
+class WorkflowNotStartedError(Exception):
+    pass

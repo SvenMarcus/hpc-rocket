@@ -1,7 +1,8 @@
 from typing import List
 from unittest.mock import Mock
 
-from hpcrocket.core.workflows.workflow import Stage, Workflow
+import pytest
+from hpcrocket.core.workflows.workflow import Stage, Workflow, WorkflowNotStartedError
 from hpcrocket.ui import UI
 
 
@@ -21,7 +22,6 @@ class StageSpy:
 
     def cancel(self, ui: UI) -> None:
         self.was_canceled = True
-
 
     def __bool__(self):
         return self.was_run
@@ -90,7 +90,7 @@ def test__given_workflow_with_stages__when_first_stage_fails__should_not_call_se
 def test__given_running_workflow_with_stage__when_canceling__should_call_cancel_on_stage():
     stage = StageSpy()
     sut = make_sut([stage])
-    
+
     stage.run_callback = cancel_workflow(sut)
 
     sut.run(ui_dummy())
@@ -98,11 +98,18 @@ def test__given_running_workflow_with_stage__when_canceling__should_call_cancel_
     assert stage.was_canceled is True
 
 
+def test__when_canceling_workflow_without_running__should_raise_error():
+    sut = make_sut([])
+
+    with pytest.raises(WorkflowNotStartedError):
+        sut.cancel(ui_dummy())
+
+
 def test__given_running_workflow_with_two_stages__when_canceling_during_first_stage__should_not_run_second_stage():
     first_stage = StageSpy()
     second_stage = StageSpy()
     sut = make_sut([first_stage, second_stage])
-    
+
     first_stage.run_callback = cancel_workflow(sut)
 
     sut.run(ui_dummy())

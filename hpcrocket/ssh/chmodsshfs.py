@@ -62,5 +62,5 @@ class PermissionChangingSSHFSDecorator(fs.base.FS):
     def makedir(self, path: Text, permissions: Optional[Permissions] = None, recreate: bool = False) -> fs.subfs.SubFS[fs.base.FS]:
         return self._internal_fs.makedir(path, permissions, recreate)
 
-    def move(self, src_path: Text, dst_path: Text, overwrite: bool = False) -> None:
+    def move(self, src_path: Text, dst_path: Text, overwrite: bool = False, preserve_time: bool = False) -> None:
         self._internal_fs.move(src_path, dst_path, overwrite)
