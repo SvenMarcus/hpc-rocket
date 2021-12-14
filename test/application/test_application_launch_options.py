@@ -2,9 +2,8 @@ from test.application.executor_filesystem_callorder import (
     CallOrderVerification, VerifierReturningFilesystemFactory)
 from test.application.launchoptions import main_connection, options
 from test.slurmoutput import completed_slurm_job
-from test.testdoubles.executor import (FailedSlurmJobCommandStub,
-                                       InfiniteSlurmJobCommand,
-                                       LoggingCommandExecutorSpy,
+from test.testdoubles.executor import (FailedSlurmJobCommandStub, InfiniteSlurmJobExecutor,
+                                       LoggingCommandExecutorSpy, LongRunningSlurmJobExecutorSpy,
                                        SlurmJobExecutorSpy,
                                        SuccessfulSlurmJobCommandStub)
 from test.testdoubles.filesystem import DummyFilesystemFactory
@@ -85,23 +84,24 @@ def test__given_failing_ssh_connection__when_running__should_log_error_and_exit_
 
     actual = sut.run(options(watch=True))
 
-    ui_spy.error.assert_called_once_with(f"SSHError: {main_connection().hostname}")
+    ui_spy.error.assert_called_once_with(
+        f"SSHError: {main_connection().hostname}")
     assert executor.command_log == []
     assert actual == 1
 
-@pytest.mark.timeout(1)
+
+@pytest.mark.timeout(2)
 def test__given_infinite_running_job__when_canceling__should_cancel_job_and_exit_with_code_130():
-    infinite_running_job = InfiniteSlurmJobCommand()
-    executor = SlurmJobExecutorSpy(sacct_cmd=infinite_running_job)
-    executor.on_scancel(infinite_running_job.mark_canceled)
+    executor = InfiniteSlurmJobExecutor()
 
     sut = Application(executor, DummyFilesystemFactory(), Mock())
     thread = run_in_background(sut)
 
     wait_until_polled(executor)
+
     actual = sut.cancel()
 
-    thread.join(1)
+    thread.join()
 
     assert actual == 130
 
@@ -151,16 +151,22 @@ def test__given_launchoptions_with_watch_and_files_to_copy_collect_and_clean__wh
 
 def run_in_background(sut):
     from threading import Thread
+
     thread = Thread(target=lambda: sut.run(options(watch=True)))
     thread.start()
-
     return thread
 
 
 def wait_until_polled(executor: LoggingCommandExecutorSpy):
     def was_polled():
-        return any(logged_command.cmd == "sacct"
-                   for logged_command in executor.command_log)
+        polled = any(logged_command.cmd == "sacct"
+                     for logged_command in executor.command_log)
+        return polled
 
-    while not was_polled():
-        continue
+    import threading
+
+    poll_event = threading.Event()
+    while not poll_event.wait(.1):
+        if was_polled():
+            poll_event.set()
+            break

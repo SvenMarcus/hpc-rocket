@@ -87,6 +87,16 @@ class SlurmJobExecutorSpy(LoggingCommandExecutorSpy):
 
         raise ValueError(cmd)
 
+
+class InfiniteSlurmJobExecutor(LoggingCommandExecutorSpy):
+
+    def exec_command(self, cmd: str) -> RunningCommand:
+        super().exec_command(cmd)
+        if is_sbatch(cmd):
+            return SlurmJobSubmittedCommandStub(DEFAULT_JOB_ID)
+
+        return RunningSlurmJobCommandStub()
+
     def connect(self) -> None:
         pass
 
@@ -157,27 +167,6 @@ class AssertWaitRunningCommandStub(RunningCommandStub):
     def wait_until_exit(self) -> int:
         self._waited = True
         return super().exit_status
-
-
-class InfiniteSlurmJobCommand(RunningCommandStub):
-
-    def __init__(self) -> None:
-        super().__init__(exit_code=0)
-        self._canceled = False
-
-    @property
-    def exit_status(self) -> int:
-        assert self._canceled, f"{self:}: Exit status is not ready"
-        return 0
-
-    def wait_until_exit(self) -> int:
-        while not self._canceled:
-            continue
-
-        return 0
-
-    def mark_canceled(self):
-        self._canceled = True
 
 
 class SuccessfulSlurmJobCommandStub(AssertWaitRunningCommandStub):

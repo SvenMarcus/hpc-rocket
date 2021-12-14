@@ -26,7 +26,7 @@ class WatcherThreadSpy:
         self.running = True
         self.call_log.append("start")
 
-    def join(self) -> None:
+    def join(self, timeout: float = 0) -> None:
         self.call_log.append("join")
 
     def stop(self) -> None:

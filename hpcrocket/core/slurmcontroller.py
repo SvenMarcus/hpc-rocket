@@ -27,7 +27,7 @@ class SlurmController:
         cmd = self._executor.exec_command(command)
         exit_code = cmd.wait_until_exit()
         if exit_code != 0:
-            raise SlurmError(cmd)
+            raise SlurmError(command)
 
         return cmd
     

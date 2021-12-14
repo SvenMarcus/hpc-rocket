@@ -1,5 +1,5 @@
 import threading
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional
 
 try:
     from typing import Protocol
@@ -22,7 +22,7 @@ class WatcherThread(Protocol):
     def is_done(self) -> bool:
         pass
 
-    def join(self):
+    def join(self, timeout: Optional[float]):
         pass
 
 
@@ -37,7 +37,6 @@ class WatcherThreadImpl(threading.Thread):
         self.interval = interval
         self.stop_event = threading.Event()
         self._done = False
-        self._joined = False
 
     def poll(self) -> None:
         last_job = None
@@ -53,7 +52,9 @@ class WatcherThreadImpl(threading.Thread):
                 break
 
     def stop(self) -> None:
+        print("Setting stop event")
         self.stop_event.set()
+        self._done = True
 
     def is_done(self) -> bool:
         return self._done

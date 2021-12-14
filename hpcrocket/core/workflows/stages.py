@@ -1,4 +1,4 @@
-from typing import List, Optional, cast
+from typing import Callable, List, Optional, cast
 
 from hpcrocket.core.environmentpreparation import (CopyInstruction,
                                                    EnvironmentPreparation)
@@ -11,6 +11,12 @@ from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher, SlurmJobStatusCallback
 
 
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol  # type: ignore
+
+
 class NoJobLaunchedError(Exception):
     pass
 
@@ -20,43 +26,61 @@ class LaunchStage:
     def __init__(self, controller: SlurmController, options: LaunchOptions) -> None:
         self._controller = controller
         self._options = options
-        self._batch_job: Optional[SlurmBatchJob] = None
-        self._watch_stage: WatchStage = None # type: ignore[assignment]
+        self._batch_job: SlurmBatchJob = None  # type: ignore[assignment]
+        self._watch_stage: WatchStage = None  # type: ignore[assignment]
 
     def __call__(self, ui: UI) -> bool:
         self._batch_job = self._controller.submit(self._options.sbatch)
         ui.launch(f"Launched job {self._batch_job.jobid}")
-        if not self._options.watch:
-            return True
 
-        return self._wait_for_job_exit(self._batch_job, ui)
+        return True
 
     def cancel(self, ui: UI):
         self._raise_if_not_launched()
-        batch_job = cast(SlurmBatchJob, self._batch_job)
 
-        ui.info(f"Canceling job {batch_job.jobid}")
-        batch_job.cancel()
-        self._watch_stage.cancel(ui)
-        ui.success(f"Canceled job {batch_job.jobid}")
+        ui.info(f"Canceling job {self._batch_job.jobid}")
+        self._batch_job.cancel()
+        ui.success(f"Canceled job {self._batch_job.jobid}")
 
     def _raise_if_not_launched(self):
         if not self._batch_job:
             raise NoJobLaunchedError("Canceled before a job was started")
 
-    def _wait_for_job_exit(self, batch_job: SlurmBatchJob, ui: UI) -> bool:
-        self._watch_stage = WatchStage(batch_job, self._options.poll_interval)
-        return self._watch_stage(ui)
+    def get_batch_job(self) -> SlurmBatchJob:
+        return self._batch_job
 
 
 class WatchStage:
 
-    def __init__(self, batch_job: SlurmBatchJob, poll_interval: int) -> None:
+    class BatchJobProvider(Protocol):
+
+        def get_batch_job(self) -> SlurmBatchJob:
+            """
+            Provides the watch stage with a batch job to watch
+
+            Returns:
+                SlurmBatchJob
+            """
+            pass
+
+        def cancel(self, ui: UI):
+            """
+            Informs the BatchJobProvider that the WatchStage was canceled
+
+            Args:
+                ui (UI): The UI instance WatchStage was called with
+            """
+            pass
+
+    def __init__(self, batch_job_provider: BatchJobProvider, poll_interval: int) -> None:
         self._poll_interval = poll_interval
-        self._watcher: JobWatcher = batch_job.get_watcher()
+        self._provider = batch_job_provider
+        self._watcher: JobWatcher = None  # type: ignore[assignment]
         self._job_status: Optional[SlurmJobStatus] = None
 
     def __call__(self, ui: UI) -> bool:
+        batch_job = self._provider.get_batch_job()
+        self._watcher = batch_job.get_watcher()
         self._watcher.watch(self._get_callback(ui), self._poll_interval)
         self._watcher.wait_until_done()
 
@@ -72,6 +96,8 @@ class WatchStage:
 
     def cancel(self, ui: UI):
         self._watcher.stop()
+        self._provider.cancel(ui)
+
 
 class PrepareStage:
 
