@@ -16,8 +16,8 @@ def parse_cli_args(args: List[str]) -> Options:
     options_builder: _OptionBuilder
     if config.command == "launch":
         options_builder = _LaunchConfigurationBuilder(config.configfile, config.watch)
-    elif config.command == "status":
-        options_builder = _StatusConfigurationBuilder(config.configfile, config.jobid)
+    else:
+        options_builder = _JobStatusConfigurationBuilder(config.command, config.configfile, config.jobid)
 
     return options_builder.build()
 
@@ -28,6 +28,7 @@ def _setup_parser() -> argparse.ArgumentParser:
 
     _setup_launch_parser(subparsers)
     _setup_status_parser(subparsers)
+    _setup_watch_parser(subparsers)
 
     return parser
 
@@ -41,7 +42,13 @@ def _setup_launch_parser(subparsers: argparse._SubParsersAction) -> None:
 def _setup_status_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("status", help="Check on a job's current status")
     parser.add_argument("configfile", type=str, help="A config file containing the connection data")
-    parser.add_argument("jobid", type=str, help="The ID of the job you want to check")
+    parser.add_argument("jobid", type=str, help="The ID of the job you to be checked")
+
+
+def _setup_watch_parser(subparsers: argparse._SubParsersAction) -> None:
+    parser = subparsers.add_parser("watch", help="Monitor a job until it completes")
+    parser.add_argument("configfile", type=str, help="A config file containing the connection data")
+    parser.add_argument("jobid", type=str, help="The ID of the job to be monitored")
 
 
 class _OptionBuilder(ABC):
@@ -77,17 +84,18 @@ class _LaunchConfigurationBuilder(_OptionBuilder):
                 for cp in copy_list]
 
 
-class _StatusConfigurationBuilder(_OptionBuilder):
+class _JobStatusConfigurationBuilder(_OptionBuilder):
 
-    def __init__(self, path: str, jobid: str) -> None:
+    def __init__(self, command: str, path: str, jobid: str) -> None:
         self._path = path
         self._jobid = jobid
-
+        self._action = JobBasedOptions.Action[command]
+        
     def build(self) -> Options:
         config = _parse_yaml(self._path)
         return JobBasedOptions(
             self._jobid,
-            action=JobBasedOptions.Action.status,
+            action=self._action,
             **_connection_dict(config)  # type: ignore
         )
 
