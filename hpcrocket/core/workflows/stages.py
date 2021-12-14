@@ -23,14 +23,14 @@ class NoJobLaunchedError(Exception):
 
 class LaunchStage:
 
-    def __init__(self, controller: SlurmController, options: LaunchOptions) -> None:
+    def __init__(self, controller: SlurmController, batch_script: str) -> None:
         self._controller = controller
-        self._options = options
+        self._batch_script = batch_script
         self._batch_job: SlurmBatchJob = None  # type: ignore[assignment]
         self._watch_stage: WatchStage = None  # type: ignore[assignment]
 
     def __call__(self, ui: UI) -> bool:
-        self._batch_job = self._controller.submit(self._options.sbatch)
+        self._batch_job = self._controller.submit(self._batch_script)
         ui.launch(f"Launched job {self._batch_job.jobid}")
 
         return True

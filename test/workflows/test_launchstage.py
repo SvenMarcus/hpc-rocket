@@ -6,7 +6,6 @@ from test.testdoubles.executor import (DEFAULT_JOB_ID, CommandExecutorStub,
                                        LongRunningSlurmJobExecutorSpy,
                                        RunningSlurmJobCommandStub,
                                        SlurmJobExecutorSpy)
-from typing import List
 from unittest.mock import Mock
 
 import pytest
@@ -15,7 +14,7 @@ from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.stages import LaunchStage, NoJobLaunchedError
 from hpcrocket.ui import UI
-from hpcrocket.watcher.jobwatcher import JobWatcher, JobWatcherFactory
+from hpcrocket.watcher.jobwatcher import JobWatcherFactory
 
 
 @pytest.fixture
@@ -27,7 +26,7 @@ def run_launch_workflow(options: LaunchOptions, executor: CommandExecutor = None
                         watcher_factory: JobWatcherFactory = None) -> int:
     executor = executor or SlurmJobExecutorSpy()
     controller = SlurmController(executor, watcher_factory)
-    sut = LaunchStage(controller, options)
+    sut = LaunchStage(controller, options.sbatch)
 
     return sut(Mock(spec=UI))
 
@@ -39,18 +38,10 @@ def test__given_simple_launchoptions__when_running__should_run_sbatch_with_execu
     assert_job_submitted(executor_spy, opts.sbatch)
 
 
-def test__given_launchoptions_with_watching__when_sbatch_job_succeeds__should_return_exit_code_zero():
+def test__given_launchoptions__when_running__should_return_true():
     actual = run_launch_workflow(options(watch=True))
 
-    assert actual == True
-
-
-def test__given_options_without_watching__when_running__should_only_sbatch_then_exit(executor_spy):
-    opts = options(watch=False)
-    run_launch_workflow(opts, executor=executor_spy)
-
-    assert_job_submitted(executor_spy, opts.sbatch)
-    assert len(executor_spy.command_log) == 1
+    assert actual is True
 
 
 def test__given_running_workflow__when_canceling__should_call_cancel_on_job():
@@ -73,14 +64,3 @@ def test__when_canceling_before_running__should_raise_no_job_launched_error():
 
     with pytest.raises(NoJobLaunchedError):
         sut.cancel(Mock())
-
-
-class StageCancelingRunningCommand(RunningSlurmJobCommandStub):
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.sut: LaunchStage = None  # type: ignore
-
-    def wait_until_exit(self) -> int:
-        self.sut.cancel(Mock())
-        return super().wait_until_exit()
