@@ -17,9 +17,13 @@ WATCH_OPTIONS = WatchOptions(
 )
 
 
+def make_sut(executor):
+    return Application(executor, DummyFilesystemFactory(), Mock())
+
+
 def test__given_watch_options__when_running__should_poll_job_until_done():
     executor = LongRunningSlurmJobExecutorSpy()
-    sut = Application(executor, DummyFilesystemFactory(), Mock())
+    sut = make_sut(executor)
 
     sut.run(WATCH_OPTIONS)
 
@@ -30,7 +34,7 @@ def test__given_watch_options__when_running__should_poll_job_until_done():
 
 def test__given_watch_options__when_running_with_successful_job__should_exit_with_0():
     executor = SlurmJobExecutorSpy()
-    sut = Application(executor, DummyFilesystemFactory(), Mock())
+    sut = make_sut(executor)
 
     actual = sut.run(WATCH_OPTIONS)
 
@@ -39,7 +43,7 @@ def test__given_watch_options__when_running_with_successful_job__should_exit_wit
 
 def test__given_watch_options__when_running_with_failing_job__should_exit_with_1():
     executor = SlurmJobExecutorSpy(sacct_cmd=FailedSlurmJobCommandStub())
-    sut = Application(executor, DummyFilesystemFactory(), Mock())
+    sut = make_sut(executor)
 
     actual = sut.run(WATCH_OPTIONS)
 
