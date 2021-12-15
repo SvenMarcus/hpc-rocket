@@ -6,7 +6,7 @@ from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
-Options = Union['LaunchOptions', 'JobBasedOptions']
+Options = Union['LaunchOptions', 'StatusOptions', 'WatchOptions']
 
 
 @dataclass
@@ -22,13 +22,15 @@ class LaunchOptions:
 
 
 @dataclass
-class JobBasedOptions:
-
-    class Action(Enum):
-        watch = auto()
-        status = auto()
-
+class StatusOptions:
     jobid: str
-    action: Action
     connection: ConnectionData
     proxyjumps: List[ConnectionData] = field(default_factory=lambda: [])
+
+
+@dataclass
+class WatchOptions:
+    jobid: str
+    connection: ConnectionData
+    proxyjumps: List[ConnectionData] = field(default_factory=lambda: [])
+    poll_interval: int = 5

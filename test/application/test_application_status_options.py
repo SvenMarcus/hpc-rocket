@@ -11,19 +11,18 @@ from unittest.mock import Mock
 
 import pytest
 from hpcrocket.core.application import Application
-from hpcrocket.core.launchoptions import JobBasedOptions
+from hpcrocket.core.launchoptions import StatusOptions
 
 
 @pytest.fixture
 def options():
-    return JobBasedOptions(
+    return StatusOptions(
         jobid=DEFAULT_JOB_ID,
-        action=JobBasedOptions.Action.status,
         connection=main_connection()
     )
 
 
-def make_sut(executor, ui = None):
+def make_sut(executor, ui=None):
     return Application(executor, DummyFilesystemFactory(), ui or Mock())
 
 
@@ -57,18 +56,12 @@ def test__when_status_poll_fails__should_exit_with_code_1(options):
     assert actual == 1
 
 
-def test__given_job_options_with_status_action__should_only_poll_job_status():
-    opts = JobBasedOptions(
-        jobid="1234",
-        action=JobBasedOptions.Action.status,
-        connection=main_connection()
-    )
-
+def test__given_job_options_with_status_action__should_only_poll_job_status(options):
     verifier = CallOrderVerification(["sacct"])
     factory = VerifierReturningFilesystemFactory(verifier)
 
     sut = Application(verifier, factory, Mock())
 
-    sut.run(opts)
+    sut.run(options)
 
     factory.verifier()

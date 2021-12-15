@@ -1,9 +1,10 @@
+from typing import Callable, Dict, Type
 import hpcrocket.core.workflows as workflows
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory
-from hpcrocket.core.launchoptions import (JobBasedOptions, LaunchOptions,
-                                          Options)
+from hpcrocket.core.launchoptions import (StatusOptions, LaunchOptions,
+                                          Options, WatchOptions)
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.ui import UI
 
@@ -12,14 +13,18 @@ class WorkflowFactory:
 
     def __init__(self, filesystem_factory: FilesystemFactory) -> None:
         self._fs_factory = filesystem_factory
+        self._monitoring_workflows: Dict[Type, Callable] = {
+            StatusOptions: workflows.statusworkflow,
+            WatchOptions: workflows.watchworkflow
+        }
 
     def __call__(self, controller: SlurmController, options: Options) -> workflows.Workflow:
-        if isinstance(options, JobBasedOptions):
-            return workflows.statusworkflow(controller, options)
-        elif isinstance(options, LaunchOptions):
+        if isinstance(options, LaunchOptions):
             return workflows.launchworkflow(self._fs_factory, controller, options)
-        else:
-            raise ValueError("Unsupported option type")
+
+        option_type = type(options)
+        monitoring_workflow_builder = self._monitoring_workflows[option_type]
+        return monitoring_workflow_builder(controller, options)
 
 
 class Application:

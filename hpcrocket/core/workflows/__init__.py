@@ -1,10 +1,12 @@
 from typing import List
 
 from hpcrocket.core.filesystem import FilesystemFactory
-from hpcrocket.core.launchoptions import JobBasedOptions, LaunchOptions
+from hpcrocket.core.launchoptions import StatusOptions, LaunchOptions, WatchOptions
+from hpcrocket.core.slurmbatchjob import SlurmBatchJob
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.workflow import Stage, Workflow
 from hpcrocket.core.workflows.stages import FinalizeStage, PrepareStage, LaunchStage, StatusStage, WatchStage
+from hpcrocket.ui import UI
 
 
 def launchworkflow(filesystem_factory: FilesystemFactory, controller: SlurmController, options: LaunchOptions) -> Workflow:
@@ -22,5 +24,17 @@ def launchworkflow(filesystem_factory: FilesystemFactory, controller: SlurmContr
     return Workflow(stages)
 
 
-def statusworkflow(controller: SlurmController, options: JobBasedOptions):
+def statusworkflow(controller: SlurmController, options: StatusOptions):
     return Workflow([StatusStage(controller, options.jobid)])
+
+
+def watchworkflow(controller: SlurmController, options: WatchOptions):
+    class SimpleBatchJobProvider:
+
+        def get_batch_job(self) -> SlurmBatchJob:
+            return SlurmBatchJob(controller, options.jobid)
+
+        def cancel(self, ui: UI) -> None:
+            pass
+
+    return Workflow([WatchStage(SimpleBatchJobProvider(), options.poll_interval)])
