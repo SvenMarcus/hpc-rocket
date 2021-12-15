@@ -52,9 +52,7 @@ class WatcherThreadImpl(threading.Thread):
                 break
 
     def stop(self) -> None:
-        print("Setting stop event")
         self.stop_event.set()
-        self._done = True
 
     def is_done(self) -> bool:
         return self._done
