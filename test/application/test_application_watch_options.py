@@ -34,7 +34,7 @@ def test__given_watch_options__when_running_with_successful_job__should_exit_wit
 
     actual = sut.run(WATCH_OPTIONS)
 
-    assert actual is 0
+    assert actual == 0
 
 
 def test__given_watch_options__when_running_with_failing_job__should_exit_with_1():
@@ -43,4 +43,4 @@ def test__given_watch_options__when_running_with_failing_job__should_exit_with_1
 
     actual = sut.run(WATCH_OPTIONS)
 
-    assert actual is 1
+    assert actual == 1
