@@ -81,3 +81,11 @@ You will need to provide a configuration file with connection data and a job ID 
 python3 -m hpc-rocket status config.yml 12345
 ```
 
+#### Monitoring a job until it finishes
+
+Similar to the `status` command, `hpc-rocket` also provides the `watch` command to monitor a job's status continuously by entering a config file and a job id.
+
+```bash
+python3 -m hpc-rocket watch config.yml 12345
+```
+
