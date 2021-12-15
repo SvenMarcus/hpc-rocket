@@ -2,8 +2,9 @@ import dataclasses
 from typing import List, Optional
 from hpcrocket.core.environmentpreparation import CopyInstruction
 
-from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.core.launchoptions import LaunchOptions, WatchOptions
 from hpcrocket.ssh.connectiondata import ConnectionData
+from test.slurmoutput import DEFAULT_JOB_ID
 
 
 def options(
@@ -66,3 +67,12 @@ def proxy_connection_only_password() -> ConnectionData:
         proxy_connection(),
         key=None,
         keyfile=None)
+
+
+def watch_options() -> WatchOptions:
+    return WatchOptions(
+        jobid=DEFAULT_JOB_ID,
+        connection=main_connection(),
+        proxyjumps=[proxy_connection()],
+        poll_interval=0
+    )

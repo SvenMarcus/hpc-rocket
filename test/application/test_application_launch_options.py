@@ -90,22 +90,6 @@ def test__given_failing_ssh_connection__when_running__should_log_error_and_exit_
     assert actual == 1
 
 
-@pytest.mark.timeout(2)
-def test__given_infinite_running_job__when_canceling__should_cancel_job_and_exit_with_code_130():
-    executor = InfiniteSlurmJobExecutor()
-
-    sut = Application(executor, DummyFilesystemFactory(), Mock())
-    thread = run_in_background(sut)
-
-    wait_until_polled(executor)
-
-    actual = sut.cancel()
-
-    thread.join()
-
-    assert actual == 130
-
-
 def test__given_options_without_watch_and_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_exit():
     opts = options(
         copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
@@ -147,26 +131,3 @@ def test__given_launchoptions_with_watch_and_files_to_copy_collect_and_clean__wh
     sut.run(opts)
 
     verify()
-
-
-def run_in_background(sut):
-    from threading import Thread
-
-    thread = Thread(target=lambda: sut.run(options(watch=True)))
-    thread.start()
-    return thread
-
-
-def wait_until_polled(executor: LoggingCommandExecutorSpy):
-    def was_polled():
-        polled = any(logged_command.cmd == "sacct"
-                     for logged_command in executor.command_log)
-        return polled
-
-    import threading
-
-    poll_event = threading.Event()
-    while not poll_event.wait(.1):
-        if was_polled():
-            poll_event.set()
-            break
