@@ -7,7 +7,7 @@ authors:
     given-names: Sven
     orcid: https://orcid.org/0000-0003-3689-2162
 title: hpc-rocket
-version: 0.0.3
+version: 0.0.4
 url: https://github.com/SvenMarcus/hpc-rocket
 repository-code: https://github.com/SvenMarcus/hpc-rocket
 references:
