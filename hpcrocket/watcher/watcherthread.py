@@ -13,16 +13,16 @@ if TYPE_CHECKING:
 
 class WatcherThread(Protocol):
 
-    def start(self):
+    def start(self) -> None:
         pass
 
-    def stop(self):
+    def stop(self) -> None:
         pass
 
     def is_done(self) -> bool:
         pass
 
-    def join(self, timeout: Optional[float]):
+    def join(self, timeout: Optional[float] = None) -> None:
         pass
 
 

@@ -35,14 +35,14 @@ class LaunchStage:
 
         return True
 
-    def cancel(self, ui: UI):
+    def cancel(self, ui: UI) -> None:
         self._raise_if_not_launched()
 
         ui.info(f"Canceling job {self._batch_job.jobid}")
         self._batch_job.cancel()
         ui.success(f"Canceled job {self._batch_job.jobid}")
 
-    def _raise_if_not_launched(self):
+    def _raise_if_not_launched(self) -> None:
         if not self._batch_job:
             raise NoJobLaunchedError("Canceled before a job was started")
 
@@ -63,7 +63,7 @@ class WatchStage:
             """
             pass
 
-        def cancel(self, ui: UI):
+        def cancel(self, ui: UI) -> None:
             """
             Informs the BatchJobProvider that the WatchStage was canceled
 
@@ -88,13 +88,13 @@ class WatchStage:
                 and self._job_status.success)
 
     def _get_callback(self, ui: UI) -> SlurmJobStatusCallback:
-        def callback(new_status: SlurmJobStatus):
+        def callback(new_status: SlurmJobStatus) -> None:
             self._job_status = new_status
             ui.update(new_status)
 
         return callback
 
-    def cancel(self, ui: UI):
+    def cancel(self, ui: UI) -> None:
         self._watcher.stop()
         self._provider.cancel(ui)
 
@@ -109,7 +109,7 @@ class PrepareStage:
         env_prep = self._create_env_prep(ui)
         return self._try_prepare(env_prep, ui)
 
-    def cancel(self, ui: UI):
+    def cancel(self, ui: UI) -> None:
         pass
 
     def _try_prepare(self, env_prep: EnvironmentPreparation, ui: UI) -> bool:
@@ -123,7 +123,7 @@ class PrepareStage:
 
         return True
 
-    def _create_env_prep(self, ui):
+    def _create_env_prep(self, ui: UI) -> EnvironmentPreparation:
         env_prep = EnvironmentPreparation(
             self._factory.create_local_filesystem(),
             self._factory.create_ssh_filesystem(),
@@ -134,7 +134,8 @@ class PrepareStage:
         return env_prep
 
     @staticmethod
-    def _do_rollback(env_prep, err, ui):
+    def _do_rollback(env_prep: EnvironmentPreparation,
+                     err: Exception, ui: UI) -> None:
         ui.error(get_error_message(err))
         ui.info("Performing rollback")
         env_prep.rollback()
@@ -162,19 +163,19 @@ class FinalizeStage:
 
         return True
 
-    def _collect_files(self, env_prep: EnvironmentPreparation, ui: UI):
+    def _collect_files(self, env_prep: EnvironmentPreparation, ui: UI) -> None:
         env_prep.files_to_collect(self._collect)
         ui.info("Collecting files...")
         env_prep.collect()
         ui.success("Done")
 
-    def _clean_files(self, env_prep: EnvironmentPreparation, ui: UI):
+    def _clean_files(self, env_prep: EnvironmentPreparation, ui: UI) -> None:
         env_prep.files_to_clean(self._clean)
         ui.info("Cleaning files...")
         env_prep.clean()
         ui.success("Done")
 
-    def cancel(self, ui: UI):
+    def cancel(self, ui: UI) -> None:
         pass
 
 
@@ -188,5 +189,5 @@ class StatusStage:
         ui.update(self._controller.poll_status(self._jobid))
         return True
 
-    def cancel(self, ui: UI):
+    def cancel(self, ui: UI) -> None:
         pass

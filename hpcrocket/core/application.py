@@ -1,11 +1,13 @@
-from typing import Callable, Dict, Type
+from typing import Any, Callable, Dict, Type
+
 import hpcrocket.core.workflows as workflows
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory
-from hpcrocket.core.launchoptions import (StatusOptions, LaunchOptions,
-                                          Options, WatchOptions)
+from hpcrocket.core.launchoptions import (LaunchOptions, MonitoringOptions,
+                                          Options, StatusOptions, WatchOptions)
 from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.workflows.workflow import Workflow
 from hpcrocket.ui import UI
 
 
@@ -13,12 +15,14 @@ class WorkflowFactory:
 
     def __init__(self, filesystem_factory: FilesystemFactory) -> None:
         self._fs_factory = filesystem_factory
-        self._monitoring_workflows: Dict[Type, Callable] = {
+        MonitoringWorkflowBuilder = Callable[[SlurmController, Any], Workflow]
+        self._monitoring_workflows: Dict[Type[MonitoringOptions],
+                                         MonitoringWorkflowBuilder] = {
             StatusOptions: workflows.statusworkflow,
             WatchOptions: workflows.watchworkflow
         }
 
-    def __call__(self, controller: SlurmController, options: Options) -> workflows.Workflow:
+    def __call__(self, controller: SlurmController, options: Options) -> Workflow:
         if isinstance(options, LaunchOptions):
             return workflows.launchworkflow(self._fs_factory, controller, options)
 
@@ -33,7 +37,7 @@ class Application:
         self._executor = executor
         self._workflow_factory = WorkflowFactory(filesystem_factory)
         self._ui = ui
-        self._workflow: workflows.Workflow
+        self._workflow: Workflow
 
     def run(self, options: Options) -> int:
         try:
@@ -48,7 +52,7 @@ class Application:
             success = self._workflow.run(self._ui)
             return 0 if success else 1
 
-    def _get_workflow(self, executor: CommandExecutor, options: Options) -> workflows.Workflow:
+    def _get_workflow(self, executor: CommandExecutor, options: Options) -> Workflow:
         controller = SlurmController(executor)
         return self._workflow_factory(controller, options)
 

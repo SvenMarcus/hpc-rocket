@@ -78,7 +78,7 @@ class JobWatcherImpl:
         self.watching_thread.stop()
         self._try_join()
 
-    def _try_join(self):
+    def _try_join(self) -> None:
         try:
             self.watching_thread.join()
         except RuntimeError as err:

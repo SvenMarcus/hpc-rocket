@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import fs.base
 import hpcrocket.ssh.chmodsshfs as sshfs
@@ -17,7 +17,7 @@ class SSHFilesystem(PyFilesystemBased):
 
     def __init__(
             self, connection_data: ConnectionData,
-            proxyjumps: List[ConnectionData] = None) -> None:
+            proxyjumps: Optional[List[ConnectionData]] = None) -> None:
         """
         Args:
             user (str): The user on the remote machine
@@ -28,9 +28,11 @@ class SSHFilesystem(PyFilesystemBased):
         self._internal_fs = self._create_new_sshfilesystem(
             connection_data, proxyjumps)
 
-    def _create_new_sshfilesystem(self, connection_data: ConnectionData, proxyjumps: List[ConnectionData] = None):
+    def _create_new_sshfilesystem(self, connection_data: ConnectionData,
+                                  proxyjumps: Optional[List[ConnectionData]] = None) -> fs.base.FS:
         try:
-            channel = build_channel_with_proxyjumps(connection_data, proxyjumps or [])
+            channel = build_channel_with_proxyjumps(
+                connection_data, proxyjumps or [])
             fs = sshfs.PermissionChangingSSHFSDecorator(
                 host=connection_data.hostname,
                 user=connection_data.username,
@@ -40,7 +42,8 @@ class SSHFilesystem(PyFilesystemBased):
 
             return fs.opendir(fs.homedir(), factory=ClosingSubFS)
         except CreateFailed as err:
-            raise SSHError(f"Could not connect to {connection_data.hostname}") from err
+            raise SSHError(
+                f"Could not connect to {connection_data.hostname}") from err
 
     @property
     def internal_fs(self) -> fs.base.FS:

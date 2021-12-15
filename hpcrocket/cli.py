@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Type, Union
 import yaml
 
 from hpcrocket.core.environmentpreparation import CopyInstruction
-from hpcrocket.core.launchoptions import Options, StatusOptions, LaunchOptions, WatchOptions
+from hpcrocket.core.launchoptions import MonitoringOptions, Options, StatusOptions, LaunchOptions, WatchOptions
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
@@ -96,7 +96,7 @@ class _LaunchConfigurationBuilder(_OptionBuilder):
 
 class _MonitoringConfigurationBuilder(_OptionBuilder):
 
-    OPTION_TYPES = {
+    OPTION_TYPES: Dict[str, Type[MonitoringOptions]] = {
         "status": StatusOptions,
         "watch": WatchOptions
     }
@@ -114,9 +114,9 @@ class _MonitoringConfigurationBuilder(_OptionBuilder):
         )
 
 
-def _parse_yaml(path):
+def _parse_yaml(path: str) -> Dict[str, Any]:
     with open(path, "r") as file:
-        return yaml.load(file, Loader=yaml.SafeLoader)
+        return yaml.load(file, Loader=yaml.SafeLoader) # type: ignore
 
 
 def _connection_dict(config: Dict[str, Any]) -> Dict[str, Union[ConnectionData, List[ConnectionData]]]:

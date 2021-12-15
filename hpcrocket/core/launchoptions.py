@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from enum import Enum, auto
 from typing import List, Union
 
 from hpcrocket.core.environmentpreparation import CopyInstruction
@@ -7,6 +6,7 @@ from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 Options = Union['LaunchOptions', 'StatusOptions', 'WatchOptions']
+MonitoringOptions = Union['StatusOptions', 'WatchOptions']
 
 
 @dataclass

@@ -24,11 +24,11 @@ def launchworkflow(filesystem_factory: FilesystemFactory, controller: SlurmContr
     return Workflow(stages)
 
 
-def statusworkflow(controller: SlurmController, options: StatusOptions):
+def statusworkflow(controller: SlurmController, options: StatusOptions) -> Workflow:
     return Workflow([StatusStage(controller, options.jobid)])
 
 
-def watchworkflow(controller: SlurmController, options: WatchOptions):
+def watchworkflow(controller: SlurmController, options: WatchOptions) -> Workflow:
     class SimpleBatchJobProvider:
 
         def get_batch_job(self) -> SlurmBatchJob:

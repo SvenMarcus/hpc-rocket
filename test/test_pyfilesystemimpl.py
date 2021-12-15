@@ -28,7 +28,7 @@ def test_local_filesystem__when_creating_new_instance__should_open_fs_in_folder(
 
 @pytest.fixture
 def sshfs_type_mock():
-    patcher = patch("fs.sshfs.SSHFS")
+    patcher = patch("fs.sshfs.sshfs.SSHFS")
 
     yield patcher.start()
 
