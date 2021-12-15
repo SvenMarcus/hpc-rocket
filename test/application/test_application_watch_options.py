@@ -1,8 +1,9 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, call
+from hpcrocket.ui import UI
 
 from test.application.launchoptions import main_connection, proxy_connection
 from test.slurm_assertions import assert_job_polled
-from test.slurmoutput import DEFAULT_JOB_ID
+from test.slurmoutput import DEFAULT_JOB_ID, completed_slurm_job, running_slurm_job
 from test.testdoubles.executor import FailedSlurmJobCommandStub, LongRunningSlurmJobExecutorSpy, SlurmJobExecutorSpy
 from test.testdoubles.filesystem import DummyFilesystemFactory
 
@@ -17,8 +18,8 @@ WATCH_OPTIONS = WatchOptions(
 )
 
 
-def make_sut(executor):
-    return Application(executor, DummyFilesystemFactory(), Mock())
+def make_sut(executor, ui=None):
+    return Application(executor, DummyFilesystemFactory(), ui or Mock())
 
 
 def test__given_watch_options__when_running__should_poll_job_until_done():
@@ -30,6 +31,18 @@ def test__given_watch_options__when_running__should_poll_job_until_done():
     assert_job_polled(executor, command_index=0)
     assert_job_polled(executor, command_index=1)
     assert_job_polled(executor, command_index=2)
+
+
+def test__given_watch_options__when_running__should_update_ui_with_job_status():
+    executor = LongRunningSlurmJobExecutorSpy()
+
+    ui = Mock(spec=UI)
+    sut = make_sut(executor, ui)
+
+    sut.run(WATCH_OPTIONS)
+
+    assert ui.update.mock_calls[0] == call(running_slurm_job())
+    assert ui.update.mock_calls[-1] == call(completed_slurm_job())
 
 
 def test__given_watch_options__when_running_with_successful_job__should_exit_with_0():
