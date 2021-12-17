@@ -1,4 +1,3 @@
-import hpcrocket.core.workflows as workflows
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory

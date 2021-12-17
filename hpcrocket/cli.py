@@ -1,11 +1,12 @@
 import argparse
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Type, Union
+from typing import Any, Dict, List, Union
 
 import yaml
 
 from hpcrocket.core.environmentpreparation import CopyInstruction
-from hpcrocket.core.launchoptions import JobBasedOptions, Options, SimpleJobOptions, LaunchOptions, WatchOptions
+from hpcrocket.core.launchoptions import (LaunchOptions, Options,
+                                          SimpleJobOptions, WatchOptions)
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
