@@ -1,4 +1,3 @@
-from threading import Thread
 from typing import TYPE_CHECKING, Callable
 
 from hpcrocket.watcher.watcherthread import WatcherThread, WatcherThreadImpl
@@ -18,14 +17,6 @@ WatcherThreadFactory = Callable[
     ['SlurmBatchJob', SlurmJobStatusCallback, int],
     WatcherThread
 ]
-
-
-def make_watcher_thread(
-        job: 'SlurmBatchJob',
-        callback: SlurmJobStatusCallback,
-        poll_interval: int) -> WatcherThread:
-
-    return WatcherThreadImpl(job, callback, poll_interval)
 
 
 class NotWatchingError(RuntimeError):
@@ -51,7 +42,7 @@ JobWatcherFactory = Callable[['SlurmBatchJob'], JobWatcher]
 
 class JobWatcherImpl:
 
-    def __init__(self, runner: 'SlurmBatchJob', thread_factory: WatcherThreadFactory = make_watcher_thread) -> None:
+    def __init__(self, runner: 'SlurmBatchJob', thread_factory: WatcherThreadFactory = WatcherThreadImpl) -> None:
         self.runner = runner
         self.factory = thread_factory
         self.watching_thread: WatcherThread = None  # type: ignore[assignment]
@@ -83,4 +74,3 @@ class JobWatcherImpl:
             self.watching_thread.join()
         except RuntimeError as err:
             print(err)
-
