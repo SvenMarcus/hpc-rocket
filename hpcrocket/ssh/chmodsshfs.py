@@ -63,11 +63,14 @@ class PermissionChangingSSHFSDecorator(FS):
     def islink(self, path: Text) -> bool:
         return self._internal_fs.islink(path)
 
-    def scandir(self, path: Text, namespaces: Optional[Collection[Text]] = None, page: Optional[Tuple[int, int]] = None) -> Iterator[Info]:
+    def scandir(self, path: Text, namespaces: Optional[Collection[Text]] = None,
+                page: Optional[Tuple[int, int]] = None) -> Iterator[Info]:
         return self._internal_fs.scandir(path, namespaces, page)
 
-    def makedir(self, path: Text, permissions: Optional[Permissions] = None, recreate: bool = False) -> SubFS[FS]:
+    def makedir(self, path: Text, permissions: Optional[Permissions] = None,
+                recreate: bool = False) -> SubFS[FS]:
         return self._internal_fs.makedir(path, permissions, recreate)
 
-    def move(self, src_path: Text, dst_path: Text, overwrite: bool = False, preserve_time: bool = False) -> None:
+    def move(self, src_path: Text, dst_path: Text,
+             overwrite: bool = False, preserve_time: bool = False) -> None:
         self._internal_fs.move(src_path, dst_path, overwrite)

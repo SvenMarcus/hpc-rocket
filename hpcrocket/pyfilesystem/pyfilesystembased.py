@@ -23,7 +23,8 @@ class PyFilesystemBased(Filesystem, ABC):
         """
         pass
 
-    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: Optional['Filesystem'] = None) -> None:
+    def copy(self, source: str, target: str,
+             overwrite: bool = False, filesystem: Optional['Filesystem'] = None) -> None:
         self._raise_if_source_does_not_exist(source)
         self._raise_if_target_exists(target, overwrite, filesystem)
         self._raise_if_no_pyfilesystem(filesystem)

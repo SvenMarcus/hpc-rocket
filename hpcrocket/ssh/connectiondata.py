@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Optional
 
 
@@ -28,4 +28,3 @@ class ConnectionData:
             keyfile = keyfile.replace("~/", home_dir + "/", 1)
 
         return keyfile
-

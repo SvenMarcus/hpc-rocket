@@ -23,7 +23,7 @@ class NoJobLaunchedError(Exception):
 
 class LaunchStage:
     """
-    Launches a batch job. 
+    Launches a batch job.
     Implements the BatchJobProvider protocol to work with WatchStage.
     """
 

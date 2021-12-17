@@ -19,8 +19,11 @@ class Filesystem(ABC):
     """
 
     @abstractmethod
-    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: Optional['Filesystem'] = None) -> None:
-        """Copies the `source` file to the `target` location. Can transfer between filesystems if `filesystem` argument is specified
+    def copy(self, source: str, target: str,
+             overwrite: bool = False,
+             filesystem: Optional['Filesystem'] = None) -> None:
+        """Copies the `source` file to the `target` location.
+        Can transfer between filesystems if `filesystem` argument is specified.
 
         Args:
             source (str): The path to the file to be copied

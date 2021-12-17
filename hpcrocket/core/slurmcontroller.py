@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional
 from hpcrocket.core.executor import CommandExecutor, RunningCommand
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmError, SlurmJobStatus
 from hpcrocket.watcher.jobwatcher import JobWatcherFactory, JobWatcherImpl

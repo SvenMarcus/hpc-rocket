@@ -116,7 +116,7 @@ class _MonitoringConfigurationBuilder(_OptionBuilder):
 
 def _parse_yaml(path: str) -> Dict[str, Any]:
     with open(path, "r") as file:
-        return yaml.load(file, Loader=yaml.SafeLoader) # type: ignore
+        return yaml.load(file, Loader=yaml.SafeLoader)  # type: ignore
 
 
 def _connection_dict(config: Dict[str, Any]) -> Dict[str, Union[ConnectionData, List[ConnectionData]]]:

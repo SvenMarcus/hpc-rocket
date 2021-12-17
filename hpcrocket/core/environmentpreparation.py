@@ -112,7 +112,8 @@ class EnvironmentPreparation:
 
     def collect(self) -> None:
         """
-        Collects the files from the target filesystem. Files that are not found or already present on the source filesystem are ignored.
+        Collects the files from the target filesystem.
+        Files that are not found or already present on the source filesystem are ignored.
 
         Args:
             None

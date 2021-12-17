@@ -9,7 +9,8 @@ from hpcrocket.core.workflows.stages import FinalizeStage, PrepareStage, LaunchS
 from hpcrocket.ui import UI
 
 
-def launchworkflow(filesystem_factory: FilesystemFactory, controller: SlurmController, options: LaunchOptions) -> Workflow:
+def launchworkflow(filesystem_factory: FilesystemFactory,
+                   controller: SlurmController, options: LaunchOptions) -> Workflow:
     launch_stage = LaunchStage(controller, options.sbatch)
     stages: List[Stage] = [
         PrepareStage(filesystem_factory, options.copy_files),

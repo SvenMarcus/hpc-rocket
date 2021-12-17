@@ -1,8 +1,7 @@
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
-from hpcrocket.core.launchoptions import LaunchOptions, Options
+from hpcrocket.core.launchoptions import Options
 from hpcrocket.pyfilesystem.localfilesystem import LocalFilesystem
 from hpcrocket.pyfilesystem.sshfilesystem import SSHFilesystem
-from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 class PyFilesystemFactory(FilesystemFactory):

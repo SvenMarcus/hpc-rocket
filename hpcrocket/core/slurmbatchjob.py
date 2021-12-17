@@ -68,7 +68,8 @@ class SlurmJobStatus:
 
 class SlurmBatchJob:
 
-    def __init__(self, controller: 'SlurmController', jobid: str = "", watcher_factory: Optional[JobWatcherFactory] = None):
+    def __init__(
+            self, controller: 'SlurmController', jobid: str = "", watcher_factory: Optional[JobWatcherFactory] = None):
         self._controller = controller
         self._watcher_factory = watcher_factory or JobWatcherImpl
         self.jobid = jobid

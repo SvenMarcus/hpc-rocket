@@ -13,21 +13,22 @@ from hpcrocket.ui import UI
 
 class WorkflowFactory:
 
+    MonitoringWorkflowBuilder = Callable[[SlurmController, Any], Workflow]
+    MonitoringWorkflows: Dict[Type[MonitoringOptions],
+                              MonitoringWorkflowBuilder] = {
+        StatusOptions: workflows.statusworkflow,
+        WatchOptions: workflows.watchworkflow
+    }
+
     def __init__(self, filesystem_factory: FilesystemFactory) -> None:
         self._fs_factory = filesystem_factory
-        MonitoringWorkflowBuilder = Callable[[SlurmController, Any], Workflow]
-        self._monitoring_workflows: Dict[Type[MonitoringOptions],
-                                         MonitoringWorkflowBuilder] = {
-            StatusOptions: workflows.statusworkflow,
-            WatchOptions: workflows.watchworkflow
-        }
 
     def __call__(self, controller: SlurmController, options: Options) -> Workflow:
         if isinstance(options, LaunchOptions):
             return workflows.launchworkflow(self._fs_factory, controller, options)
 
         option_type = type(options)
-        monitoring_workflow_builder = self._monitoring_workflows[option_type]
+        monitoring_workflow_builder = self.MonitoringWorkflows[option_type]
         return monitoring_workflow_builder(controller, options)
 
 

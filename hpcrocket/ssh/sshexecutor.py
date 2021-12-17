@@ -118,6 +118,6 @@ def _connect_client(sshclient: pm.SSHClient, connection: ConnectionData, channel
         port=connection.port,
         key_filename=connection.keyfile,
         password=connection.password,
-        pkey=connection.key, # type: ignore[arg-type]
-        sock=channel # type: ignore[arg-type]
+        pkey=connection.key,  # type: ignore[arg-type]
+        sock=channel  # type: ignore[arg-type]
     )

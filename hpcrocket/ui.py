@@ -99,7 +99,7 @@ class RichUI(UI):
                 last_column = Spinner("arc", task.state)
             elif task.state == "COMPLETED":
                 color = "green"
-                last_column =  f":heavy_check_mark: {task.state}"
+                last_column = f":heavy_check_mark: {task.state}"
             elif task.state == "FAILED":
                 color = "red"
                 last_column = f":cross_mark: {task.state}"
