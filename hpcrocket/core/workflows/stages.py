@@ -205,3 +205,17 @@ class StatusStage:
 
     def cancel(self, ui: UI) -> None:
         pass
+
+
+class CancelStage:
+
+    def __init__(self, controller: SlurmController, jobid: str):
+        self._controller = controller
+        self._jobid = jobid
+
+    def __call__(self, ui: UI) -> bool:
+        self._controller.cancel(self._jobid)
+        return True
+
+    def cancel(self, ui: UI) -> None:
+        pass

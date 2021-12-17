@@ -1,6 +1,6 @@
 from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.core.environmentpreparation import CopyInstruction
-from hpcrocket.core.launchoptions import StatusOptions, LaunchOptions, WatchOptions
+from hpcrocket.core.launchoptions import SimpleJobOptions, LaunchOptions, WatchOptions
 from hpcrocket.cli import parse_cli_args
 
 
@@ -60,8 +60,9 @@ def test__given_status_args__when_parsing__should_return_matching_config():
         "1234"
     ])
 
-    assert config == StatusOptions(
+    assert config == SimpleJobOptions(
         jobid="1234",
+        action=SimpleJobOptions.Action.status,
         connection=CONNECTION_DATA,
         proxyjumps=PROXYJUMPS,
     )
@@ -78,4 +79,19 @@ def test__given_watch_args__when_parsing__should_return_matching_config():
         jobid="1234",
         connection=CONNECTION_DATA,
         proxyjumps=PROXYJUMPS,
+    )
+
+
+def test__given_cancel_args__when_parsing__should_return_matching_config():
+    config = parse_cli_args([
+        "cancel",
+        "test/testconfig/config.yml",
+        "1234"
+    ])
+
+    assert config == SimpleJobOptions(
+        jobid="1234",
+        action=SimpleJobOptions.Action.cancel,
+        connection=CONNECTION_DATA,
+        proxyjumps=PROXYJUMPS
     )

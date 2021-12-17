@@ -11,13 +11,14 @@ from unittest.mock import Mock
 
 import pytest
 from hpcrocket.core.application import Application
-from hpcrocket.core.launchoptions import StatusOptions
+from hpcrocket.core.launchoptions import SimpleJobOptions
 
 
 @pytest.fixture
 def options():
-    return StatusOptions(
+    return SimpleJobOptions(
         jobid=DEFAULT_JOB_ID,
+        action=SimpleJobOptions.Action.status,
         connection=main_connection()
     )
 

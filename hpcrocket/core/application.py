@@ -1,35 +1,12 @@
-from typing import Any, Callable, Dict, Type
-
 import hpcrocket.core.workflows as workflows
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory
-from hpcrocket.core.launchoptions import (LaunchOptions, MonitoringOptions,
-                                          Options, StatusOptions, WatchOptions)
+from hpcrocket.core.launchoptions import Options
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.workflow import Workflow
+from hpcrocket.core.workflowfactory import WorkflowFactory
 from hpcrocket.ui import UI
-
-
-class WorkflowFactory:
-
-    MonitoringWorkflowBuilder = Callable[[SlurmController, Any], Workflow]
-    MonitoringWorkflows: Dict[Type[MonitoringOptions],
-                              MonitoringWorkflowBuilder] = {
-        StatusOptions: workflows.statusworkflow,
-        WatchOptions: workflows.watchworkflow
-    }
-
-    def __init__(self, filesystem_factory: FilesystemFactory) -> None:
-        self._fs_factory = filesystem_factory
-
-    def __call__(self, controller: SlurmController, options: Options) -> Workflow:
-        if isinstance(options, LaunchOptions):
-            return workflows.launchworkflow(self._fs_factory, controller, options)
-
-        option_type = type(options)
-        monitoring_workflow_builder = self.MonitoringWorkflows[option_type]
-        return monitoring_workflow_builder(controller, options)
 
 
 class Application:

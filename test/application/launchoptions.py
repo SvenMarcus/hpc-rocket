@@ -2,7 +2,7 @@ import dataclasses
 from typing import List, Optional
 from hpcrocket.core.environmentpreparation import CopyInstruction
 
-from hpcrocket.core.launchoptions import LaunchOptions, WatchOptions
+from hpcrocket.core.launchoptions import LaunchOptions, SimpleJobOptions, WatchOptions
 from hpcrocket.ssh.connectiondata import ConnectionData
 from test.slurmoutput import DEFAULT_JOB_ID
 
@@ -76,3 +76,16 @@ def watch_options() -> WatchOptions:
         proxyjumps=[proxy_connection()],
         poll_interval=0
     )
+
+
+def simple_options(action: SimpleJobOptions.Action) -> SimpleJobOptions:
+    return SimpleJobOptions(
+        jobid=DEFAULT_JOB_ID,
+        action=action,
+        connection=main_connection(),
+        proxyjumps=[proxy_connection()],
+    )
+
+
+def cancel_options() -> SimpleJobOptions:
+    return simple_options(SimpleJobOptions.Action.cancel)

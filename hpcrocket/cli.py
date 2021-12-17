@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Type, Union
 import yaml
 
 from hpcrocket.core.environmentpreparation import CopyInstruction
-from hpcrocket.core.launchoptions import MonitoringOptions, Options, StatusOptions, LaunchOptions, WatchOptions
+from hpcrocket.core.launchoptions import JobBasedOptions, Options, SimpleJobOptions, LaunchOptions, WatchOptions
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
@@ -17,9 +17,11 @@ def parse_cli_args(args: List[str]) -> Options:
     if config.command == "launch":
         options_builder = _LaunchConfigurationBuilder(
             config.configfile, config.watch)
+    elif config.command == "watch":
+        options_builder = _WatchConfigurationBuilder(config.configfile, config.jobid)
     else:
-        options_builder = _MonitoringConfigurationBuilder(config.command,
-                                                          config.configfile, config.jobid)
+        options_builder = _SimpleConfigurationBuilder(config.command,
+                                                      config.configfile, config.jobid)
 
     return options_builder.build()
 
@@ -31,6 +33,7 @@ def _setup_parser() -> argparse.ArgumentParser:
     _setup_launch_parser(subparsers)
     _setup_status_parser(subparsers)
     _setup_watch_parser(subparsers)
+    _setup_cancel_parser(subparsers)
 
     return parser
 
@@ -48,7 +51,16 @@ def _setup_status_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("configfile", type=str,
                         help="A config file containing the connection data")
     parser.add_argument("jobid", type=str,
-                        help="The ID of the job you to be checked")
+                        help="The ID of the job to be checked")
+
+
+def _setup_cancel_parser(subparsers: argparse._SubParsersAction) -> None:
+    parser = subparsers.add_parser(
+        "cancel", help="Cancel a job")
+    parser.add_argument("configfile", type=str,
+                        help="A config file containing the connection data")
+    parser.add_argument("jobid", type=str,
+                        help="The ID of the job to be canceled")
 
 
 def _setup_watch_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -94,21 +106,31 @@ class _LaunchConfigurationBuilder(_OptionBuilder):
                 for cp in copy_list]
 
 
-class _MonitoringConfigurationBuilder(_OptionBuilder):
-
-    OPTION_TYPES: Dict[str, Type[MonitoringOptions]] = {
-        "status": StatusOptions,
-        "watch": WatchOptions
-    }
+class _SimpleConfigurationBuilder(_OptionBuilder):
 
     def __init__(self, command: str, path: str, jobid: str) -> None:
         self._path = path
         self._jobid = jobid
-        self._option_type = self.OPTION_TYPES[command]
+        self._command = command
 
     def build(self) -> Options:
         config = _parse_yaml(self._path)
-        return self._option_type(
+        return SimpleJobOptions(
+            jobid=self._jobid,
+            action=SimpleJobOptions.Action[self._command],
+            ** _connection_dict(config)  # type: ignore
+        )
+
+
+class _WatchConfigurationBuilder(_OptionBuilder):
+
+    def __init__(self, path: str, jobid: str) -> None:
+        self._path = path
+        self._jobid = jobid
+
+    def build(self) -> Options:
+        config = _parse_yaml(self._path)
+        return WatchOptions(
             jobid=self._jobid,
             **_connection_dict(config)  # type: ignore
         )
