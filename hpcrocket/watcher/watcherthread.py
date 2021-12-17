@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 try:
     from typing import Protocol
-except ImportError:
+except ImportError: # pragma: no cover
     from typing_extensions import Protocol  # type: ignore
 
 
@@ -14,15 +14,33 @@ if TYPE_CHECKING:
 class WatcherThread(Protocol):
 
     def start(self) -> None:
+        """
+        Start watching a job
+        """
         pass
 
     def stop(self) -> None:
+        """
+        Stop watching a job
+        """
         pass
 
     def is_done(self) -> bool:
+        """
+        Returns true if the job has finished running.
+
+        Returns:
+            bool
+        """
         pass
 
     def join(self, timeout: Optional[float] = None) -> None:
+        """
+        Joins the WatcherThread.
+
+        Args:
+            timeout (float): An optional timeout for joining
+        """
         pass
 
 

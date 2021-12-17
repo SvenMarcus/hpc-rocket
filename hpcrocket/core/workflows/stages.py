@@ -1,20 +1,18 @@
-from typing import Callable, List, Optional, cast
+from typing import List, Optional, cast
 
 from hpcrocket.core.environmentpreparation import (CopyInstruction,
                                                    EnvironmentPreparation)
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.filesystem import FilesystemFactory
-from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.typesafety import get_or_raise
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher, SlurmJobStatusCallback
 
-
 try:
     from typing import Protocol
-except ImportError:
+except ImportError: # pragma: no cover
     from typing_extensions import Protocol  # type: ignore
 
 
@@ -23,6 +21,10 @@ class NoJobLaunchedError(Exception):
 
 
 class LaunchStage:
+    """
+    Launches a batch job. 
+    Implements the BatchJobProvider protocol to work with WatchStage.
+    """
 
     def __init__(self, controller: SlurmController, batch_script: str) -> None:
         self._controller = controller
@@ -50,6 +52,10 @@ class LaunchStage:
 
 
 class WatchStage:
+    """
+    Watches a batch job until it completes
+    """
+
 
     class BatchJobProvider(Protocol):
 
@@ -99,6 +105,9 @@ class WatchStage:
 
 
 class PrepareStage:
+    """
+    Copies the given files to the target filesystem.
+    """
 
     def __init__(self, filesystem_factory: FilesystemFactory, copy_instructions: List[CopyInstruction]) -> None:
         self._factory = filesystem_factory
@@ -142,6 +151,9 @@ class PrepareStage:
 
 
 class FinalizeStage:
+    """
+    Collects result files from the remote filesystem and cleans it according to the given instructions.
+    """
 
     def __init__(
             self, filesystem_factory: FilesystemFactory, collect_instructions: List[CopyInstruction],
@@ -179,6 +191,9 @@ class FinalizeStage:
 
 
 class StatusStage:
+    """
+    Checks a job's status.
+    """
 
     def __init__(self, controller: SlurmController, jobid: str) -> None:
         self._controller = controller

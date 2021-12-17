@@ -5,7 +5,7 @@ from hpcrocket.watcher.watcherthread import WatcherThread, WatcherThreadImpl
 
 try:
     from typing import Protocol
-except ImportError:
+except ImportError: # pragma: no cover
     from typing_extensions import Protocol  # type: ignore
 
 
@@ -29,12 +29,25 @@ class NotWatchingError(RuntimeError):
 class JobWatcher(Protocol):
 
     def watch(self, callback: SlurmJobStatusCallback, poll_interval: int) -> None:
+        """
+        Starts watching the job in the background.
+
+        Args:
+            callback (SlurmJobStatusCallback): A callback that accepts a status update.
+            poll_interval (int): The time between poll calls.
+        """
         pass
 
     def wait_until_done(self) -> None:
+        """
+        Blocks until the job has been completed.
+        """
         pass
 
     def stop(self) -> None:
+        """
+        Stops watching the job.
+        """
         pass
 
 
