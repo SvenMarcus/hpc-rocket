@@ -41,7 +41,7 @@ jobs:
     
     - name: Check type annotations with mypy --strict
       run: |
-        mypy --install-types
+        mypy --install-types --non-interactive hpcrocket
         mypy --strict hpcrocket
     
     - name: Test with pytest
