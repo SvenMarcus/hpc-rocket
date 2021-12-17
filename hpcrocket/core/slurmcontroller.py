@@ -22,7 +22,7 @@ class SlurmController:
         return SlurmJobStatus.from_output(cmd.stdout())
 
     def cancel(self, jobid: str) -> None:
-        cmd = self._execute_and_wait_or_raise_on_error(f"scancel {jobid}")
+        self._execute_and_wait_or_raise_on_error(f"scancel {jobid}")
 
     def _execute_and_wait_or_raise_on_error(self, command: str) -> RunningCommand:
         cmd = self._executor.exec_command(command)

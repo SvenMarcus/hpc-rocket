@@ -8,11 +8,12 @@ from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.typesafety import get_or_raise
 from hpcrocket.ui import UI
-from hpcrocket.watcher.jobwatcher import JobWatcher, SlurmJobStatusCallback
+from hpcrocket.watcher.jobwatcher import (JobWatcher, NotWatchingError,
+                                          SlurmJobStatusCallback)
 
 try:
     from typing import Protocol
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     from typing_extensions import Protocol  # type: ignore
 
 
@@ -56,7 +57,6 @@ class WatchStage:
     Watches a batch job until it completes
     """
 
-
     class BatchJobProvider(Protocol):
 
         def get_batch_job(self) -> SlurmBatchJob:
@@ -80,7 +80,7 @@ class WatchStage:
     def __init__(self, batch_job_provider: BatchJobProvider, poll_interval: int) -> None:
         self._poll_interval = poll_interval
         self._provider = batch_job_provider
-        self._watcher: JobWatcher = None  # type: ignore[assignment]
+        self._watcher: Optional[JobWatcher] = None
         self._job_status: Optional[SlurmJobStatus] = None
 
     def __call__(self, ui: UI) -> bool:
@@ -100,7 +100,7 @@ class WatchStage:
         return callback
 
     def cancel(self, ui: UI) -> None:
-        self._watcher.stop()
+        get_or_raise(self._watcher, NotWatchingError).stop()
         self._provider.cancel(ui)
 
 

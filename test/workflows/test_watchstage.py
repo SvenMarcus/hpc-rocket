@@ -1,18 +1,21 @@
-from typing import List
 from test.application.launchoptions import options
 from test.slurm_assertions import assert_job_polled
 from test.slurmoutput import (DEFAULT_JOB_ID, completed_slurm_job,
                               running_slurm_job)
-from test.testdoubles.executor import (FailedSlurmJobCommandStub,
+from test.testdoubles.executor import (CommandExecutorStub,
+                                       FailedSlurmJobCommandStub,
                                        LongRunningSlurmJobExecutorSpy,
                                        SlurmJobExecutorSpy)
+from typing import List
 from unittest.mock import Mock, call
 
+import pytest
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.stages import WatchStage
 from hpcrocket.ui import UI
-from hpcrocket.watcher.jobwatcher import JobWatcher, JobWatcherFactory
+from hpcrocket.watcher.jobwatcher import (JobWatcher, JobWatcherFactory,
+                                          NotWatchingError)
 
 
 class WatcherSpy:
@@ -150,7 +153,7 @@ def test__given_running_stage__when_canceling__should_stop_watcher():
     assert watcher.stop.called is True
 
 
-def test__when_given_running_stage__when_canceling__should_notify_batch_job_provider():
+def test__given_running_stage__when_canceling__should_notify_batch_job_provider():
     executor = LongRunningSlurmJobExecutorSpy()
     provider_spy = make_job_provider(executor)
     sut = make_sut_with_provider(provider_spy)
@@ -159,3 +162,11 @@ def test__when_given_running_stage__when_canceling__should_notify_batch_job_prov
     sut.cancel(Mock())
 
     assert provider_spy.was_canceled is True
+
+
+def test__when_canceling_before_running__should_raise_not_watching_error():
+    executor = CommandExecutorStub()
+    sut = make_sut(executor)
+
+    with pytest.raises(NotWatchingError):
+        sut.cancel(Mock(spec=UI))
