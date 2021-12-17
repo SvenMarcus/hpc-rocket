@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional
 
+from hpcrocket.typesafety import get_or_raise
 from hpcrocket.watcher.watcherthread import WatcherThread, WatcherThreadImpl
 
 try:
@@ -45,32 +46,27 @@ class JobWatcherImpl:
     def __init__(self, runner: 'SlurmBatchJob', thread_factory: WatcherThreadFactory = WatcherThreadImpl) -> None:
         self.runner = runner
         self.factory = thread_factory
-        self.watching_thread: WatcherThread = None  # type: ignore[assignment]
+        self.watching_thread: Optional[WatcherThread] = None
 
     def watch(self, callback: SlurmJobStatusCallback, poll_interval: int) -> None:
         self.watching_thread = self.factory(self.runner, callback, poll_interval)
         self.watching_thread.start()
 
     def is_done(self) -> bool:
-        if self.watching_thread is None:
-            raise NotWatchingError()
-
-        return self.watching_thread.is_done()
+        watching_thread = get_or_raise(self.watching_thread, NotWatchingError)
+        return watching_thread.is_done()
 
     def wait_until_done(self) -> None:
-        if self.watching_thread is None:
-            raise NotWatchingError()
-
-        self._try_join()
+        watching_thread = get_or_raise(self.watching_thread, NotWatchingError)
+        self._try_join(watching_thread)
 
     def stop(self) -> None:
-        if self.watching_thread is None:
-            raise NotWatchingError()
-        self.watching_thread.stop()
-        self._try_join()
+        watching_thread = get_or_raise(self.watching_thread, NotWatchingError)
+        watching_thread.stop()
+        self._try_join(watching_thread)
 
-    def _try_join(self) -> None:
+    def _try_join(self, watching_thread: WatcherThread) -> None:
         try:
-            self.watching_thread.join()
+            watching_thread.join()
         except RuntimeError as err:
             print(err)

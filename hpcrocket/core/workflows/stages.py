@@ -7,6 +7,7 @@ from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.typesafety import get_or_raise
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcher, SlurmJobStatusCallback
 
@@ -26,8 +27,7 @@ class LaunchStage:
     def __init__(self, controller: SlurmController, batch_script: str) -> None:
         self._controller = controller
         self._batch_script = batch_script
-        self._batch_job: SlurmBatchJob = None  # type: ignore[assignment]
-        self._watch_stage: WatchStage = None  # type: ignore[assignment]
+        self._batch_job: Optional[SlurmBatchJob] = None
 
     def __call__(self, ui: UI) -> bool:
         self._batch_job = self._controller.submit(self._batch_script)
@@ -36,18 +36,17 @@ class LaunchStage:
         return True
 
     def cancel(self, ui: UI) -> None:
-        self._raise_if_not_launched()
+        batch_job = get_or_raise(self._batch_job, self._no_job_launched())
 
-        ui.info(f"Canceling job {self._batch_job.jobid}")
-        self._batch_job.cancel()
-        ui.success(f"Canceled job {self._batch_job.jobid}")
+        ui.info(f"Canceling job {batch_job.jobid}")
+        batch_job.cancel()
+        ui.success(f"Canceled job {batch_job.jobid}")
 
-    def _raise_if_not_launched(self) -> None:
-        if not self._batch_job:
-            raise NoJobLaunchedError("Canceled before a job was started")
+    def _no_job_launched(self) -> NoJobLaunchedError:
+        return NoJobLaunchedError("Canceled before a job was started")
 
     def get_batch_job(self) -> SlurmBatchJob:
-        return self._batch_job
+        return cast(SlurmBatchJob, self._batch_job)
 
 
 class WatchStage:

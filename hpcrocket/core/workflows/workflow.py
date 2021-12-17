@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from hpcrocket.typesafety import get_or_raise
 from hpcrocket.ui import UI
 
 try:
@@ -44,13 +45,9 @@ class Workflow:
         return True
 
     def cancel(self, ui: UI) -> None:
-        self._raise_if_not_started()
-        self._active_stage.cancel(ui) # type: ignore
+        active_stage = get_or_raise(self._active_stage, WorkflowNotStartedError)
+        active_stage.cancel(ui)
         self._canceled = True
-
-    def _raise_if_not_started(self) -> None:
-        if not self._active_stage:
-            raise WorkflowNotStartedError()
 
 
 class WorkflowNotStartedError(Exception):
