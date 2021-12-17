@@ -40,7 +40,9 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Check type annotations with mypy --strict
-      run: mypy --strict hpcrocket
+      run: |
+        mypy --install-types
+        mypy --strict hpcrocket
     
     - name: Test with pytest
       run: |
