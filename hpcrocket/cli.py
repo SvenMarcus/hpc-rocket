@@ -82,14 +82,14 @@ def _setup_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _setup_launch_parser(subparsers: argparse._SubParsersAction[Any]) -> None:
+def _setup_launch_parser(subparsers: 'argparse._SubParsersAction[argparse.ArgumentParser]') -> None:
     parser = subparsers.add_parser("launch", help="Launch a remote job")
     parser.add_argument("configfile", type=str)
     parser.add_argument("--watch", default=False,
                         dest="watch", action="store_true")
 
 
-def _setup_status_parser(subparsers: argparse._SubParsersAction[Any]) -> None:
+def _setup_status_parser(subparsers: 'argparse._SubParsersAction[argparse.ArgumentParser]') -> None:
     parser = subparsers.add_parser(
         "status", help="Check on a job's current status")
     parser.add_argument("configfile", type=str,
@@ -98,7 +98,7 @@ def _setup_status_parser(subparsers: argparse._SubParsersAction[Any]) -> None:
                         help="The ID of the job to be checked")
 
 
-def _setup_cancel_parser(subparsers: argparse._SubParsersAction[Any]) -> None:
+def _setup_cancel_parser(subparsers: 'argparse._SubParsersAction[argparse.ArgumentParser]') -> None:
     parser = subparsers.add_parser(
         "cancel", help="Cancel a job")
     parser.add_argument("configfile", type=str,
@@ -107,7 +107,7 @@ def _setup_cancel_parser(subparsers: argparse._SubParsersAction[Any]) -> None:
                         help="The ID of the job to be canceled")
 
 
-def _setup_watch_parser(subparsers: argparse._SubParsersAction[Any]) -> None:
+def _setup_watch_parser(subparsers: 'argparse._SubParsersAction[argparse.ArgumentParser]') -> None:
     parser = subparsers.add_parser(
         "watch", help="Monitor a job until it completes")
     parser.add_argument("configfile", type=str,
