@@ -1,7 +1,7 @@
 
 from test.testdoubles.filesystem import sshfs_with_connection_fake
 from test.testdoubles.sshclient import ProxyJumpVerifyingSSHClient
-from unittest.mock import ANY, DEFAULT, Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.pyfilesystem.factory import PyFilesystemFactory
@@ -60,4 +60,3 @@ def test__when_creating_ssh_filesystem__should_open_homedir(chmodsshfs_type_mock
         sut.create_ssh_filesystem()
 
         sshfs_mock.opendir.assert_called_with("/home/proxy-user", factory=ANY)
-

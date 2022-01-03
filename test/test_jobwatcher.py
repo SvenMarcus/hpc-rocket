@@ -1,9 +1,9 @@
 from typing import List
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock
 
 import pytest
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob
-from hpcrocket.watcher.jobwatcher import JobWatcherImpl, NotWatchingError, SlurmJobStatusCallback, WatcherThreadFactory
+from hpcrocket.watcher.jobwatcher import JobWatcherImpl, NotWatchingError, SlurmJobStatusCallback
 from hpcrocket.watcher.watcherthread import WatcherThreadImpl
 
 

@@ -1,9 +1,9 @@
 from test.application.executor_filesystem_callorder import (
     CallOrderVerification, VerifierReturningFilesystemFactory)
-from test.application.launchoptions import main_connection, launch_options
+from test.application.launchoptions import launch_options, main_connection
 from test.slurmoutput import completed_slurm_job
-from test.testdoubles.executor import (FailedSlurmJobCommandStub, InfiniteSlurmJobExecutor,
-                                       LoggingCommandExecutorSpy, LongRunningSlurmJobExecutorSpy,
+from test.testdoubles.executor import (FailedSlurmJobCommandStub,
+                                       LoggingCommandExecutorSpy,
                                        SlurmJobExecutorSpy,
                                        SuccessfulSlurmJobCommandStub)
 from test.testdoubles.filesystem import DummyFilesystemFactory

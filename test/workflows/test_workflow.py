@@ -2,7 +2,8 @@ from typing import List
 from unittest.mock import Mock
 
 import pytest
-from hpcrocket.core.workflows.workflow import Stage, Workflow, WorkflowNotStartedError
+from hpcrocket.core.workflows.workflow import (Stage, Workflow,
+                                               WorkflowNotStartedError)
 from hpcrocket.ui import UI
 
 

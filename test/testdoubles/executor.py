@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
-
-from test.slurmoutput import get_failed_lines, get_running_lines, get_success_lines, DEFAULT_JOB_ID
+from test.slurmoutput import (DEFAULT_JOB_ID, get_failed_lines,
+                              get_running_lines, get_success_lines)
 from typing import Callable, List
+
 from hpcrocket.core.executor import CommandExecutor, RunningCommand
 
 SLURM_SBATCH_COMMAND = "sbatch"

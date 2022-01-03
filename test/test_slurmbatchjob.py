@@ -1,16 +1,15 @@
-from typing import cast
-from unittest.mock import Mock
-
 from test.slurm_assertions import assert_job_canceled, assert_job_polled
 from test.slurmoutput import DEFAULT_JOB_ID, completed_slurm_job
-from test.testdoubles.executor import LoggingCommandExecutorSpy, SlurmJobExecutorSpy
+from test.testdoubles.executor import (LoggingCommandExecutorSpy,
+                                       SlurmJobExecutorSpy)
+from typing import cast
+from unittest.mock import Mock
 
 import pytest
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.watcher.jobwatcher import JobWatcherFactory
-
 
 JOB_ID = DEFAULT_JOB_ID
 
@@ -33,7 +32,8 @@ def test__when_canceling_job__should_execute_scancel_with_executor(executor_spy:
     assert_job_canceled(executor_spy, JOB_ID)
 
 
-def test__given_submitted_job_when_polling_status__should_execute_sacct_with_id(executor_spy: LoggingCommandExecutorSpy):
+def test__given_submitted_job_when_polling_status__should_execute_sacct_with_id(
+        executor_spy: LoggingCommandExecutorSpy):
     sut = make_sut(executor_spy, JOB_ID)
 
     sut.poll_status()
@@ -49,8 +49,10 @@ def test__when_polling_status__should_return_job_status(executor_spy: LoggingCom
     assert actual == completed_slurm_job()
 
 
-def test__given_submitted_job_with_watcher_factory__get_watcher__should_return_watcher_from_factory(executor_spy: LoggingCommandExecutorSpy):
+def test__given_submitted_job_with_watcher_factory__get_watcher__should_return_watcher_from_factory(
+        executor_spy: LoggingCommandExecutorSpy):
     watcher_dummy = Mock()
+
     def factory(job):
         return watcher_dummy
 
@@ -58,6 +60,3 @@ def test__given_submitted_job_with_watcher_factory__get_watcher__should_return_w
     actual = sut.get_watcher()
 
     assert actual is watcher_dummy
-
-
-    

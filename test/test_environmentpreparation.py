@@ -1,8 +1,9 @@
-from hpcrocket.core.filesystem import Filesystem
-from hpcrocket.core.environmentpreparation import CopyInstruction, EnvironmentPreparation
 from unittest.mock import MagicMock, call
 
 import pytest
+from hpcrocket.core.environmentpreparation import (CopyInstruction,
+                                                   EnvironmentPreparation)
+from hpcrocket.core.filesystem import Filesystem
 
 
 def new_mock_filesystem() -> Filesystem:
@@ -29,7 +30,7 @@ def test__given_files_to_copy__when_preparing__should_copy_files():
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
 
     sut.files_to_copy([
-       CopyInstruction("file.txt", "filecopy.txt"),
+        CopyInstruction("file.txt", "filecopy.txt"),
         CopyInstruction("funny.gif", "evenfunnier.gif", overwrite=True)
     ])
 
@@ -108,6 +109,7 @@ def test__given_rollback_done_with_file_not_found__when_rolling_back_again__shou
         CopyInstruction("file.txt", "filecopy.txt"),
         CopyInstruction("funny.gif", "evenfunnier.gif")
     ])
+
     sut.prepare()
     sut.rollback()
     target_fs_spy.reset_mock()

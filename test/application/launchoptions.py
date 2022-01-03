@@ -1,10 +1,11 @@
 import dataclasses
-from typing import List, Optional
-from hpcrocket.core.environmentpreparation import CopyInstruction
-
-from hpcrocket.core.launchoptions import LaunchOptions, SimpleJobOptions, WatchOptions
-from hpcrocket.ssh.connectiondata import ConnectionData
 from test.slurmoutput import DEFAULT_JOB_ID
+from typing import List, Optional
+
+from hpcrocket.core.environmentpreparation import CopyInstruction
+from hpcrocket.core.launchoptions import (LaunchOptions, SimpleJobOptions,
+                                          WatchOptions)
+from hpcrocket.ssh.connectiondata import ConnectionData
 
 
 def launch_options(

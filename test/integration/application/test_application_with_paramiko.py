@@ -1,9 +1,9 @@
 from dataclasses import replace
-from test.application.fixtures import *
+from test.integration.application.fixtures import *
 from test.application.launchoptions import *
 from test.slurmoutput import get_success_lines
 from test.testdoubles.filesystem import DummyFilesystemFactory
-from test.testdoubles.sshclient import (ChannelFileStub, DelayedChannelSpy,
+from test.testdoubles.sshclient import (ChannelFileStub, CmdSpecificSSHClientStub, DelayedChannelSpy,
                                         ProxyJumpVerifyingSSHClient,
                                         SSHClientMock)
 from unittest.mock import Mock

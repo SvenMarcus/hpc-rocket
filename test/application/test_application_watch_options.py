@@ -1,14 +1,14 @@
-from unittest.mock import Mock, call
-from hpcrocket.ui import UI
-
-from test.application.launchoptions import main_connection, proxy_connection, watch_options_with_proxy
+from test.application.launchoptions import watch_options_with_proxy
 from test.slurm_assertions import assert_job_polled
-from test.slurmoutput import DEFAULT_JOB_ID, completed_slurm_job, running_slurm_job
-from test.testdoubles.executor import FailedSlurmJobCommandStub, LongRunningSlurmJobExecutorSpy, SlurmJobExecutorSpy
+from test.slurmoutput import completed_slurm_job, running_slurm_job
+from test.testdoubles.executor import (FailedSlurmJobCommandStub,
+                                       LongRunningSlurmJobExecutorSpy,
+                                       SlurmJobExecutorSpy)
 from test.testdoubles.filesystem import DummyFilesystemFactory
+from unittest.mock import Mock, call
 
 from hpcrocket.core.application import Application
-from hpcrocket.core.launchoptions import WatchOptions
+from hpcrocket.ui import UI
 
 
 def make_sut(executor, ui=None):

@@ -1,15 +1,11 @@
 from test.application.launchoptions import launch_options
-from test.slurm_assertions import (assert_job_canceled, assert_job_polled,
-                                   assert_job_submitted)
+from test.slurm_assertions import assert_job_canceled, assert_job_submitted
 from test.testdoubles.executor import (DEFAULT_JOB_ID, CommandExecutorStub,
-                                       FailedSlurmJobCommandStub,
-                                       LongRunningSlurmJobExecutorSpy,
-                                       RunningSlurmJobCommandStub,
                                        SlurmJobExecutorSpy)
 from unittest.mock import Mock
 
 import pytest
-from hpcrocket.core.executor import CommandExecutor, RunningCommand
+from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.stages import LaunchStage, NoJobLaunchedError
@@ -22,7 +18,8 @@ def executor_spy():
     return SlurmJobExecutorSpy()
 
 
-def run_launch_workflow(options: LaunchOptions, executor: CommandExecutor = None,
+def run_launch_workflow(options: LaunchOptions,
+                        executor: CommandExecutor = None,
                         watcher_factory: JobWatcherFactory = None) -> int:
     executor = executor or SlurmJobExecutorSpy()
     controller = SlurmController(executor, watcher_factory)

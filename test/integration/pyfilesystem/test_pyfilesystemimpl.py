@@ -1,4 +1,4 @@
-from test.sshfilesystem_assertions import (
+from test.integration.pyfilesystem.sshfilesystem_assertions import (
     assert_sshfs_connected_with_connection_data,
     assert_sshfs_connected_with_keyfile_from_connection_data,
     assert_sshfs_connected_with_private_key_from_connection_data)

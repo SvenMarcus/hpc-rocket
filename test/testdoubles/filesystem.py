@@ -1,11 +1,8 @@
 from contextlib import contextmanager
 from typing import List, Optional, cast
-from unittest.mock import patch, DEFAULT
+from unittest.mock import DEFAULT, patch
 
-from fs.copy import copy_file
-from fs.memoryfs import MemoryFS
-
-from hpcrocket.core.filesystem import FilesystemFactory, Filesystem
+from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 
 
 class DummyFilesystemFactory(FilesystemFactory):
@@ -47,7 +44,8 @@ class MemoryFilesystemFake(Filesystem):
     def __init__(self, files: List[str] = []) -> None:
         self.files = set(files)
 
-    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: Optional['Filesystem'] = None) -> None:
+    def copy(
+            self, source: str, target: str, overwrite: bool = False, filesystem: Optional['Filesystem'] = None) -> None:
         assert filesystem is None or isinstance(filesystem, MemoryFilesystemFake)
 
         if not self.exists(source):
@@ -62,9 +60,9 @@ class MemoryFilesystemFake(Filesystem):
     def delete(self, path: str) -> None:
         if not self.exists(path):
             raise FileNotFoundError(path)
-        
+
         self.files.remove(path)
-        
+
     def exists(self, path: str) -> bool:
         return path in self.files
 

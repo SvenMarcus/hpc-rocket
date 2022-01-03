@@ -1,8 +1,8 @@
-from hpcrocket.ssh.connectiondata import ConnectionData
-from hpcrocket.core.environmentpreparation import CopyInstruction
-from hpcrocket.core.launchoptions import SimpleJobOptions, LaunchOptions, WatchOptions
 from hpcrocket.cli import parse_cli_args
-
+from hpcrocket.core.environmentpreparation import CopyInstruction
+from hpcrocket.core.launchoptions import (LaunchOptions, SimpleJobOptions,
+                                          WatchOptions)
+from hpcrocket.ssh.connectiondata import ConnectionData
 
 CONNECTION_DATA = ConnectionData(
     hostname="cluster.example.com",

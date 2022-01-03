@@ -1,12 +1,10 @@
 import os
 from test.testdoubles.pyfilesystem import (ArbitraryArgsMemoryFS,
                                            OnlySubFSMemoryFS)
-from test.testdoubles.sshclient import CmdSpecificSSHClientStub
 from unittest.mock import Mock, patch
 
 import pytest
 from fs.memoryfs import MemoryFS
-
 
 HOME_DIR = "/home/myuser"
 

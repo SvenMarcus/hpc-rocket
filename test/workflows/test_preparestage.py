@@ -1,6 +1,4 @@
-from hpcrocket.ui import UI
 from test.testdoubles.filesystem import (DummyFilesystemFactory,
-                                         MemoryFilesystemFake,
                                          MemoryFilesystemFactoryStub)
 from unittest.mock import DEFAULT, Mock, create_autospec
 
@@ -8,6 +6,7 @@ import pytest
 from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.core.filesystem import Filesystem
 from hpcrocket.core.workflows.stages import PrepareStage
+from hpcrocket.ui import UI
 
 
 def run_prepare_stage(filesystem_factory, files_to_copy):
@@ -60,7 +59,7 @@ def test__given_copy_instructions__when_error_during_copy__should_return_false()
     actual = run_prepare_stage(factory, copy_instructions)
 
     assert actual == False
- 
+
 
 def filesystem_raising_on_copy(error_type, required_copy_calls: int = 1):
     local_fs = Mock(spec=Filesystem)

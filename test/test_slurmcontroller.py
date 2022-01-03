@@ -1,17 +1,15 @@
-from unittest.mock import Mock
-
-from hpcrocket.core.executor import CommandExecutor
 from test.slurm_assertions import (assert_job_canceled, assert_job_polled,
                                    assert_job_submitted)
 from test.slurmoutput import completed_slurm_job
 from test.testdoubles.executor import (CommandExecutorStub, RunningCommandStub,
                                        SlurmJobExecutorSpy)
+from unittest.mock import Mock
 
 import pytest
+from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmError
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.watcher.jobwatcher import JobWatcher, JobWatcherFactory
-
 
 
 def make_sut(executor: CommandExecutor, factory: JobWatcherFactory = None) -> SlurmController:

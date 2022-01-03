@@ -43,6 +43,7 @@ def get_blocking_channel_exit_status_ready_func(stdout, exit_code=0):
     Returns a channel.exit_status_ready() methods the needs to be called twice before it returns True and sets the exit status to the given value
     """
     counter = 0
+
     def exit_status_ready():
         nonlocal counter
         counter += 1

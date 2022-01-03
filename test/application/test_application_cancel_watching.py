@@ -1,11 +1,11 @@
-import pytest
-
+from test.application.launchoptions import (launch_options,
+                                            watch_options_with_proxy)
+from test.testdoubles.executor import (InfiniteSlurmJobExecutor,
+                                       LoggingCommandExecutorSpy)
+from test.testdoubles.filesystem import DummyFilesystemFactory
 from unittest.mock import Mock
 
-from test.testdoubles.executor import InfiniteSlurmJobExecutor, LoggingCommandExecutorSpy
-from test.testdoubles.filesystem import DummyFilesystemFactory
-from test.application.launchoptions import launch_options, watch_options_with_proxy
-
+import pytest
 from hpcrocket.core.application import Application
 
 

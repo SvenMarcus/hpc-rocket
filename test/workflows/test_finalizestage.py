@@ -1,6 +1,6 @@
 from test.testdoubles.filesystem import (DummyFilesystemFactory,
-                                         MemoryFilesystemFake,
-                                         MemoryFilesystemFactoryStub)
+                                         MemoryFilesystemFactoryStub,
+                                         MemoryFilesystemFake)
 from unittest.mock import Mock
 
 from hpcrocket.core.environmentpreparation import CopyInstruction
@@ -22,7 +22,7 @@ def test__when_running_successfully__should_return_true():
 def test__given_collect_instruction__when_running__should_copy_collect_item_to_local_filesystem():
     ssh_fs = MemoryFilesystemFake(files=["myfile.txt"])
     factory = MemoryFilesystemFactoryStub(ssh_fs=ssh_fs)
-    
+
     run_finalize_stage(factory, [CopyInstruction("myfile.txt", "collected.txt")], [])
 
     local_fs = factory.local_filesystem
@@ -42,7 +42,9 @@ def test__given_collect_instructions__when_file_not_found__should_still_collect_
     ssh_fs = MemoryFilesystemFake(files=["myfile.txt"])
     factory = MemoryFilesystemFactoryStub(ssh_fs=ssh_fs)
 
-    files_to_collect = [CopyInstruction("invalid", "_"), CopyInstruction("myfile.txt", "collected.txt")]
+    files_to_collect = [CopyInstruction("invalid", "_"),
+                        CopyInstruction("myfile.txt", "collected.txt")]
+
     run_finalize_stage(factory, files_to_collect, [])
 
     local_fs = factory.local_filesystem
@@ -54,7 +56,9 @@ def test__given_collect_instructions__when_file_exists__should_still_collect_rem
     ssh_fs = MemoryFilesystemFake(files=["myfile.txt"])
     factory = MemoryFilesystemFactoryStub(local_fs, ssh_fs)
 
-    files_to_collect = [CopyInstruction("myfile.txt", "existing.txt"), CopyInstruction("myfile.txt", "collected.txt")]
+    files_to_collect = [CopyInstruction("myfile.txt", "existing.txt"),
+                        CopyInstruction("myfile.txt", "collected.txt")]
+
     run_finalize_stage(factory, files_to_collect, [])
 
     assert local_fs.exists("collected.txt") is True
