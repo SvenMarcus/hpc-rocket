@@ -89,3 +89,11 @@ Similar to the `status` command, `hpc-rocket` also provides the `watch` command 
 python3 -m hpc-rocket watch config.yml 12345
 ```
 
+#### Canceling a running job
+
+Jobs may also be canceled using the `cancel` command. Like the previous commands it accepts a config file and the id of a running job.
+
+```bash
+hpc-rocket cancel config.yml 12345
+```
+
