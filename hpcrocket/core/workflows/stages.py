@@ -208,6 +208,9 @@ class StatusStage:
 
 
 class CancelStage:
+    """
+    Cancels a running job
+    """
 
     def __init__(self, controller: SlurmController, jobid: str):
         self._controller = controller

@@ -1,6 +1,5 @@
 import argparse
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, cast
 
 import yaml
 
@@ -14,17 +13,61 @@ def parse_cli_args(args: List[str]) -> Options:
     parser = _setup_parser()
     config = parser.parse_args(args)
 
-    options_builder: _OptionBuilder
-    if config.command == "launch":
-        options_builder = _LaunchConfigurationBuilder(
-            config.configfile, config.watch)
-    elif config.command == "watch":
-        options_builder = _WatchConfigurationBuilder(config.configfile, config.jobid)
-    else:
-        options_builder = _SimpleConfigurationBuilder(config.command,
-                                                      config.configfile, config.jobid)
+    option_builders = {
+        "launch": _build_launch_options,
+        "watch": _build_watch_options
+    }
 
-    return options_builder.build()
+    builder = option_builders.get(config.command, _build_simple_job_options)
+
+    return builder(config)
+
+
+def _build_launch_options(config: argparse.Namespace) -> Options:
+    path = cast(str, config.configfile)
+    watch = cast(bool, config.watch)
+    yaml_config = _parse_yaml(path)
+
+    return LaunchOptions(
+        sbatch=yaml_config["sbatch"],
+        watch=watch,
+        copy_files=_collect_copy_instructions(yaml_config.get("copy", [])),
+        clean_files=yaml_config.get("clean", []),
+        collect_files=_collect_copy_instructions(
+            yaml_config.get("collect", [])),
+        **_connection_dict(yaml_config)  # type: ignore
+    )
+
+
+def _collect_copy_instructions(copy_list: List[Dict[str, str]]) -> List[CopyInstruction]:
+    return [CopyInstruction(cp["from"],
+                            cp["to"],
+                            bool(cp.get("overwrite", False)))
+            for cp in copy_list]
+
+
+def _build_simple_job_options(config: argparse.Namespace) -> Options:
+    path = cast(str, config.configfile)
+    jobid = cast(str, config.jobid)
+    command = cast(str, config.command)
+    yaml_config = _parse_yaml(path)
+
+    return SimpleJobOptions(
+        jobid=jobid,
+        action=SimpleJobOptions.Action[command],
+        ** _connection_dict(yaml_config)  # type: ignore
+    )
+
+
+def _build_watch_options(config: argparse.Namespace) -> Options:
+    path = cast(str, config.configfile)
+    jobid = cast(str, config.jobid)
+    yaml_config = _parse_yaml(path)
+
+    return WatchOptions(
+        jobid=jobid,
+        **_connection_dict(yaml_config)  # type: ignore
+    )
 
 
 def _setup_parser() -> argparse.ArgumentParser:
@@ -71,70 +114,6 @@ def _setup_watch_parser(subparsers: argparse._SubParsersAction) -> None:
                         help="A config file containing the connection data")
     parser.add_argument("jobid", type=str,
                         help="The ID of the job to be monitored")
-
-
-class _OptionBuilder(ABC):
-
-    @abstractmethod
-    def build(self) -> Options:
-        pass
-
-
-class _LaunchConfigurationBuilder(_OptionBuilder):
-
-    def __init__(self, path: str, watch: bool) -> None:
-        self._path = path
-        self._watch = watch
-
-    def build(self) -> Options:
-        config = _parse_yaml(self._path)
-
-        return LaunchOptions(
-            sbatch=config["sbatch"],
-            watch=self._watch,
-            copy_files=self._collect_copy_instructions(config.get("copy", [])),
-            clean_files=config.get("clean", []),
-            collect_files=self._collect_copy_instructions(
-                config.get("collect", [])),
-            **_connection_dict(config)  # type: ignore
-        )
-
-    @staticmethod
-    def _collect_copy_instructions(copy_list: List[Dict[str, str]]) -> List[CopyInstruction]:
-        return [CopyInstruction(cp["from"],
-                                cp["to"],
-                                bool(cp.get("overwrite", False)))
-                for cp in copy_list]
-
-
-class _SimpleConfigurationBuilder(_OptionBuilder):
-
-    def __init__(self, command: str, path: str, jobid: str) -> None:
-        self._path = path
-        self._jobid = jobid
-        self._command = command
-
-    def build(self) -> Options:
-        config = _parse_yaml(self._path)
-        return SimpleJobOptions(
-            jobid=self._jobid,
-            action=SimpleJobOptions.Action[self._command],
-            ** _connection_dict(config)  # type: ignore
-        )
-
-
-class _WatchConfigurationBuilder(_OptionBuilder):
-
-    def __init__(self, path: str, jobid: str) -> None:
-        self._path = path
-        self._jobid = jobid
-
-    def build(self) -> Options:
-        config = _parse_yaml(self._path)
-        return WatchOptions(
-            jobid=self._jobid,
-            **_connection_dict(config)  # type: ignore
-        )
 
 
 def _parse_yaml(path: str) -> Dict[str, Any]:
