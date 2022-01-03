@@ -7,7 +7,7 @@ from hpcrocket.ssh.connectiondata import ConnectionData
 from test.slurmoutput import DEFAULT_JOB_ID
 
 
-def options(
+def launch_options(
     copy: Optional[List[CopyInstruction]] = None,
     collect: Optional[List[CopyInstruction]] = None,
     clean: Optional[List[str]] = None,
@@ -27,12 +27,12 @@ def options(
     )
 
 
-def options_with_proxy() -> LaunchOptions:
-    return options(proxyjumps=[proxy_connection()])
+def launch_options_with_proxy() -> LaunchOptions:
+    return launch_options(proxyjumps=[proxy_connection()])
 
 
-def options_with_proxy_only_password() -> LaunchOptions:
-    return options(connection=main_connection_only_password(),
+def launch_options_with_proxy_only_password() -> LaunchOptions:
+    return launch_options(connection=main_connection_only_password(),
                    proxyjumps=[proxy_connection_only_password()])
 
 
@@ -69,7 +69,7 @@ def proxy_connection_only_password() -> ConnectionData:
         keyfile=None)
 
 
-def watch_options() -> WatchOptions:
+def watch_options_with_proxy() -> WatchOptions:
     return WatchOptions(
         jobid=DEFAULT_JOB_ID,
         connection=main_connection(),
@@ -78,7 +78,7 @@ def watch_options() -> WatchOptions:
     )
 
 
-def simple_options(action: SimpleJobOptions.Action) -> SimpleJobOptions:
+def simple_options_with_proxy(action: SimpleJobOptions.Action) -> SimpleJobOptions:
     return SimpleJobOptions(
         jobid=DEFAULT_JOB_ID,
         action=action,
@@ -87,5 +87,9 @@ def simple_options(action: SimpleJobOptions.Action) -> SimpleJobOptions:
     )
 
 
-def cancel_options() -> SimpleJobOptions:
-    return simple_options(SimpleJobOptions.Action.cancel)
+def status_options_with_proxy() -> SimpleJobOptions:
+    return simple_options_with_proxy(SimpleJobOptions.Action.status)
+
+
+def cancel_options_with_proxy() -> SimpleJobOptions:
+    return simple_options_with_proxy(SimpleJobOptions.Action.cancel)

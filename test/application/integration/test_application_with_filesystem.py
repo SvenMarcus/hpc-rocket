@@ -25,17 +25,17 @@ def make_sut(options, ui=None):
 
 
 def test__given_valid_config__when_running__should_open_local_fs_in_current_directory(osfs_type_mock):
-    sut = make_sut(options())
+    sut = make_sut(launch_options())
 
-    sut.run(options())
+    sut.run(launch_options())
 
     osfs_type_mock.assert_called_with(".")
 
 
 def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_credentials(sshfs_type_mock):
-    sut = make_sut(options())
+    sut = make_sut(launch_options())
 
-    sut.run(options())
+    sut.run(launch_options())
 
     assert_sshfs_connected_with_connection_data(sshfs_type_mock, main_connection())
 
@@ -44,9 +44,9 @@ def test__given_ssh_connection_not_available_for_sshfs__when_running__should_log
     sshfs_type_mock.side_effect = SSHError(main_connection().hostname)
 
     ui_spy = Mock()
-    sut = make_sut(options(), ui_spy)
+    sut = make_sut(launch_options(), ui_spy)
 
-    sut.run(options())
+    sut.run(launch_options())
 
     ui_spy.error.assert_called_once_with(f"SSHError: {main_connection().hostname}")
 
@@ -98,17 +98,17 @@ def test__given_config_with_proxy__when_running__should_login_to_sshfs_over_prox
     sshclient_type_mock.return_value = mock
 
     with sshfs_with_connection_fake(sshclient_type_mock.return_value):
-        sut = make_sut(options_with_proxy_only_password())
+        sut = make_sut(launch_options_with_proxy_only_password())
 
-        sut.run(options_with_proxy_only_password())
+        sut.run(launch_options_with_proxy_only_password())
 
         mock.verify()
 
 
 def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_mock: MagicMock):
-    sut = make_sut(options())
+    sut = make_sut(launch_options())
 
-    sut.run(options())
+    sut.run(launch_options())
 
     sshfs_mock: MagicMock = sshfs_type_mock.return_value
     calls = sshfs_mock.mock_calls
@@ -118,7 +118,7 @@ def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_m
 
 def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem(osfs_type_mock,
                                                                                                 sshfs_type_mock):
-    opts = options(copy=[
+    opts = launch_options(copy=[
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
     ])
@@ -136,7 +136,7 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
 
 def test__given_config_with_files_to_clean__when_running__should_remove_files_from_remote_filesystem(osfs_type_mock,
                                                                                                      sshfs_type_mock):
-    opts = options(
+    opts = launch_options(
         watch=True,
         copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
         clean=["mycopy.txt"]
@@ -153,7 +153,7 @@ def test__given_config_with_files_to_clean__when_running__should_remove_files_fr
 
 def test__given_config_with_files_to_collect__when_running__should_collect_files_from_remote_filesystem_after_completing_job_and_before_cleaning(osfs_type_mock,
                                                                                                                                                  sshfs_type_mock):
-    opts = options(
+    opts = launch_options(
         watch=True,
         copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
         clean=["mycopy.txt"],
@@ -175,7 +175,7 @@ def test__given_config_with_files_to_collect__when_running__should_collect_files
 @ pytest.mark.usefixtures("sshclient_type_mock")
 def test__given_config_with_non_existing_file_to_copy__when_running__should_perform_rollback_and_exit(osfs_type_mock,
                                                                                                       sshfs_type_mock):
-    opts = options(
+    opts = launch_options(
         watch=True,
         copy=[
             CopyInstruction("myfile.txt", "mycopy.txt"),
@@ -197,7 +197,7 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_perf
 @ pytest.mark.usefixtures("sshclient_type_mock", "sshfs_type_mock")
 def test__given_config_with_non_existing_file_to_copy__when_running__should_print_to_ui(osfs_type_mock):
 
-    opts = options(copy=[
+    opts = launch_options(copy=[
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
     ])
@@ -216,7 +216,7 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_prin
 @ pytest.mark.usefixtures("sshclient_type_mock")
 def test__given_config_with_already_existing_file_to_copy__when_running__should_perform_rollback_and_exit(
         osfs_type_mock, sshfs_type_mock):
-    opts = options(copy=[
+    opts = launch_options(copy=[
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("otherfile.gif", "copy.gif")
     ])

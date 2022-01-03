@@ -4,13 +4,13 @@ from unittest.mock import Mock
 
 from test.testdoubles.executor import InfiniteSlurmJobExecutor, LoggingCommandExecutorSpy
 from test.testdoubles.filesystem import DummyFilesystemFactory
-from test.application.launchoptions import options, watch_options
+from test.application.launchoptions import launch_options, watch_options_with_proxy
 
 from hpcrocket.core.application import Application
 
 
 @pytest.mark.timeout(2)
-@pytest.mark.parametrize("app_options", (options(watch=True), watch_options()))
+@pytest.mark.parametrize("app_options", (launch_options(watch=True), watch_options_with_proxy()))
 def test__given_infinite_running_job__when_canceling__should_cancel_job_and_exit_with_code_130(app_options):
     executor = InfiniteSlurmJobExecutor()
 

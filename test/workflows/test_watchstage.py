@@ -1,4 +1,4 @@
-from test.application.launchoptions import options
+from test.application.launchoptions import launch_options
 from test.slurm_assertions import assert_job_polled
 from test.slurmoutput import (DEFAULT_JOB_ID, completed_slurm_job,
                               running_slurm_job)
@@ -55,13 +55,13 @@ def make_job_provider(executor, factory=None):
 
 
 def make_sut(executor, factory=None):
-    poll_interval = options().poll_interval
+    poll_interval = launch_options().poll_interval
     provider = make_job_provider(executor, factory)
     return WatchStage(provider, poll_interval)
 
 
 def make_sut_with_provider(provider):
-    poll_interval = options().poll_interval
+    poll_interval = launch_options().poll_interval
     return WatchStage(provider, poll_interval)
 
 

@@ -1,4 +1,4 @@
-from test.application.launchoptions import options
+from test.application.launchoptions import launch_options
 from test.slurm_assertions import (assert_job_canceled, assert_job_polled,
                                    assert_job_submitted)
 from test.testdoubles.executor import (DEFAULT_JOB_ID, CommandExecutorStub,
@@ -32,14 +32,14 @@ def run_launch_workflow(options: LaunchOptions, executor: CommandExecutor = None
 
 
 def test__given_simple_launchoptions__when_running__should_run_sbatch_with_executor(executor_spy):
-    opts = options()
+    opts = launch_options()
     run_launch_workflow(opts, executor=executor_spy)
 
     assert_job_submitted(executor_spy, opts.sbatch)
 
 
 def test__given_launchoptions__when_running__should_return_true():
-    actual = run_launch_workflow(options(watch=True))
+    actual = run_launch_workflow(launch_options(watch=True))
 
     assert actual is True
 
@@ -48,7 +48,7 @@ def test__given_running_workflow__when_canceling__should_call_cancel_on_job():
     executor = SlurmJobExecutorSpy()
     controller = SlurmController(executor)
 
-    opts = options(watch=True)
+    opts = launch_options(watch=True)
     sut = LaunchStage(controller, opts)
 
     sut(Mock(spec=UI))
@@ -60,7 +60,7 @@ def test__given_running_workflow__when_canceling__should_call_cancel_on_job():
 
 def test__when_canceling_before_running__should_raise_no_job_launched_error():
     controller = SlurmController(CommandExecutorStub())
-    sut = LaunchStage(controller, options(watch=True))
+    sut = LaunchStage(controller, launch_options(watch=True))
 
     with pytest.raises(NoJobLaunchedError):
         sut.cancel(Mock())

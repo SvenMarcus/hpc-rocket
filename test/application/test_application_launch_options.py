@@ -1,6 +1,6 @@
 from test.application.executor_filesystem_callorder import (
     CallOrderVerification, VerifierReturningFilesystemFactory)
-from test.application.launchoptions import main_connection, options
+from test.application.launchoptions import main_connection, launch_options
 from test.slurmoutput import completed_slurm_job
 from test.testdoubles.executor import (FailedSlurmJobCommandStub, InfiniteSlurmJobExecutor,
                                        LoggingCommandExecutorSpy, LongRunningSlurmJobExecutorSpy,
@@ -43,16 +43,16 @@ def test__given_valid_config__when_running__should_run_sbatch_with_executor():
     executor = SlurmJobExecutorSpy()
     sut = make_sut(executor)
 
-    sut.run(options())
+    sut.run(launch_options())
 
-    assert str(executor.command_log[0]) == f"sbatch {options().sbatch}"
+    assert str(executor.command_log[0]) == f"sbatch {launch_options().sbatch}"
 
 
 def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_zero():
     executor = SlurmJobExecutorSpy(sacct_cmd=SuccessfulSlurmJobCommandStub())
     sut = make_sut(executor)
 
-    actual = sut.run(options(watch=True))
+    actual = sut.run(launch_options(watch=True))
 
     assert actual == 0
 
@@ -61,7 +61,7 @@ def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one
     executor = SlurmJobExecutorSpy(sacct_cmd=FailedSlurmJobCommandStub())
     sut = make_sut(executor)
 
-    actual = sut.run(options(watch=True))
+    actual = sut.run(launch_options(watch=True))
 
     assert actual == 1
 
@@ -71,7 +71,7 @@ def test__given_ui__when_running__should_update_ui_after_polling():
     executor = SlurmJobExecutorSpy()
     sut = make_sut(executor, ui_spy)
 
-    _ = sut.run(options(watch=True))
+    _ = sut.run(launch_options(watch=True))
 
     ui_spy.update.assert_called_with(completed_slurm_job())
 
@@ -82,7 +82,7 @@ def test__given_failing_ssh_connection__when_running__should_log_error_and_exit_
     executor = ConnectionFailingCommandExecutor()
     sut = make_sut(executor, ui_spy)
 
-    actual = sut.run(options(watch=True))
+    actual = sut.run(launch_options(watch=True))
 
     ui_spy.error.assert_called_once_with(
         f"SSHError: {main_connection().hostname}")
@@ -91,7 +91,7 @@ def test__given_failing_ssh_connection__when_running__should_log_error_and_exit_
 
 
 def test__given_options_without_watch_and_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_exit():
-    opts = options(
+    opts = launch_options(
         copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
         collect=[CopyInstruction("mycopy.txt", "mycollect.txt")],
         clean=["mycopy.txt"],
@@ -111,7 +111,7 @@ def test__given_options_without_watch_and_files_to_copy_collect_and_clean__when_
 
 
 def test__given_launchoptions_with_watch_and_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_collect_then_clean():
-    opts = options(
+    opts = launch_options(
         copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
         collect=[CopyInstruction("mycopy.txt", "mycollect.txt")],
         clean=["mycopy.txt"],
