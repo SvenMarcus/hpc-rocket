@@ -31,6 +31,7 @@ HPC Rocket uses a configuration file in YAML format containing credentials to co
 Note that all paths in the configuration file must be relative paths.
 On the local machine paths are evaluated from the current working directory, on the remote machine from the user's home directory.
 If you want to overwrite existing files on the remote machine, make sure to specify the `overwrite` instruction for each file you would like to overwrite.
+HPC Rocket will evaluate environment variables on the **LOCAL** machine in the form of `${VAR}` and `$VAR` when parsing the config file.
 
 ```yaml
 host: cluster.example.com
