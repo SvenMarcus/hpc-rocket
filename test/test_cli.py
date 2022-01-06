@@ -1,12 +1,39 @@
+import os
+
+import pytest
 from hpcrocket.cli import parse_cli_args
 from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.core.launchoptions import (LaunchOptions, SimpleJobOptions,
                                           WatchOptions)
 from hpcrocket.ssh.connectiondata import ConnectionData
 
+HOME = "/home/user"
+REMOTE_USER = "the_user"
+REMOTE_HOST = "cluster.example.com"
+PROXY1_KEYFILE = "/home/user/.ssh/proxy1_keyfile"
+PROXY2_PRIVATE_KEY = "SUPER_SECRET_PRIVATE_KEY"
+PROXY3_PASSWORD = "PROXY3_PASS"
+
+LOCAL_SLURM_SCRIPT_PATH = "slurm.job"
+REMOTE_SLURM_SCRIPT_PATH = "remote_slurm.job"
+
+REMOTE_RESULT_FILEPATH = "remote_result.txt"
+
+ENV = {
+    "HOME": HOME,
+    "REMOTE_USER": REMOTE_USER,
+    "REMOTE_HOST": REMOTE_HOST,
+    "PROXY1_KEYFILE": PROXY1_KEYFILE,
+    "PROXY2_PRIVATE_KEY": PROXY2_PRIVATE_KEY,
+    "PROXY3_PASSWORD": PROXY3_PASSWORD,
+    "LOCAL_SLURM_SCRIPT_PATH": LOCAL_SLURM_SCRIPT_PATH,
+    "REMOTE_SLURM_SCRIPT_PATH": REMOTE_SLURM_SCRIPT_PATH,
+    "REMOTE_RESULT_FILEPATH": REMOTE_RESULT_FILEPATH,
+}
+
 CONNECTION_DATA = ConnectionData(
-    hostname="cluster.example.com",
-    username="the_user",
+    hostname=REMOTE_HOST,
+    username=REMOTE_USER,
     password="1234",
     keyfile="/home/user/.ssh/keyfile",
 )
@@ -16,21 +43,26 @@ PROXYJUMPS = [
         hostname="proxy1.example.com",
         username="proxy1-user",
         password="proxy1-pass",
-        keyfile="/home/user/.ssh/proxy1_keyfile",
+        keyfile=PROXY1_KEYFILE,
     ),
     ConnectionData(
         hostname="proxy2.example.com",
         username="proxy2-user",
         password="proxy2-pass",
-        keyfile="/home/user/.ssh/proxy2_keyfile",
+        key=PROXY2_PRIVATE_KEY,
     ),
     ConnectionData(
         hostname="proxy3.example.com",
         username="proxy3-user",
-        password="proxy3-pass",
+        password=PROXY3_PASSWORD,
         keyfile="/home/user/.ssh/proxy3_keyfile",
     ),
 ]
+
+
+@pytest.fixture(autouse=True)
+def setup_env():
+    os.environ.update(ENV)
 
 
 def test__given_valid_launch_args__should_return_matching_config():
@@ -41,14 +73,14 @@ def test__given_valid_launch_args__should_return_matching_config():
     ])
 
     assert config == LaunchOptions(
-        sbatch="slurm.job",
+        sbatch=REMOTE_SLURM_SCRIPT_PATH,
         connection=CONNECTION_DATA,
         proxyjumps=PROXYJUMPS,
         copy_files=[
             CopyInstruction("myfile.txt", "mycopy.txt"),
-            CopyInstruction("slurm.job", "slurm.job", True)],
-        clean_files=["mycopy.txt", "slurm.job"],
-        collect_files=[CopyInstruction("result.txt", "result.txt", True)],
+            CopyInstruction(LOCAL_SLURM_SCRIPT_PATH, REMOTE_SLURM_SCRIPT_PATH, True)],
+        clean_files=["mycopy.txt", REMOTE_SLURM_SCRIPT_PATH],
+        collect_files=[CopyInstruction(REMOTE_RESULT_FILEPATH, "result.txt", True)],
         watch=True
     )
 

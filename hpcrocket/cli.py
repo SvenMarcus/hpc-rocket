@@ -1,5 +1,6 @@
 import argparse
-from typing import Any, Dict, List, Union, cast
+import os.path
+from typing import Any, Dict, List, Optional, Union, cast
 
 import yaml
 
@@ -28,11 +29,12 @@ def _build_launch_options(config: argparse.Namespace) -> Options:
     watch = cast(bool, config.watch)
     yaml_config = _parse_yaml(path)
 
+    sbatch = cast(str, yaml_config["sbatch"])
     return LaunchOptions(
-        sbatch=yaml_config["sbatch"],
+        sbatch=os.path.expandvars(sbatch),
         watch=watch,
         copy_files=_collect_copy_instructions(yaml_config.get("copy", [])),
-        clean_files=yaml_config.get("clean", []),
+        clean_files=_clean_instructions(yaml_config.get("clean", [])),
         collect_files=_collect_copy_instructions(
             yaml_config.get("collect", [])),
         **_connection_dict(yaml_config)  # type: ignore
@@ -40,10 +42,14 @@ def _build_launch_options(config: argparse.Namespace) -> Options:
 
 
 def _collect_copy_instructions(copy_list: List[Dict[str, str]]) -> List[CopyInstruction]:
-    return [CopyInstruction(cp["from"],
-                            cp["to"],
+    return [CopyInstruction(os.path.expandvars(cp["from"]),
+                            os.path.expandvars(cp["to"]),
                             bool(cp.get("overwrite", False)))
             for cp in copy_list]
+
+
+def _clean_instructions(clean_instructions: List[str]) -> List[str]:
+    return [os.path.expandvars(ci) for ci in clean_instructions]
 
 
 def _build_simple_job_options(config: argparse.Namespace) -> Options:
@@ -130,11 +136,19 @@ def _connection_dict(config: Dict[str, Any]) -> Dict[str, Union[ConnectionData, 
 
 def _connection_data_from_dict(config: Dict[str, str]) -> ConnectionData:
     return ConnectionData(
-        hostname=config["host"],
-        username=config["user"],
-        keyfile=config.get("private_keyfile"),
-        password=str(config.get("password"))
+        hostname=cast(str, expand_or_none(config["host"])),
+        username=cast(str, expand_or_none(config["user"])),
+        keyfile=expand_or_none(config.get("private_keyfile")),
+        key=expand_or_none(config.get("private_key")),
+        password=expand_or_none(str(config.get("password")))
     )
+
+
+def expand_or_none(config_entry: Optional[str]) -> Optional[str]:
+    if not config_entry:
+        return None
+
+    return os.path.expandvars(config_entry)
 
 
 def _collect_proxyjumps(proxyjumps: List[Dict[str, str]]) -> List[ConnectionData]:

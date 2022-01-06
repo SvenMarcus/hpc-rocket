@@ -1,39 +1,39 @@
-host: cluster.example.com
-user: the_user
-private_keyfile: /home/user/.ssh/keyfile
+host: $REMOTE_HOST
+user: $REMOTE_USER
+private_keyfile: ${HOME}/.ssh/keyfile
 password: 1234
 
 proxyjumps:
   - host: proxy1.example.com
     user: proxy1-user
     password: proxy1-pass
-    private_keyfile: /home/user/.ssh/proxy1_keyfile
+    private_keyfile: $PROXY1_KEYFILE
 
   - host: proxy2.example.com
     user: proxy2-user
     password: proxy2-pass
-    private_keyfile: /home/user/.ssh/proxy2_keyfile
+    private_key: $PROXY2_PRIVATE_KEY
 
   - host: proxy3.example.com
     user: proxy3-user
-    password: proxy3-pass
+    password: $PROXY3_PASSWORD
     private_keyfile: /home/user/.ssh/proxy3_keyfile
 
 copy:
   - from: myfile.txt
     to: mycopy.txt
 
-  - from: slurm.job
-    to: slurm.job
+  - from: $LOCAL_SLURM_SCRIPT_PATH
+    to: $REMOTE_SLURM_SCRIPT_PATH
     overwrite: true
 
 collect:
-  - from: result.txt
+  - from: $REMOTE_RESULT_FILEPATH
     to: result.txt
     overwrite: true
 
 clean:
   - mycopy.txt
-  - slurm.job
+  - $REMOTE_SLURM_SCRIPT_PATH
 
-sbatch: slurm.job
+sbatch: $REMOTE_SLURM_SCRIPT_PATH
