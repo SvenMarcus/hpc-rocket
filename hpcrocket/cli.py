@@ -139,7 +139,6 @@ def _connection_data_from_dict(config: Dict[str, str]) -> ConnectionData:
         hostname=cast(str, expand_or_none(config["host"])),
         username=cast(str, expand_or_none(config["user"])),
         keyfile=expand_or_none(config.get("private_keyfile")),
-        key=expand_or_none(config.get("private_key")),
         password=expand_or_none(str(config.get("password")))
     )
 

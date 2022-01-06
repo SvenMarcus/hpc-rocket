@@ -11,7 +11,6 @@ HOME = "/home/user"
 REMOTE_USER = "the_user"
 REMOTE_HOST = "cluster.example.com"
 PROXY1_KEYFILE = "/home/user/.ssh/proxy1_keyfile"
-PROXY2_PRIVATE_KEY = "SUPER_SECRET_PRIVATE_KEY"
 PROXY3_PASSWORD = "PROXY3_PASS"
 
 LOCAL_SLURM_SCRIPT_PATH = "slurm.job"
@@ -24,7 +23,6 @@ ENV = {
     "REMOTE_USER": REMOTE_USER,
     "REMOTE_HOST": REMOTE_HOST,
     "PROXY1_KEYFILE": PROXY1_KEYFILE,
-    "PROXY2_PRIVATE_KEY": PROXY2_PRIVATE_KEY,
     "PROXY3_PASSWORD": PROXY3_PASSWORD,
     "LOCAL_SLURM_SCRIPT_PATH": LOCAL_SLURM_SCRIPT_PATH,
     "REMOTE_SLURM_SCRIPT_PATH": REMOTE_SLURM_SCRIPT_PATH,
@@ -49,7 +47,7 @@ PROXYJUMPS = [
         hostname="proxy2.example.com",
         username="proxy2-user",
         password="proxy2-pass",
-        key=PROXY2_PRIVATE_KEY,
+        keyfile="/home/user/.ssh/proxy2_keyfile",
     ),
     ConnectionData(
         hostname="proxy3.example.com",

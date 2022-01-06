@@ -12,7 +12,7 @@ proxyjumps:
   - host: proxy2.example.com
     user: proxy2-user
     password: proxy2-pass
-    private_key: $PROXY2_PRIVATE_KEY
+    private_keyfile: /home/user/.ssh/proxy2_keyfile
 
   - host: proxy3.example.com
     user: proxy3-user
