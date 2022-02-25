@@ -1,19 +1,25 @@
-from test.application.executor_filesystem_callorder import (
-    CallOrderVerification, VerifierReturningFilesystemFactory)
+import unittest
+from test.application.executor_filesystem_callorder import (CallOrderVerification,
+                                                            VerifierReturningFilesystemFactory)
 from test.application.launchoptions import launch_options, main_connection
 from test.slurmoutput import completed_slurm_job
 from test.testdoubles.executor import (FailedSlurmJobCommandStub,
                                        LoggingCommandExecutorSpy,
                                        SlurmJobExecutorSpy,
                                        SuccessfulSlurmJobCommandStub)
-from test.testdoubles.filesystem import DummyFilesystemFactory
+from test.testdoubles.filesystem import (DummyFilesystemFactory,
+                                         MemoryFilesystemFactoryStub,
+                                         MemoryFilesystemFake)
 from unittest.mock import Mock
 
-import pytest
 from hpcrocket.core.application import Application
 from hpcrocket.core.environmentpreparation import CopyInstruction
 from hpcrocket.core.executor import RunningCommand
 from hpcrocket.ssh.errors import SSHError
+
+DEFAULT_LOCAL_FILE = "myfile.txt"
+DEFAULT_REMOTE_FILE = "mycopy.txt"
+DEFAULT_LOCAL_COLLECTED = "mycollect.txt"
 
 
 class ConnectionFailingCommandExecutor(LoggingCommandExecutorSpy):
@@ -28,8 +34,35 @@ class ConnectionFailingCommandExecutor(LoggingCommandExecutorSpy):
         pass
 
 
-def make_sut(executor, ui=None):
-    return Application(executor, DummyFilesystemFactory(), ui or Mock())
+def launch_options_copy_collect():
+    return launch_options(
+        copy=[CopyInstruction(DEFAULT_LOCAL_FILE, DEFAULT_REMOTE_FILE)],
+        collect=[CopyInstruction(
+            DEFAULT_REMOTE_FILE,
+            DEFAULT_LOCAL_COLLECTED
+        )],
+        watch=True
+    )
+
+
+def launch_options_copy_collect_clean():
+    opts = launch_options_copy_collect()
+    opts.clean_files = [DEFAULT_REMOTE_FILE]
+    return opts
+
+
+def memory_fs_factory_with_default_local_file():
+    local_fs = MemoryFilesystemFake([DEFAULT_LOCAL_FILE])
+    remote_fs = MemoryFilesystemFake()
+    return MemoryFilesystemFactoryStub(local_fs, remote_fs)
+
+
+def make_sut(executor=None, filesystem_factory=None, ui=None):
+    return Application(
+        executor or SlurmJobExecutorSpy(),
+        filesystem_factory or DummyFilesystemFactory(),
+        ui or Mock()
+    )
 
 
 def make_sut_with_call_order_verification(expected_calls):
@@ -39,95 +72,113 @@ def make_sut_with_call_order_verification(expected_calls):
     return sut, verifier
 
 
-def test__given_valid_config__when_running__should_run_sbatch_with_executor():
-    executor = SlurmJobExecutorSpy()
-    sut = make_sut(executor)
+class Application_With_Launch_Options(unittest.TestCase):
 
-    sut.run(launch_options())
+    def setUp(self) -> None:
+        self.executor = SlurmJobExecutorSpy()
+        self.ui_spy = Mock()
+        self.sut = make_sut(self.executor, ui=self.ui_spy)
 
-    assert str(executor.command_log[0]) == f"sbatch {launch_options().sbatch}"
+    def test__when_running__it_runs_sbatch_with_executor(self):
+        self.sut.run(launch_options())
 
+        actual_sbatch = str(self.executor.command_log[0])
+        assert actual_sbatch == f"sbatch {launch_options().sbatch}"
 
-def test__given_valid_config__when_sbatch_job_succeeds__should_return_exit_code_zero():
-    executor = SlurmJobExecutorSpy(sacct_cmd=SuccessfulSlurmJobCommandStub())
-    sut = make_sut(executor)
+    def test__when_sbatch_job_succeeds__should_return_exit_code_zero(self):
+        self.executor.sacct_cmd = SuccessfulSlurmJobCommandStub()
+        actual = self.sut.run(launch_options(watch=True))
 
-    actual = sut.run(launch_options(watch=True))
+        assert actual == 0
 
-    assert actual == 0
+    def test__when_sbatch_job_fails__should_return_exit_code_one(self):
+        self.executor.sacct_cmd = FailedSlurmJobCommandStub()
 
+        actual = self.sut.run(launch_options(watch=True))
 
-def test__given_valid_config__when_sbatch_job_fails__should_return_exit_code_one():
-    executor = SlurmJobExecutorSpy(sacct_cmd=FailedSlurmJobCommandStub())
-    sut = make_sut(executor)
+        assert actual == 1
 
-    actual = sut.run(launch_options(watch=True))
+    def test__when_running__it_updates_ui_with_job_state_after_polling(self):
+        _ = self.sut.run(launch_options(watch=True))
 
-    assert actual == 1
+        self.ui_spy.update.assert_called_with(completed_slurm_job())
 
+    def test__when_running_but_connection_fails__it_logs_the_error_and_exits_with_code_1(self):
+        self.executor = ConnectionFailingCommandExecutor()
+        self.sut = make_sut(self.executor, ui=self.ui_spy)
 
-def test__given_ui__when_running__should_update_ui_after_polling():
-    ui_spy = Mock()
-    executor = SlurmJobExecutorSpy()
-    sut = make_sut(executor, ui_spy)
+        actual = self.sut.run(launch_options(watch=True))
 
-    _ = sut.run(launch_options(watch=True))
+        self.assert_error_logged(f"SSHError: {main_connection().hostname}")
+        self.assert_exited_without_running_commands(actual)
 
-    ui_spy.update.assert_called_with(completed_slurm_job())
+    def assert_error_logged(self, expected_message):
+        self.ui_spy.error.assert_called_once_with(expected_message)
 
-
-def test__given_failing_ssh_connection__when_running__should_log_error_and_exit_with_code_1():
-    ui_spy = Mock()
-
-    executor = ConnectionFailingCommandExecutor()
-    sut = make_sut(executor, ui_spy)
-
-    actual = sut.run(launch_options(watch=True))
-
-    ui_spy.error.assert_called_once_with(
-        f"SSHError: {main_connection().hostname}")
-    assert executor.command_log == []
-    assert actual == 1
+    def assert_exited_without_running_commands(self, actual):
+        assert self.executor.command_log == []
+        assert actual == 1
 
 
-def test__given_options_without_watch_and_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_exit():
-    opts = launch_options(
-        copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
-        collect=[CopyInstruction("mycopy.txt", "mycollect.txt")],
-        clean=["mycopy.txt"],
-        watch=False
-    )
+class Application_With_Options_To_Copy_And_Collect(unittest.TestCase):
 
-    expected = [
-        "copy myfile.txt mycopy.txt",
-        "sbatch"
-    ]
+    def test__when_running__copies_and_collects_files(self):
+        opts = launch_options_copy_collect()
 
-    sut, verify = make_sut_with_call_order_verification(expected)
+        fs_factory = memory_fs_factory_with_default_local_file()
+        sut = make_sut(filesystem_factory=fs_factory)
 
-    sut.run(opts)
+        sut.run(opts)
 
-    verify()
+        local_fs = fs_factory.local_filesystem
+        remote_fs = fs_factory.ssh_filesystem
+        assert local_fs.exists(DEFAULT_LOCAL_COLLECTED)
+        assert remote_fs.exists(DEFAULT_REMOTE_FILE)
 
 
-def test__given_launchoptions_with_watch_and_files_to_copy_collect_and_clean__when_running__should_first_copy_to_remote_then_execute_job_then_collect_then_clean():
-    opts = launch_options(
-        copy=[CopyInstruction("myfile.txt", "mycopy.txt")],
-        collect=[CopyInstruction("mycopy.txt", "mycollect.txt")],
-        clean=["mycopy.txt"],
-        watch=True
-    )
+class Application_With_Options_To_Copy_Collect_Clean(unittest.TestCase):
 
-    expected = [
-        "copy myfile.txt mycopy.txt",
-        "sbatch",
-        "sacct",
-        "copy mycopy.txt mycollect.txt",
-        "delete mycopy.txt",
-    ]
+    def setUp(self) -> None:
+        self.options = launch_options_copy_collect_clean()
 
-    sut, verify = make_sut_with_call_order_verification(expected)
+    def test__when_running_without_watching__it_only_copies_files(self):
+        self.options.watch = False
 
-    sut.run(opts)
+        fs_factory = memory_fs_factory_with_default_local_file()
+        sut = make_sut(filesystem_factory=fs_factory)
 
-    verify()
+        sut.run(self.options)
+
+        local_fs = fs_factory.local_filesystem
+        remote_fs = fs_factory.ssh_filesystem
+        assert remote_fs.exists(DEFAULT_REMOTE_FILE)
+        assert local_fs.exists(DEFAULT_LOCAL_COLLECTED) is False
+
+    def test__when_running_without_watching__it_only_copies_and_runs_job_in_order(self):
+        self.options.watch = False
+
+        expected = [
+            "copy myfile.txt mycopy.txt",
+            "sbatch"
+        ]
+
+        sut, verify = make_sut_with_call_order_verification(expected)
+
+        sut.run(self.options)
+
+        verify()
+
+    def test__when_running_with_watching__it_copies_runs_job_collects_cleans_in_order(self):
+        expected = [
+            "copy myfile.txt mycopy.txt",
+            "sbatch",
+            "sacct",
+            "copy mycopy.txt mycollect.txt",
+            "delete mycopy.txt",
+        ]
+
+        sut, verify = make_sut_with_call_order_verification(expected)
+
+        sut.run(self.options)
+
+        verify()

@@ -33,8 +33,10 @@ def launch_options_with_proxy() -> LaunchOptions:
 
 
 def launch_options_with_proxy_only_password() -> LaunchOptions:
-    return launch_options(connection=main_connection_only_password(),
-                   proxyjumps=[proxy_connection_only_password()])
+    return launch_options(
+        connection=main_connection_only_password(),
+        proxyjumps=[proxy_connection_only_password()]
+    )
 
 
 def main_connection() -> ConnectionData:
