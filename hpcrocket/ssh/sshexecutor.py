@@ -1,4 +1,5 @@
-from typing import List, Optional
+from socket import socket
+from typing import List, Optional, cast
 
 import paramiko as pm
 import paramiko.channel as channel
@@ -119,5 +120,5 @@ def _connect_client(sshclient: pm.SSHClient, connection: ConnectionData, channel
         key_filename=connection.keyfile,
         password=connection.password,
         pkey=connection.key,  # type: ignore[arg-type]
-        sock=channel  # type: ignore[arg-type]
+        sock=cast(socket, channel)
     )
