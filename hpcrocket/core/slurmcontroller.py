@@ -12,7 +12,7 @@ class SlurmController:
 
     def submit(self, jobfile: str) -> SlurmBatchJob:
         cmd = self._execute_and_wait_or_raise_on_error(f"sbatch {jobfile}")
-        jobid = self._parse_jobid(cmd)
+        jobid = _parse_jobid(cmd)
 
         return SlurmBatchJob(self, jobid, self._watcher_factory)
 
@@ -32,9 +32,10 @@ class SlurmController:
 
         return cmd
 
-    def _parse_jobid(self, cmd: RunningCommand) -> str:
-        first_line = cmd.stdout()[0]
-        split_line = first_line.split()
-        jobid = split_line[-1]
 
-        return jobid
+def _parse_jobid(cmd: RunningCommand) -> str:
+    first_line = cmd.stdout()[0]
+    split_line = first_line.split()
+    jobid = split_line[-1]
+
+    return jobid

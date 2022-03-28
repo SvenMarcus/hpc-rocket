@@ -21,7 +21,6 @@ class PyFilesystemBased(Filesystem, ABC):
         Returns:
             fs.base.FS: The internal PyFilesystem
         """
-        pass
 
     def copy(self, source: str, target: str,
              overwrite: bool = False, filesystem: Optional['Filesystem'] = None) -> None:

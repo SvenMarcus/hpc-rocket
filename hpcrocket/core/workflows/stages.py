@@ -66,7 +66,6 @@ class WatchStage:
             Returns:
                 SlurmBatchJob
             """
-            pass
 
         def cancel(self, ui: UI) -> None:
             """
@@ -75,7 +74,6 @@ class WatchStage:
             Args:
                 ui (UI): The UI instance WatchStage was called with
             """
-            pass
 
     def __init__(self, batch_job_provider: BatchJobProvider, poll_interval: int) -> None:
         self._poll_interval = poll_interval

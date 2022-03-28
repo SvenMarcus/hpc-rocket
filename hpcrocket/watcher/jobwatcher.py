@@ -36,19 +36,16 @@ class JobWatcher(Protocol):
             callback (SlurmJobStatusCallback): A callback that accepts a status update.
             poll_interval (int): The time between poll calls.
         """
-        pass
 
     def wait_until_done(self) -> None:
         """
         Blocks until the job has been completed.
         """
-        pass
 
     def stop(self) -> None:
         """
         Stops watching the job.
         """
-        pass
 
 
 JobWatcherFactory = Callable[['SlurmBatchJob'], JobWatcher]

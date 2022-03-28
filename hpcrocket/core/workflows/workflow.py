@@ -24,7 +24,6 @@ class Stage(Protocol):
         Returns:
             bool
         """
-        pass
 
     def cancel(self, ui: UI) -> None:
         """
@@ -33,7 +32,6 @@ class Stage(Protocol):
         Args:
             ui (UI): The ui to send output to.
         """
-        pass
 
 
 class Workflow:

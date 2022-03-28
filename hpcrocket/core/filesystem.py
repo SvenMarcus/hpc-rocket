@@ -34,7 +34,6 @@ class Filesystem(ABC):
             FileNotFoundError: The `source` file does not exist
             FileExistsError: The `target` file already exists and overwrite is False
         """
-        pass
 
     @abstractmethod
     def delete(self, path: str) -> None:
@@ -46,7 +45,6 @@ class Filesystem(ABC):
         Raises:
             FileNotFoundError: The file does not exist
         """
-        pass
 
     @abstractmethod
     def exists(self, path: str) -> bool:
@@ -58,4 +56,3 @@ class Filesystem(ABC):
         Returns:
             bool: True if the file exists
         """
-        pass
