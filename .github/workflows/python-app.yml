@@ -46,7 +46,7 @@ jobs:
     
     - name: Test with pytest
       run: |
-         pytest --cov=. --cov-report=xml test/
+         pytest --cov=hpcrocket --cov-report=xml test/
 
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
