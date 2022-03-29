@@ -9,7 +9,17 @@ import fs.copy as fscp
 from hpcrocket.core.filesystem import Filesystem
 
 
-def _is_glob(path):
+def _is_glob(path: str) -> bool:
+    """
+    Checks if a wildcard operator is used in the path
+
+    Args:
+        path (str): The filepath
+
+    Returns:
+        bool
+    """
+
     return "*" in path
 
 
@@ -88,7 +98,7 @@ class PyFilesystemBased(Filesystem, ABC):
 
         self._delete_path(path)
 
-    def _delete_glob(self, path):
+    def _delete_glob(self, path: str) -> None:
         glob = self.internal_fs.glob(path)
         for match in glob:
             self._delete_path(match.path)
