@@ -2,10 +2,15 @@ import os
 from abc import ABC, abstractmethod
 from typing import Optional, cast
 
+import fs.glob
 import fs.base
 import fs.copy as fscp
 
 from hpcrocket.core.filesystem import Filesystem
+
+
+def _is_glob(path):
+    return "*" in path
 
 
 class PyFilesystemBased(Filesystem, ABC):
@@ -22,8 +27,39 @@ class PyFilesystemBased(Filesystem, ABC):
             fs.base.FS: The internal PyFilesystem
         """
 
-    def copy(self, source: str, target: str,
-             overwrite: bool = False, filesystem: Optional['Filesystem'] = None) -> None:
+    def copy(
+        self,
+        source: str,
+        target: str,
+        overwrite: bool = False,
+        filesystem: Optional['Filesystem'] = None
+    ) -> None:
+        if _is_glob(source):
+            self._copy_glob(source, target, overwrite, filesystem)
+            return
+
+        self._copy_single_file(source, target, overwrite, filesystem)
+
+    def _copy_glob(
+        self,
+        source: str,
+        target: str,
+        overwrite: bool,
+        filesystem: Optional['Filesystem']
+    ) -> None:
+        glob = self.internal_fs.glob(source)
+        for match in glob:
+            filename = os.path.basename(match.path)
+            target_path = os.path.join(target, filename)
+            self._copy_single_file(match.path, target_path, overwrite, filesystem)
+
+    def _copy_single_file(
+        self,
+        source: str,
+        target: str,
+        overwrite: bool = False,
+        filesystem: Optional['Filesystem'] = None
+    ) -> None:
         self._raise_if_source_does_not_exist(source)
         self._raise_if_target_exists(target, overwrite, filesystem)
         self._raise_if_no_pyfilesystem(filesystem)
@@ -35,13 +71,29 @@ class PyFilesystemBased(Filesystem, ABC):
 
         self._try_copy(source, target, overwrite)
 
-    def _create_missing_target_dirs(self, target: str, filesystem: Optional[Filesystem]) -> None:
+    def _create_missing_target_dirs(
+        self,
+        target: str,
+        filesystem: Optional[Filesystem]
+    ) -> None:
         target_fs = cast(PyFilesystemBased, filesystem) or self
         target_parent_dir = os.path.dirname(target)
         if not target_fs.exists(target_parent_dir):
             target_fs.internal_fs.makedirs(target_parent_dir)
 
     def delete(self, path: str) -> None:
+        if _is_glob(path):
+            self._delete_glob(path)
+            return
+
+        self._delete_path(path)
+
+    def _delete_glob(self, path):
+        glob = self.internal_fs.glob(path)
+        for match in glob:
+            self._delete_path(match.path)
+
+    def _delete_path(self, path: str) -> None:
         if not self.exists(path):
             raise FileNotFoundError(path)
 

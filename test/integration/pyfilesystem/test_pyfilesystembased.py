@@ -262,3 +262,49 @@ def test__when_deleting_file_but_does_not_exist__should_raise_file_not_found_err
 
     with pytest.raises(FileNotFoundError):
         sut.delete(SOURCE)
+
+
+def test__when_copying_files_with_glob_pattern__it_copies_matching_files():
+    mem_fs = MemoryFS()
+    mem_fs.create("hello.txt")
+    mem_fs.create("world.txt")
+    mem_fs.create("nope.gif")
+
+    sut = _TestFilesystemImpl(mem_fs)
+
+    sut.copy("*.txt", "newdir/")
+
+    assert mem_fs.exists("newdir/hello.txt")
+    assert mem_fs.exists("newdir/world.txt")
+    assert not mem_fs.exists("newdir/nope.gif")
+
+
+def test__when_copying_dirs_with_glob_patterns__it_copies_matching_dirs_with_content():
+    mem_fs = MemoryFS()
+    sub_fs = mem_fs.makedirs("sub/first")
+    sub_fs.create("file.txt")
+
+    sub_fs = mem_fs.makedirs("sub/second")
+    sub_fs.create("another.txt")
+
+    sut = _TestFilesystemImpl(mem_fs)
+    
+    sut.copy("sub/*", "otherdir/")
+
+    assert mem_fs.exists("otherdir/first/file.txt")
+    assert mem_fs.exists("otherdir/second/another.txt")
+
+
+def test__when_deleting_with_glob_pattern__it_deletes_matching_files():
+    mem_fs = MemoryFS()
+    mem_fs.create("hello.txt")
+    mem_fs.create("world.txt")
+    mem_fs.create("nope.gif")
+    
+    sut = _TestFilesystemImpl(mem_fs)
+
+    sut.delete("*.txt")
+
+    assert not mem_fs.exists("hello.txt")
+    assert not mem_fs.exists("world.txt")
+    assert mem_fs.exists("nope.gif")
