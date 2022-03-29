@@ -1,5 +1,4 @@
-[run]
-source=hpcrocket
+[report]
 omit = 
     # Omitting ui.py because it is just responsible for printing on the console
     hpcrocket/ui.py
@@ -7,7 +6,6 @@ omit =
     # Omitting chmodsshfs because it is just a decorator for the fs.sshfs implementation
     hpcrocket/ssh/chmodsshfs.py
 
-[report]
 exclude_lines =
     # Have to re-enable the standard pragma
     pragma: no cover
