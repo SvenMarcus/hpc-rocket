@@ -1,3 +1,6 @@
+[run]
+branch = True
+
 [report]
 omit = 
     # Omitting ui.py because it is just responsible for printing on the console
