@@ -1,5 +1,4 @@
-from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Protocol
 from rich import box
 
 from rich.console import RenderableType
@@ -10,48 +9,74 @@ from rich.table import Table
 from hpcrocket.core.slurmbatchjob import SlurmJobStatus
 
 
-class UI(ABC):
-
-    @abstractmethod
-    def update(self, job: SlurmJobStatus) -> None:
-        pass
-
-    @abstractmethod
-    def error(self, text: str) -> None:
-        pass
-
-    @abstractmethod
-    def info(self, text: str) -> None:
-        pass
-
-    @abstractmethod
-    def success(self, text: str) -> None:
-        pass
-
-    @abstractmethod
-    def launch(self, text: str) -> None:
-        pass
-
-
-class NullUI(UI):
+class UI(Protocol):  # pragma: no cover
 
     def update(self, job: SlurmJobStatus) -> None:
-        pass
+        """
+        Displays the current state of Slurm job
+
+        Args:
+            job (SlurmJobStatus): The Slurm job
+        """
 
     def error(self, text: str) -> None:
-        pass
+        """
+        Displays an error message
+
+        Args:
+            text (str): The message
+        """
 
     def info(self, text: str) -> None:
-        pass
+        """
+        Displays an informative message
+
+        Args:
+            text (str): The message
+        """
 
     def success(self, text: str) -> None:
-        pass
+        """
+        Displays a message for successful operations
+
+        Args:
+            text (str): The message
+        """
 
     def launch(self, text: str) -> None:
+        """
+        Displays a message for launching a job
+
+        Args:
+            text (str): The message
+        """
+
+
+class NullUI(UI):  # pragma: no cover
+    """
+    An empty UI that does nothing when receiving messages
+    """
+
+    def update(self, job: SlurmJobStatus) -> None:  # pragma: no cover
+        pass
+
+    def error(self, text: str) -> None:  # pragma: no cover
+        pass
+
+    def info(self, text: str) -> None:  # pragma: no cover
+        pass
+
+    def success(self, text: str) -> None:  # pragma: no cover
+        pass
+
+    def launch(self, text: str) -> None:  # pragma: no cover
         pass
 
 
 class RichUI(UI):
+    """
+    A UI that uses the rich terminal library
+    """
 
     def __init__(self) -> None:
         self._rich_live: Live
