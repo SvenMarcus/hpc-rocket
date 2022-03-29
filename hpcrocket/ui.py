@@ -1,12 +1,17 @@
-from typing import Any, Protocol
-from rich import box
+from typing import Any
 
+from rich import box
 from rich.console import RenderableType
 from rich.live import Live
 from rich.spinner import Spinner
 from rich.table import Table
 
 from hpcrocket.core.slurmbatchjob import SlurmJobStatus
+
+try:
+    from typing import Protocol
+except ImportError:  # pragma: no cover
+    from typing_extensions import Protocol  # type: ignore
 
 
 class UI(Protocol):  # pragma: no cover
