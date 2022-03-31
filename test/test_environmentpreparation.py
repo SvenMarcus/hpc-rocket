@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, call, create_autospec
 
 import pytest
 from hpcrocket.core.environmentpreparation import (CopyInstruction,
@@ -7,8 +7,7 @@ from hpcrocket.core.filesystem import Filesystem
 
 
 def new_mock_filesystem() -> Filesystem:
-    return MagicMock(
-        spec="hpcrocket.filesystem.Filesystem").return_value
+    return create_autospec(spec=Filesystem)
 
 
 def test__given_files_to_copy__but_not_preparing__should_not_do_anything():

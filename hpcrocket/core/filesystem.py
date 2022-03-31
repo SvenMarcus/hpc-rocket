@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import List, Optional
 
 
 class FilesystemFactory(ABC):
@@ -17,6 +17,18 @@ class Filesystem(ABC):
     """
     Abstract base class for all Filesystems
     """
+
+    @abstractmethod
+    def glob(self, pattern: str) -> List[str]:
+        """
+        Matches file names against the provided pattern. Supports single and double wildcard operators (* / **).
+
+        Args:
+            pattern (str): The pattern to match file names against.
+
+        Returns:
+            list[str]: A list of file paths matching the pattern.
+        """
 
     @abstractmethod
     def copy(self, source: str, target: str,

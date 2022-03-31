@@ -1,3 +1,4 @@
+from typing import List
 from unittest.mock import MagicMock
 
 import fs
@@ -24,6 +25,9 @@ class NonPyFilesystemBasedFilesystem(Filesystem):
 
     def __init__(self) -> None:
         pass
+
+    def glob(self, pattern: str) -> List[str]:
+        return []
 
     def copy(self, source: str, target: str, overwrite: bool = False, filesystem: 'Filesystem' = None) -> None:
         pass
@@ -288,7 +292,7 @@ def test__when_copying_dirs_with_glob_patterns__it_copies_matching_dirs_with_con
     sub_fs.create("another.txt")
 
     sut = _TestFilesystemImpl(mem_fs)
-    
+
     sut.copy("sub/*", "otherdir/")
 
     assert mem_fs.exists("otherdir/first/file.txt")
@@ -300,7 +304,7 @@ def test__when_deleting_with_glob_pattern__it_deletes_matching_files():
     mem_fs.create("hello.txt")
     mem_fs.create("world.txt")
     mem_fs.create("nope.gif")
-    
+
     sut = _TestFilesystemImpl(mem_fs)
 
     sut.delete("*.txt")
@@ -308,3 +312,23 @@ def test__when_deleting_with_glob_pattern__it_deletes_matching_files():
     assert not mem_fs.exists("hello.txt")
     assert not mem_fs.exists("world.txt")
     assert mem_fs.exists("nope.gif")
+
+
+def test__when_globbing__it_returns_matching_paths():
+    mem_fs = MemoryFS()
+    mem_fs.create("hello.txt")
+    mem_fs.create("world.txt")
+    mem_fs.create("nope.gif")
+    subfs = mem_fs.makedir("sub")
+    subfs.create("nomatch.gif")
+    subfs.create("match.txt")
+
+    sut = _TestFilesystemImpl(mem_fs)
+
+    actual = sut.glob("**/**.txt")
+
+    assert actual == [
+        "hello.txt",
+        "world.txt",
+        "sub/match.txt"
+    ]

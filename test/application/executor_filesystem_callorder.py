@@ -1,5 +1,5 @@
 from test.testdoubles.executor import SlurmJobExecutorSpy
-from typing import Any
+from typing import Any, List
 from unittest.mock import Mock
 
 from hpcrocket.core.executor import RunningCommand
@@ -26,6 +26,9 @@ class CallOrderVerification(SlurmJobExecutorSpy, Filesystem):
 
     def close(self) -> None:
         pass
+
+    def glob(self, pattern: str) -> List[str]:
+        return []
 
     def copy(self, source: str, target: str, overwrite: bool = False, filesystem: 'Filesystem' = None) -> None:
         self.log.append(f"copy {source} {target}")

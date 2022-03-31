@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Optional, cast
+from typing import List, Optional, cast
 
 import fs.glob
 import fs.base
@@ -36,6 +36,9 @@ class PyFilesystemBased(Filesystem, ABC):
         Returns:
             fs.base.FS: The internal PyFilesystem
         """
+
+    def glob(self, pattern: str) -> List[str]:
+        return [match.path.lstrip("/") for match in self.internal_fs.glob(pattern)]
 
     def copy(
         self,
