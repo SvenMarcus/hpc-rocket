@@ -13,7 +13,7 @@ def new_mock_filesystem(files: Optional[List[str]] = None) -> Filesystem:
 
 
 def test__given_files_to_copy__but_not_preparing__should_not_do_anything():
-    source_fs = new_mock_filesystem("file1.txt")
+    source_fs = new_mock_filesystem(["file1.txt"])
     target_fs = new_mock_filesystem()
 
     sut = EnvironmentPreparation(source_fs, target_fs)
@@ -25,8 +25,8 @@ def test__given_files_to_copy__but_not_preparing__should_not_do_anything():
 
 
 def test__given_files_to_copy__when_preparing__should_copy_files():
-    source_fs = new_mock_filesystem()
-    target_fs = new_mock_filesystem()
+    source_fs = new_mock_filesystem(["file.txt", "funny.gif"])
+    target_fs = new_mock_filesystem(["evenfunnier.gif"])
 
     sut = EnvironmentPreparation(source_fs, target_fs)
 
@@ -37,7 +37,8 @@ def test__given_files_to_copy__when_preparing__should_copy_files():
 
     sut.prepare()
 
-    assert target_fs.exists()
+    assert target_fs.exists("filecopy.txt")
+    assert target_fs.exists("evenfunnier.gif")
 
 def test__given_files_to_copy_with_non_existing_file__when_preparing_then_rollback__should_remove_copied_files_from_target_fs():
     source_fs_spy = new_mock_filesystem(["funny.gif"])
@@ -117,17 +118,17 @@ def test__given_rollback_done_with_file_not_found__when_rolling_back_again__shou
 
 def test__given_files_to_clean__but_not_cleaning__should_not_do_anything():
     source_fs = new_mock_filesystem()
-    target_fs_spy = new_mock_filesystem()
+    target_fs_spy = new_mock_filesystem(["file1.txt"])
 
     sut = EnvironmentPreparation(source_fs, target_fs_spy)
     sut.files_to_clean(["file1.txt"])
 
-    target_fs_spy.delete.assert_not_called()
+    assert target_fs_spy.exists("file1.txt")
 
 
 def test__given_files_to_clean__when_cleaning__should_delete_files():
     source_fs = new_mock_filesystem()
-    target_fs_spy = new_mock_filesystem()
+    target_fs_spy = new_mock_filesystem(["file.txt", "funny.gif"])
 
     sut = EnvironmentPreparation(source_fs, target_fs_spy)
 
@@ -138,16 +139,13 @@ def test__given_files_to_clean__when_cleaning__should_delete_files():
 
     sut.clean()
 
-    target_fs_spy.delete.assert_has_calls([
-        call("file.txt"),
-        call("funny.gif")
-    ])
+    assert target_fs_spy.exists("file.txt") is False
+    assert target_fs_spy.exists("funny.gif") is False
 
 
 def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_still_clean_remaining_files():
     source_fs_spy = new_mock_filesystem()
-    target_fs = new_mock_filesystem()
-    target_fs.delete.side_effect = raise_file_not_found_on_given_call(1)
+    target_fs = new_mock_filesystem(["funny.gif"])
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
     sut.files_to_clean([
@@ -157,13 +155,12 @@ def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_st
 
     sut.clean()
 
-    target_fs.delete.assert_called_with("funny.gif")
+    assert target_fs.exists("funny.gif") is False
 
 
 def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_log_error_to_ui():
     source_fs_spy = new_mock_filesystem()
-    target_fs = new_mock_filesystem()
-    target_fs.delete.side_effect = raise_file_not_found_on_given_call(1)
+    target_fs = new_mock_filesystem(["funny.gif"])
 
     ui_spy = MagicMock()
     sut = EnvironmentPreparation(source_fs_spy, target_fs, ui_spy)
@@ -179,8 +176,8 @@ def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_lo
 
 
 def test__given_files_to_collect__when_collect__should_copy_to_source_fs():
-    source_fs_spy = new_mock_filesystem()
-    target_fs = new_mock_filesystem()
+    source_fs_spy = new_mock_filesystem(["copy_file.txt"])
+    target_fs = new_mock_filesystem(["file.txt", "funny.gif"])
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
 
@@ -191,16 +188,13 @@ def test__given_files_to_collect__when_collect__should_copy_to_source_fs():
 
     sut.collect()
 
-    target_fs.copy.assert_has_calls([
-        call("file.txt", "copy_file.txt", True, filesystem=source_fs_spy),
-        call("funny.gif", "copy_funny.gif", False, filesystem=source_fs_spy)
-    ])
+    assert source_fs_spy.exists("copy_file.txt")
+    assert source_fs_spy.exists("copy_funny.gif")
 
 
 def test__given_files_to_collect_with_non_existing_file__when_collecting__should_collect_remaining_files():
     source_fs_spy = new_mock_filesystem()
-    target_fs = new_mock_filesystem()
-    target_fs.copy.side_effect = raise_file_not_found_on_given_call(1)
+    target_fs = new_mock_filesystem(["funny.gif"])
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
 
@@ -211,15 +205,12 @@ def test__given_files_to_collect_with_non_existing_file__when_collecting__should
 
     sut.collect()
 
-    target_fs.copy.assert_has_calls([
-        call("funny.gif", "copy_funny.gif", False, filesystem=source_fs_spy),
-    ])
+    assert source_fs_spy.exists("copy_funny.gif")
 
 
 def test__given_files_to_collect_with_non_existing_file__when_collecting__should_log_error_to_ui():
     source_fs_spy = new_mock_filesystem()
-    target_fs = new_mock_filesystem()
-    target_fs.copy.side_effect = raise_file_not_found_on_given_call(1)
+    target_fs = new_mock_filesystem(["funny.gif"])
 
     ui_spy = MagicMock()
     sut = EnvironmentPreparation(source_fs_spy, target_fs, ui_spy)
@@ -236,10 +227,8 @@ def test__given_files_to_collect_with_non_existing_file__when_collecting__should
 
 
 def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_collecting__should_still_collect_remaining_files():
-    source_fs_spy = new_mock_filesystem()
-
-    target_fs = new_mock_filesystem()
-    target_fs.copy.side_effect = raise_file_exists_on_given_call(1)
+    source_fs_spy = new_mock_filesystem(["copy_file.txt"])
+    target_fs = new_mock_filesystem(["file.txt", "funny.gif"])
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
 
@@ -250,15 +239,12 @@ def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_c
 
     sut.collect()
 
-    target_fs.copy.assert_has_calls([
-        call("funny.gif", "copy_funny.gif", False, filesystem=source_fs_spy),
-    ])
+    assert source_fs_spy.exists("copy_funny.gif")
 
 
 def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_collecting__should_log_error_to_ui():
-    source_fs_spy = new_mock_filesystem()
-    target_fs = new_mock_filesystem()
-    target_fs.copy.side_effect = raise_file_exists_on_given_call(1)
+    source_fs_spy = new_mock_filesystem(["copy_file.txt"])
+    target_fs = new_mock_filesystem(["file.txt", "funny.gif"])
 
     ui_spy = MagicMock()
     sut = EnvironmentPreparation(source_fs_spy, target_fs, ui_spy)
@@ -272,27 +258,3 @@ def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_c
 
     ui_spy.error.assert_called_with(
         "FileExistsError: Cannot copy file 'file.txt'")
-
-
-def raise_file_not_found_on_given_call(call: int = 1):
-    call_count = 0
-
-    def raise_file_not_found(*args, **kwargs):
-        nonlocal call_count
-        call_count += 1
-        if call_count == call:
-            raise FileNotFoundError(*args)
-
-    return raise_file_not_found
-
-
-def raise_file_exists_on_given_call(call: int = 1):
-    call_count = 0
-
-    def raise_file_exists(*args, **kwargs):
-        nonlocal call_count
-        call_count += 1
-        if call_count == call:
-            raise FileExistsError(*args)
-
-    return raise_file_exists

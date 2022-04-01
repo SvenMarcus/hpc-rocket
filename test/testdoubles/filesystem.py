@@ -187,7 +187,7 @@ class MemoryFilesystemFake(Filesystem):
         base = os.path.basename(file.path)
         subpath = self._minimal_matching_subpath(file, source)
         if subpath != file.path:
-            base = file.path.removeprefix(subpath).strip("/")
+            base = file.path[len(subpath):].strip("/")
 
         return os.path.join(target, base)
 
