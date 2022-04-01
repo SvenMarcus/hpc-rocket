@@ -1,32 +1,34 @@
+from typing import List, Optional
 from unittest.mock import MagicMock, call, create_autospec
 
 import pytest
 from hpcrocket.core.environmentpreparation import (CopyInstruction,
                                                    EnvironmentPreparation)
 from hpcrocket.core.filesystem import Filesystem
+from test.testdoubles.filesystem import MemoryFilesystemFake
 
 
-def new_mock_filesystem() -> Filesystem:
-    return create_autospec(spec=Filesystem)
+def new_mock_filesystem(files: Optional[List[str]] = None) -> Filesystem:
+    return MemoryFilesystemFake(files or [])
 
 
 def test__given_files_to_copy__but_not_preparing__should_not_do_anything():
-    source_fs_spy = new_mock_filesystem()
+    source_fs = new_mock_filesystem("file1.txt")
     target_fs = new_mock_filesystem()
 
-    sut = EnvironmentPreparation(source_fs_spy, target_fs)
+    sut = EnvironmentPreparation(source_fs, target_fs)
     sut.files_to_copy([
         CopyInstruction("file1.txt", "file2.txt")
     ])
 
-    source_fs_spy.copy.assert_not_called()
+    assert target_fs.exists("file2.txt") is False
 
 
 def test__given_files_to_copy__when_preparing__should_copy_files():
-    source_fs_spy = new_mock_filesystem()
+    source_fs = new_mock_filesystem()
     target_fs = new_mock_filesystem()
 
-    sut = EnvironmentPreparation(source_fs_spy, target_fs)
+    sut = EnvironmentPreparation(source_fs, target_fs)
 
     sut.files_to_copy([
         CopyInstruction("file.txt", "filecopy.txt"),
@@ -35,17 +37,12 @@ def test__given_files_to_copy__when_preparing__should_copy_files():
 
     sut.prepare()
 
-    source_fs_spy.copy.assert_has_calls([
-        call("file.txt", "filecopy.txt", False, filesystem=target_fs),
-        call("funny.gif", "evenfunnier.gif", True, filesystem=target_fs)
-    ])
-
+    assert target_fs.exists()
 
 def test__given_files_to_copy_with_non_existing_file__when_preparing_then_rollback__should_remove_copied_files_from_target_fs():
-    source_fs_spy = new_mock_filesystem()
+    source_fs_spy = new_mock_filesystem(["funny.gif"])
     target_fs = new_mock_filesystem()
 
-    source_fs_spy.copy.side_effect = raise_file_not_found_on_given_call(2)
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
 
     sut.files_to_copy([
@@ -58,13 +55,12 @@ def test__given_files_to_copy_with_non_existing_file__when_preparing_then_rollba
 
     sut.rollback()
 
-    target_fs.delete.assert_called_with("filecopy.txt")
+    assert target_fs.exists("filecopy.txt") is False
 
 
 def test__given_copied_file_not_on_target_fs__when_rolling_back__should_remove_remaining_copied_files_from_target_fs():
-    source_fs_spy = new_mock_filesystem()
+    source_fs_spy = new_mock_filesystem(["file.txt", "funny.gif"])
     target_fs = new_mock_filesystem()
-    target_fs.delete.side_effect = raise_file_not_found_on_given_call(1)
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
     sut.files_to_copy([
@@ -73,16 +69,15 @@ def test__given_copied_file_not_on_target_fs__when_rolling_back__should_remove_r
     ])
 
     sut.prepare()
+    target_fs.delete("filecopy.txt")
+
     sut.rollback()
 
-    target_fs.delete.assert_has_calls([
-        call("evenfunnier.gif")
-    ])
-
+    assert target_fs.exists("evenfunnier.gif") is False
 
 def test__given_rollback_done__when_rolling_back_again__should_not_do_anything():
-    source_fs_spy = new_mock_filesystem()
-    target_fs = new_mock_filesystem()
+    source_fs_spy = new_mock_filesystem(["file.txt", "funny.gif"])
+    target_fs = MagicMock(wraps=new_mock_filesystem())
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs)
     sut.files_to_copy([
@@ -99,9 +94,8 @@ def test__given_rollback_done__when_rolling_back_again__should_not_do_anything()
 
 
 def test__given_rollback_done_with_file_not_found__when_rolling_back_again__should_try_to_delete_remaining_files():
-    source_fs_spy = new_mock_filesystem()
-    target_fs_spy = new_mock_filesystem()
-    target_fs_spy.delete.side_effect = raise_file_not_found_on_given_call(1)
+    source_fs_spy = new_mock_filesystem(["file.txt", "funny.gif"])
+    target_fs_spy = MagicMock(wraps=new_mock_filesystem())
 
     sut = EnvironmentPreparation(source_fs_spy, target_fs_spy)
     sut.files_to_copy([
@@ -110,9 +104,10 @@ def test__given_rollback_done_with_file_not_found__when_rolling_back_again__shou
     ])
 
     sut.prepare()
+    target_fs_spy.delete("filecopy.txt")
     sut.rollback()
-    target_fs_spy.reset_mock()
 
+    target_fs_spy.reset_mock()
     sut.rollback()
 
     target_fs_spy.delete.assert_has_calls([

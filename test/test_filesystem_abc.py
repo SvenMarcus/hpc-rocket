@@ -191,10 +191,10 @@ class FilesystemTest(ABC):
 
     def test__when_copying_dirs_with_glob_patterns__it_copies_matching_dirs_with_content(self):
         sut = self.create_filesystem()
-        self.create_file(sut, "sub/first/file.txt")
-        self.create_file(sut, "sub/second/another.txt")
+        self.create_file(sut, "dir/sub/first/file.txt")
+        self.create_file(sut, "dir/sub/second/another.txt")
 
-        sut.copy("sub/*", "otherdir/")
+        sut.copy("dir/sub/*", "otherdir/")
 
         assert sut.exists("otherdir/first/file.txt")
         assert sut.exists("otherdir/second/another.txt")
@@ -218,11 +218,13 @@ class FilesystemTest(ABC):
         self.create_file(sut, "nope.gif")
         self.create_file(sut, "sub/nomatch.gif")
         self.create_file(sut, "sub/match.txt")
+        self.create_file(sut, "sub/dir/match.txt")
 
-        actual = sut.glob("**/**.txt")
+        actual = sut.glob("**/*.txt")
 
         assert actual == [
             "hello.txt",
             "world.txt",
-            "sub/match.txt"
+            "sub/match.txt",
+            "sub/dir/match.txt"
         ]

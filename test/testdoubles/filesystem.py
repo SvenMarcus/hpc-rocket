@@ -1,13 +1,11 @@
 import fnmatch
 import os.path
 from contextlib import contextmanager
-from dataclasses import dataclass, field
-from copy import deepcopy
-from typing import List, Optional, Set, cast, Union
-from unittest.mock import DEFAULT, patch
+from dataclasses import dataclass
+from typing import List, Optional, Union, cast
+from unittest.mock import DEFAULT, Mock, patch
 
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
-from hpcrocket.typesafety import get_or_raise
 
 
 class DummyFilesystemFactory(FilesystemFactory):
@@ -49,8 +47,7 @@ class MemoryFilesystemFactoryStub(FilesystemFactory):
 
 @dataclass
 class FileStub:
-    name: str
-    parent: 'DirectoryStub'
+    path: str
     content: str = ""
 
     def is_dir(self) -> bool:
@@ -59,9 +56,7 @@ class FileStub:
 
 @dataclass
 class DirectoryStub:
-    name: str
-    parent: Optional['DirectoryStub'] = None
-    items: List['FilesystemItem'] = field(default_factory=list)
+    path: str
 
     def is_dir(self) -> bool:
         return True
@@ -73,54 +68,41 @@ FilesystemItem = Union[FileStub, DirectoryStub]
 class MemoryFilesystemFake(Filesystem):
 
     def __init__(self, files: List[str] = []) -> None:
-        self._root = DirectoryStub("")
+        self._filesystem: List[FilesystemItem] = []
+        for file in files:
+            self.create_file_stub(file, "")
 
     def create_file_stub(self, path: str, content: str) -> None:
-        head, filename = os.path.split(path)
-        dir_stub = self._root
-        if head:
-            dir_stub = self._create_dir_stub(head)
-        file_stub = FileStub(filename, dir_stub, content)
-        dir_stub.items.append(file_stub)
+        parent, _ = os.path.split(path)
+        if parent and not self.exists(parent):
+            self.create_dir_stub(parent)
+
+        self._filesystem.append(FileStub(path, content))
 
     def create_dir_stub(self, path: str) -> None:
-        self._create_dir_stub(path)
-
-    def _create_dir_stub(self, path: str) -> DirectoryStub:
-        split_path = path.split(os.path.sep)
-        current_dir = self._root
-
-        walked_path = ""
-        for dirname in split_path:
-            walked_path += dirname
-            match = self._find_matching_item(walked_path)
-            if match and match.is_dir():
-                current_dir = cast(DirectoryStub, match)
-            else:
-                current_dir = self._create_sub_dir(current_dir, dirname)
-
-            walked_path += os.path.sep
-
-        return current_dir
-
-    def _create_sub_dir(self, current_dir: DirectoryStub, dirname: str) -> DirectoryStub:
-        sub_dir = DirectoryStub(dirname, current_dir)
-        current_dir.items.append(sub_dir)
-        return sub_dir
+        parent, _ = os.path.split(path)
+        while parent and not self.exists(parent):
+            self.create_dir_stub(parent)
+            parent, _ = os.path.split(path)
+        self._filesystem.append(DirectoryStub(path))
 
     def get_content_of_file_stub(self, path: str) -> str:
-        return cast(FileStub, self._find_matching_item(path)).content
+        file = next(filter(lambda f: f.path == path, self._filesystem))
+        return cast(FileStub, file).content
 
     def glob(self, pattern: str) -> List[str]:
-        matches: List[str] = []
-        cd = self._root
-        walked_path = ""
-        for item in cd.items:
-            item_path = walked_path + os.path.sep + item.name
-            if fnmatch.fnmatch(item_path, pattern):
-                if item.is_dir():
-                    # walk down
-        return []
+        pattern = pattern.replace('**/', '*')
+        return [
+            file.path for file in self._filesystem
+            if fnmatch.fnmatch(file.path, pattern)
+        ]
+
+    def _get_items_by_glob(self, pattern: str) -> List[FilesystemItem]:
+        pattern = pattern.replace('**/', '*')
+        return [
+            file for file in self._filesystem
+            if fnmatch.fnmatch(file.path, pattern)
+        ]
 
     def copy(
         self,
@@ -129,8 +111,10 @@ class MemoryFilesystemFake(Filesystem):
         overwrite: bool = False,
         filesystem: Optional['Filesystem'] = None
     ) -> None:
-        assert filesystem is None or isinstance(filesystem, MemoryFilesystemFake)
+        assert filesystem is None or isinstance(filesystem, (MemoryFilesystemFake, Mock))
         other = cast(MemoryFilesystemFake, filesystem) or self
+        source = source.strip("/")
+        target = target.strip("/")
         self._raise_if_target_file_exists(other, target, overwrite)
         self._perform_copy(other, source, target, overwrite)
 
@@ -141,17 +125,17 @@ class MemoryFilesystemFake(Filesystem):
         target: str,
         overwrite: bool
     ) -> None:
-        match = get_or_raise(
-            self._find_matching_item(source),
-            FileNotFoundError
-        )
+        matches = self._get_matching_items(source)
 
-        if match.is_dir():  # type: ignore
-            match = cast(DirectoryStub, match)
-            self._copy_directory(source, target, overwrite, other, match)
-        else:
-            match = cast(FileStub, match)
-            self._copy_single_file(other, match, target, overwrite)
+        if not matches:
+            raise FileNotFoundError(source)
+
+        for match in matches:
+            if match.is_dir():
+                self._copy_directory(source, target, other)
+            else:
+                match = cast(FileStub, match)
+                self._copy_single_file(other, match, source, target, overwrite)
 
     def _raise_if_target_file_exists(
         self,
@@ -167,83 +151,88 @@ class MemoryFilesystemFake(Filesystem):
         self,
         source: str,
         target: str,
-        overwrite: bool,
         other: 'MemoryFilesystemFake',
-        match: DirectoryStub
     ) -> None:
-        match = cast(DirectoryStub, match)
-        self._copy_files_recursive(match, source, target, overwrite, other)
-
-    def _copy_files_recursive(
-        self,
-        directory: DirectoryStub,
-        base_path: str,
-        target_path: str,
-        overwrite: bool,
-        other: 'MemoryFilesystemFake'
-    ) -> None:
-        for item in directory.items:
-            item_path = os.path.join(base_path, item.name)
-            if not item.is_dir():
-                item = cast(FileStub, item)
-                target_path = os.path.join(target_path, item.name)
-                self._copy_single_file(other, item, target_path, overwrite)
-            else:
-                item = cast(DirectoryStub, item)
-                self._copy_files_recursive(item, item_path, target_path, overwrite, other)
+        children = self._find_children(source)
+        for child in children:
+            if not child.is_dir():
+                basename = os.path.basename(child.path)
+                target_path = os.path.join(target, basename)
+                child = cast(FileStub, child)
+                other.create_file_stub(target_path, child.content)
 
     def _copy_single_file(
         self,
         fs: 'MemoryFilesystemFake',
         file: FileStub,
-        path: str,
-        overwrite: bool
+        source: str,
+        target: str,
+        overwrite: bool,
     ) -> None:
-        match = fs._find_matching_item(path)
-        if match and not overwrite:
-            raise FileExistsError()
+        match = fs._find_matching_item(target)
+        if match and not match.is_dir() and not overwrite:
+            raise FileExistsError(target)
 
         if match and overwrite:
             match = cast(FileStub, match)
             match.content = file.content
         else:
-            fs.create_file_stub(path, file.content)
+            target_path = self._final_target_path(file, source, target)
+            fs.create_file_stub(target_path, file.content)
+
+    def _final_target_path(self, file: FileStub, source: str, target: str) -> str:
+        if not '*' in source:
+            return target
+
+        base = os.path.basename(file.path)
+        subpath = self._minimal_matching_subpath(file, source)
+        if subpath != file.path:
+            base = file.path.removeprefix(subpath).strip("/")
+
+        return os.path.join(target, base)
+
+    def _minimal_matching_subpath(self, file: FileStub, pattern: str) -> str:
+        path_components = file.path.split(os.path.sep)
+        walked_path = ""
+        for component in path_components:
+            walked_path += component
+            if component != path_components[-1]:
+                walked_path += os.path.sep
+
+            path_matches = fnmatch.fnmatch(walked_path, pattern)
+            if path_matches:
+                break
+
+        return walked_path
 
     def delete(self, path: str) -> None:
-        if not self.exists(path):
+        items = self._get_matching_items(path)
+
+        if not items:
             raise FileNotFoundError(path)
 
-        file = cast(FilesystemItem, self._find_matching_item(path))
-        if file.parent:
-            file.parent.items.remove(file)
+        for item in items:
+            self._filesystem.remove(item)
+
+    def _get_matching_items(self, path):
+        if "*" in path:
+            items = self._get_items_by_glob(path)
+        else:
+            item = self._find_matching_item(path)
+            items = [item] if item else self._find_children(path)  # type: ignore
+        return items
+
+    def _find_children(self, path: str) -> List[FilesystemItem]:
+        return self._get_items_by_glob(os.path.join(path, '*'))
 
     def exists(self, path: str) -> bool:
         return self._find_matching_item(path) is not None
 
     def _find_matching_item(self, path: str) -> Optional[FilesystemItem]:
-        split_path = path.split(os.path.sep)
-        current_item: Optional[FilesystemItem] = self._root
-
-        for name in split_path:
-            current_item = cast(FilesystemItem, current_item)
-            if current_item.is_dir():
-                current_item = cast(DirectoryStub, current_item)
-                current_item = self._matching_item_in_dir(current_item, name)
-
-                if not current_item:
-                    return None
-
-        return current_item
-
-    def _matching_item_in_dir(
-        self,
-        current_item: DirectoryStub,
-        name: str
-    ) -> Optional[FilesystemItem]:
         return next(
             filter(
-                lambda d: d.name == name,
-                current_item.items
+                lambda f: f.path == path,
+                self._filesystem
             ), None
         )
 
