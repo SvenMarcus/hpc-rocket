@@ -2,7 +2,7 @@ import fnmatch
 import os.path
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List, Optional, Union, cast
+from typing import List, Optional, Tuple, Union, cast
 from unittest.mock import DEFAULT, Mock, patch
 
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
@@ -58,7 +58,7 @@ class MemoryFilesystemFactoryStub(FilesystemFactory):
         self._create_files_for_fs(self.ssh_filesystem, files)
 
     def _create_files_for_fs(
-        self, fs: "MemoryFilesystemFake", files: tuple[str, ...]
+        self, fs: "MemoryFilesystemFake", files: Tuple[str, ...]
     ) -> None:
         for file in files:
             fs.create_file_stub(file, "")
