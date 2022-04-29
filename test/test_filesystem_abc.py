@@ -189,6 +189,14 @@ class FilesystemTest(ABC):
         assert sut.exists("newdir/world.txt")
         assert not sut.exists("newdir/nope.gif")
 
+    def test__when_copying_files_with_glob_pattern__but_file_exists__it_raises_an_error(self):
+        sut = self.create_filesystem()
+        self.create_file(sut, "hello.txt")
+        self.create_file(sut, "sub_dir/hello.txt")
+
+        with pytest.raises(FileExistsError):
+            sut.copy("*.txt", "sub_dir")
+
     def test__when_copying_dirs_with_glob_patterns__it_copies_matching_dirs_with_content(self):
         sut = self.create_filesystem()
         self.create_file(sut, "dir/sub/first/file.txt")

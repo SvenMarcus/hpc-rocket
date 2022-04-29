@@ -9,23 +9,27 @@ from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 
 
 class DummyFilesystemFactory(FilesystemFactory):
-
-    def create_local_filesystem(self) -> 'Filesystem':
+    def create_local_filesystem(self) -> "Filesystem":
         return DummyFilesystem()
 
-    def create_ssh_filesystem(self) -> 'Filesystem':
+    def create_ssh_filesystem(self) -> "Filesystem":
         return DummyFilesystem()
 
 
 class DummyFilesystem(Filesystem):
-
     def glob(self, pattern: str) -> List[str]:
         return []
 
     def exists(self, path: str) -> bool:
         return False
 
-    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: 'Filesystem' = None) -> None:
+    def copy(
+        self,
+        source: str,
+        target: str,
+        overwrite: bool = False,
+        filesystem: "Filesystem" = None,
+    ) -> None:
         pass
 
     def delete(self, path: str) -> None:
@@ -33,16 +37,31 @@ class DummyFilesystem(Filesystem):
 
 
 class MemoryFilesystemFactoryStub(FilesystemFactory):
-
-    def __init__(self, local_fs: 'MemoryFilesystemFake' = None, ssh_fs: 'MemoryFilesystemFake' = None) -> None:
+    def __init__(
+        self,
+        local_fs: "MemoryFilesystemFake" = None,
+        ssh_fs: "MemoryFilesystemFake" = None,
+    ) -> None:
         self.local_filesystem = local_fs or MemoryFilesystemFake()
         self.ssh_filesystem = ssh_fs or MemoryFilesystemFake()
 
-    def create_local_filesystem(self) -> 'Filesystem':
+    def create_local_filesystem(self) -> "Filesystem":
         return self.local_filesystem
 
-    def create_ssh_filesystem(self) -> 'Filesystem':
+    def create_ssh_filesystem(self) -> "Filesystem":
         return self.ssh_filesystem
+
+    def create_local_files(self, *files: str) -> None:
+        self._create_files_for_fs(self.local_filesystem, files)
+
+    def create_remote_files(self, *files: str) -> None:
+        self._create_files_for_fs(self.ssh_filesystem, files)
+
+    def _create_files_for_fs(
+        self, fs: "MemoryFilesystemFake", files: tuple[str, ...]
+    ) -> None:
+        for file in files:
+            fs.create_file_stub(file, "")
 
 
 @dataclass
@@ -66,7 +85,6 @@ FilesystemItem = Union[FileStub, DirectoryStub]
 
 
 class MemoryFilesystemFake(Filesystem):
-
     def __init__(self, files: List[str] = []) -> None:
         self._filesystem: List[FilesystemItem] = []
         for file in files:
@@ -91,17 +109,17 @@ class MemoryFilesystemFake(Filesystem):
         return cast(FileStub, file).content
 
     def glob(self, pattern: str) -> List[str]:
-        pattern = pattern.replace('**/', '*')
+        pattern = pattern.replace("**/", "*")
         return [
-            file.path for file in self._filesystem
+            file.path
+            for file in self._filesystem
             if fnmatch.fnmatch(file.path, pattern)
         ]
 
     def _get_items_by_glob(self, pattern: str) -> List[FilesystemItem]:
-        pattern = pattern.replace('**/', '*')
+        pattern = pattern.replace("**/", "*")
         return [
-            file for file in self._filesystem
-            if fnmatch.fnmatch(file.path, pattern)
+            file for file in self._filesystem if fnmatch.fnmatch(file.path, pattern)
         ]
 
     def copy(
@@ -109,9 +127,11 @@ class MemoryFilesystemFake(Filesystem):
         source: str,
         target: str,
         overwrite: bool = False,
-        filesystem: Optional['Filesystem'] = None
+        filesystem: Optional["Filesystem"] = None,
     ) -> None:
-        assert filesystem is None or isinstance(filesystem, (MemoryFilesystemFake, Mock))
+        assert filesystem is None or isinstance(
+            filesystem, (MemoryFilesystemFake, Mock)
+        )
         other = cast(MemoryFilesystemFake, filesystem) or self
         source = source.strip("/")
         target = target.strip("/")
@@ -119,11 +139,7 @@ class MemoryFilesystemFake(Filesystem):
         self._perform_copy(other, source, target, overwrite)
 
     def _perform_copy(
-        self,
-        other: 'MemoryFilesystemFake',
-        source: str,
-        target: str,
-        overwrite: bool
+        self, other: "MemoryFilesystemFake", source: str, target: str, overwrite: bool
     ) -> None:
         matches = self._get_matching_items(source)
 
@@ -139,19 +155,22 @@ class MemoryFilesystemFake(Filesystem):
 
     def _raise_if_target_file_exists(
         self,
-        other: 'MemoryFilesystemFake',
+        other: "MemoryFilesystemFake",
         target: str,
         overwrite: bool,
     ):
+        if overwrite:
+            return
+
         target_item = other._find_matching_item(target)
-        if target_item and not target_item.is_dir() and not overwrite:
+        if target_item and not target_item.is_dir():
             raise FileExistsError(target)
 
     def _copy_directory(
         self,
         source: str,
         target: str,
-        other: 'MemoryFilesystemFake',
+        other: "MemoryFilesystemFake",
     ) -> None:
         children = self._find_children(source)
         for child in children:
@@ -163,31 +182,36 @@ class MemoryFilesystemFake(Filesystem):
 
     def _copy_single_file(
         self,
-        fs: 'MemoryFilesystemFake',
-        file: FileStub,
+        fs: "MemoryFilesystemFake",
+        file_to_copy: FileStub,
         source: str,
         target: str,
         overwrite: bool,
     ) -> None:
-        match = fs._find_matching_item(target)
-        if match and not match.is_dir() and not overwrite:
-            raise FileExistsError(target)
+        existing_file = cast(FileStub, fs._find_matching_item(target))
+        if existing_file and overwrite:
+            self._overwrite_file_content(file_to_copy, existing_file)
+            return
 
-        if match and overwrite:
-            match = cast(FileStub, match)
-            match.content = file.content
-        else:
-            target_path = self._final_target_path(file, source, target)
-            fs.create_file_stub(target_path, file.content)
+        self._create_file_copy(fs, file_to_copy, source, target, overwrite)
+
+    def _overwrite_file_content(self, file_to_copy: FileStub, existing_file: FileStub):
+        existing_file = cast(FileStub, existing_file)
+        existing_file.content = file_to_copy.content
+
+    def _create_file_copy(self, fs, file, source, target, overwrite):
+        target_path = self._final_target_path(file, source, target)
+        self._raise_if_target_file_exists(fs, target_path, overwrite)
+        fs.create_file_stub(target_path, file.content)
 
     def _final_target_path(self, file: FileStub, source: str, target: str) -> str:
-        if not '*' in source:
+        if not "*" in source:
             return target
 
         base = os.path.basename(file.path)
         subpath = self._minimal_matching_subpath(file, source)
         if subpath != file.path:
-            base = file.path[len(subpath):].strip("/")
+            base = file.path[len(subpath) :].strip("/")
 
         return os.path.join(target, base)
 
@@ -223,23 +247,17 @@ class MemoryFilesystemFake(Filesystem):
         return items
 
     def _find_children(self, path: str) -> List[FilesystemItem]:
-        return self._get_items_by_glob(os.path.join(path, '*'))
+        return self._get_items_by_glob(os.path.join(path, "*"))
 
     def exists(self, path: str) -> bool:
         return self._find_matching_item(path) is not None
 
     def _find_matching_item(self, path: str) -> Optional[FilesystemItem]:
-        return next(
-            filter(
-                lambda f: f.path == path,
-                self._filesystem
-            ), None
-        )
+        return next(filter(lambda f: f.path == path, self._filesystem), None)
 
 
 @contextmanager
 def sshfs_with_connection_fake(sshclient_mock):
-
     def emulate_connect(*args, **kwargs):
         map_to_paramiko_arguments(kwargs)
         sshclient_mock.connect(*args, **kwargs)

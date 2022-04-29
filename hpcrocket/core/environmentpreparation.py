@@ -1,4 +1,5 @@
-from typing import List, NamedTuple, Optional
+import os
+from typing import Callable, List, NamedTuple, Optional, Tuple
 
 from hpcrocket.core.errors import error_type
 from hpcrocket.core.filesystem import Filesystem
@@ -9,9 +10,21 @@ class CopyInstruction(NamedTuple):
     """
     Copy instruction for a file.
     """
+
     source: str
     destination: str
     overwrite: bool = False
+
+
+_PathResolver = Callable[[str, str], str]
+
+
+def _join_dest_and_src(src: str, dest: str) -> str:
+    return os.path.join(dest, src)
+
+
+def _always_dest(src: str, dest: str) -> str:
+    return dest
 
 
 class EnvironmentPreparation:
@@ -19,7 +32,12 @@ class EnvironmentPreparation:
     This class is responsible for copying and deleting files from the source and target filesystems.
     """
 
-    def __init__(self, source_filesystem: Filesystem, target_filesystem: Filesystem, ui: Optional[UI] = None) -> None:
+    def __init__(
+        self,
+        source_filesystem: Filesystem,
+        target_filesystem: Filesystem,
+        ui: Optional[UI] = None,
+    ) -> None:
         self._src_filesystem = source_filesystem
         self._target_filesystem = target_filesystem
         self._ui = ui or NullUI()
@@ -55,10 +73,29 @@ class EnvironmentPreparation:
             FileExistsError: If a file to copy already exists on the target filesystem
         """
         for src, dest, overwrite in self._copy:
-            self._src_filesystem.copy(src, dest, overwrite,
-                                      filesystem=self._target_filesystem)
+            files, path_resolver = self._files_and_resolver(src)
+            self._copy_all(files, dest, overwrite, path_resolver)
 
-            self._copied_files.append(dest)
+    def _files_and_resolver(self, src: str) -> Tuple[List[str], _PathResolver]:
+        if "*" in src:
+            files = self._src_filesystem.glob(src)
+            return files, _join_dest_and_src
+
+        return [src], _always_dest
+
+    def _copy_all(
+        self, files: List[str], dest: str, overwrite: bool, path_resolver: _PathResolver
+    ) -> None:
+        for f in files:
+            destination = path_resolver(f, dest)
+            self._copy_single_file(f, destination, overwrite)
+
+    def _copy_single_file(self, src: str, dest: str, overwrite: bool) -> None:
+        self._src_filesystem.copy(
+            src, dest, overwrite, filesystem=self._target_filesystem
+        )
+
+        self._copied_files.append(dest)
 
     def files_to_clean(self, files: List[str]) -> None:
         """
@@ -92,8 +129,7 @@ class EnvironmentPreparation:
         try:
             self._target_filesystem.delete(file)
         except FileNotFoundError as err:
-            self._ui.error(
-                f"{error_type(err)}: Cannot delete file '{file}'")
+            self._ui.error(f"{error_type(err)}: Cannot delete file '{file}'")
             return False
 
         return True
@@ -123,11 +159,11 @@ class EnvironmentPreparation:
         """
         for src, dst, overwrite in self._collect:
             try:
-                self._target_filesystem.copy(src, dst, overwrite,
-                                             filesystem=self._src_filesystem)
+                self._target_filesystem.copy(
+                    src, dst, overwrite, filesystem=self._src_filesystem
+                )
             except (FileNotFoundError, FileExistsError) as err:
-                self._ui.error(
-                    f"{error_type(err)}: Cannot copy file '{src}'")
+                self._ui.error(f"{error_type(err)}: Cannot copy file '{src}'")
 
     def rollback(self) -> None:
         """
