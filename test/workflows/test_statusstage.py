@@ -1,6 +1,6 @@
 from test.slurmoutput import DEFAULT_JOB_ID, completed_slurm_job
 from test.testdoubles.executor import (SlurmJobExecutorSpy,
-                                       SuccessfulSlurmJobCommandStub)
+                                       successful_slurm_job_command_stub)
 from unittest.mock import Mock
 
 from hpcrocket.core.slurmcontroller import SlurmController
@@ -9,7 +9,7 @@ from hpcrocket.ui import UI
 
 
 def make_sut():
-    executor = SlurmJobExecutorSpy(sacct_cmd=SuccessfulSlurmJobCommandStub())
+    executor = SlurmJobExecutorSpy(sacct_cmd=successful_slurm_job_command_stub())
     controller = SlurmController(executor)
     return StatusStage(controller, DEFAULT_JOB_ID)
 

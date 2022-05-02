@@ -14,7 +14,7 @@ def new_filesystem(files: Optional[List[str]] = None) -> Filesystem:
     return MemoryFilesystemFake(files or [])
 
 
-def test__given_files_to_copy__but_not_preparing__should_not_do_anything():
+def test__given_files_to_copy__but_not_preparing__should_not_do_anything() -> None:
     source_fs = new_filesystem(["file1.txt"])
     target_fs = new_filesystem()
 
@@ -24,7 +24,7 @@ def test__given_files_to_copy__but_not_preparing__should_not_do_anything():
     assert target_fs.exists("file2.txt") is False
 
 
-def test__given_files_to_copy__when_preparing__should_copy_files():
+def test__given_files_to_copy__when_preparing__should_copy_files() -> None:
     source_fs = new_filesystem(["file.txt", "funny.gif"])
     target_fs = new_filesystem(["evenfunnier.gif"])
 
@@ -43,7 +43,7 @@ def test__given_files_to_copy__when_preparing__should_copy_files():
     assert target_fs.exists("evenfunnier.gif")
 
 
-def test__given_files_to_copy_with_non_existing_file__when_preparing_then_rollback__should_remove_copied_files_from_target_fs():
+def test__given_files_to_copy_with_non_existing_file__when_preparing_then_rollback__should_remove_copied_files_from_target_fs() -> None:
     source_fs_spy = new_filesystem(["funny.gif"])
     target_fs = new_filesystem()
 
@@ -64,7 +64,7 @@ def test__given_files_to_copy_with_non_existing_file__when_preparing_then_rollba
     assert target_fs.exists("filecopy.txt") is False
 
 
-def test__given_copied_file_not_on_target_fs__when_rolling_back__should_remove_remaining_copied_files_from_target_fs():
+def test__given_copied_file_not_on_target_fs__when_rolling_back__should_remove_remaining_copied_files_from_target_fs() -> None:
     source_fs_spy = new_filesystem(["file.txt", "funny.gif"])
     target_fs = new_filesystem()
 
@@ -84,7 +84,7 @@ def test__given_copied_file_not_on_target_fs__when_rolling_back__should_remove_r
     assert target_fs.exists("evenfunnier.gif") is False
 
 
-def test__given_copied_with_glob_but_file_exists_on_target__when_rolling_back__it_removes_copied_files_from_target():
+def test__given_copied_with_glob_but_file_exists_on_target__when_rolling_back__it_removes_copied_files_from_target() -> None:
     exists_on_target = "exists_on_target.txt"
     source_fs = new_filesystem(["file.txt", exists_on_target])
     target_fs = new_filesystem([exists_on_target])
@@ -100,7 +100,7 @@ def test__given_copied_with_glob_but_file_exists_on_target__when_rolling_back__i
     assert target_fs.exists("file.txt") is False
 
 
-def test__given_rollback_done__when_rolling_back_again__should_not_do_anything():
+def test__given_rollback_done__when_rolling_back_again__should_not_do_anything() -> None:
     source_fs_spy = new_filesystem(["file.txt", "funny.gif"])
     target_fs = MagicMock(wraps=new_filesystem())
 
@@ -120,7 +120,7 @@ def test__given_rollback_done__when_rolling_back_again__should_not_do_anything()
     target_fs.delete.assert_not_called()
 
 
-def test__given_rollback_done_with_file_not_found__when_rolling_back_again__should_try_to_delete_remaining_files():
+def test__given_rollback_done_with_file_not_found__when_rolling_back_again__should_try_to_delete_remaining_files() -> None:
     source_fs_spy = new_filesystem(["file.txt", "funny.gif"])
     target_fs_spy = MagicMock(wraps=new_filesystem())
 
@@ -142,7 +142,7 @@ def test__given_rollback_done_with_file_not_found__when_rolling_back_again__shou
     target_fs_spy.delete.assert_has_calls([call("filecopy.txt")])
 
 
-def test__given_files_to_clean__but_not_cleaning__should_not_do_anything():
+def test__given_files_to_clean__but_not_cleaning__should_not_do_anything() -> None:
     source_fs = new_filesystem()
     target_fs_spy = new_filesystem(["file1.txt"])
 
@@ -152,7 +152,7 @@ def test__given_files_to_clean__but_not_cleaning__should_not_do_anything():
     assert target_fs_spy.exists("file1.txt")
 
 
-def test__given_files_to_clean__when_cleaning__should_delete_files():
+def test__given_files_to_clean__when_cleaning__should_delete_files() -> None:
     source_fs = new_filesystem()
     target_fs_spy = new_filesystem(["file.txt", "funny.gif"])
 
@@ -171,7 +171,7 @@ def test__given_files_to_clean__when_cleaning__should_delete_files():
     assert target_fs_spy.exists("funny.gif") is False
 
 
-def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_still_clean_remaining_files():
+def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_still_clean_remaining_files() -> None:
     source_fs_spy = new_filesystem()
     target_fs = new_filesystem(["funny.gif"])
 
@@ -188,7 +188,7 @@ def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_st
     assert target_fs.exists("funny.gif") is False
 
 
-def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_log_error_to_ui():
+def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_log_error_to_ui() -> None:
     source_fs_spy = new_filesystem()
     target_fs = new_filesystem(["funny.gif"])
 
@@ -206,7 +206,7 @@ def test__given_files_to_clean_with_non_existing_files__when_cleaning__should_lo
     ui_spy.error.assert_called_with("FileNotFoundError: Cannot delete file 'file.txt'")
 
 
-def test__given_files_to_collect__when_collect__should_copy_to_source_fs():
+def test__given_files_to_collect__when_collect__should_copy_to_source_fs() -> None:
     source_fs_spy = new_filesystem(["copy_file.txt"])
     target_fs = new_filesystem(["file.txt", "funny.gif"])
 
@@ -225,7 +225,7 @@ def test__given_files_to_collect__when_collect__should_copy_to_source_fs():
     assert source_fs_spy.exists("copy_funny.gif")
 
 
-def test__given_files_to_collect_with_non_existing_file__when_collecting__should_collect_remaining_files():
+def test__given_files_to_collect_with_non_existing_file__when_collecting__should_collect_remaining_files() -> None:
     source_fs_spy = new_filesystem()
     target_fs = new_filesystem(["funny.gif"])
 
@@ -243,7 +243,7 @@ def test__given_files_to_collect_with_non_existing_file__when_collecting__should
     assert source_fs_spy.exists("copy_funny.gif")
 
 
-def test__given_files_to_collect_with_non_existing_file__when_collecting__should_log_error_to_ui():
+def test__given_files_to_collect_with_non_existing_file__when_collecting__should_log_error_to_ui() -> None:
     source_fs_spy = new_filesystem()
     target_fs = new_filesystem(["funny.gif"])
 
@@ -262,7 +262,7 @@ def test__given_files_to_collect_with_non_existing_file__when_collecting__should
     ui_spy.error.assert_called_with("FileNotFoundError: Cannot copy file 'file.txt'")
 
 
-def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_collecting__should_still_collect_remaining_files():
+def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_collecting__should_still_collect_remaining_files() -> None:
     source_fs_spy = new_filesystem(["copy_file.txt"])
     target_fs = new_filesystem(["file.txt", "funny.gif"])
 
@@ -280,7 +280,7 @@ def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_c
     assert source_fs_spy.exists("copy_funny.gif")
 
 
-def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_collecting__should_log_error_to_ui():
+def test__given_files_to_collect_with_file_already_existing_on_source_fs__when_collecting__should_log_error_to_ui() -> None:
     source_fs_spy = new_filesystem(["copy_file.txt"])
     target_fs = new_filesystem(["file.txt", "funny.gif"])
 

@@ -3,9 +3,9 @@ from test.application.executor_filesystem_callorder import (
 from test.application.launchoptions import main_connection
 from test.slurm_assertions import assert_job_polled
 from test.slurmoutput import DEFAULT_JOB_ID, completed_slurm_job
-from test.testdoubles.executor import (AssertWaitRunningCommandStub,
+from test.testdoubles.executor import (RunningCommandStub,
                                        RunningCommandStub, SlurmJobExecutorSpy,
-                                       SuccessfulSlurmJobCommandStub)
+                                       successful_slurm_job_command_stub)
 from test.testdoubles.filesystem import DummyFilesystemFactory
 from unittest.mock import Mock
 
@@ -28,7 +28,7 @@ def make_sut(executor, ui=None):
 
 
 def test__given_job_options_with_status_action__when_running__should_poll_job_status_once_and_exit(options):
-    executor = SlurmJobExecutorSpy(sacct_cmd=AssertWaitRunningCommandStub())
+    executor = SlurmJobExecutorSpy(sacct_cmd=RunningCommandStub())
     sut = make_sut(executor)
 
     actual = sut.run(options)
@@ -38,7 +38,7 @@ def test__given_job_options_with_status_action__when_running__should_poll_job_st
 
 
 def test__given_job_option_with_status_action__when_running__should_update_ui_with_job_status(options):
-    executor = SlurmJobExecutorSpy(sacct_cmd=SuccessfulSlurmJobCommandStub())
+    executor = SlurmJobExecutorSpy(sacct_cmd=successful_slurm_job_command_stub())
 
     ui_spy = Mock()
     sut = make_sut(executor, ui_spy)

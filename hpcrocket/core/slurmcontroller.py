@@ -5,8 +5,11 @@ from hpcrocket.watcher.jobwatcher import JobWatcherFactory, JobWatcherImpl
 
 
 class SlurmController:
-
-    def __init__(self, executor: CommandExecutor, watcher_factory: Optional[JobWatcherFactory] = None) -> None:
+    def __init__(
+        self,
+        executor: CommandExecutor,
+        watcher_factory: Optional[JobWatcherFactory] = None,
+    ) -> None:
         self._executor = executor
         self._watcher_factory = watcher_factory or JobWatcherImpl
 
@@ -18,7 +21,8 @@ class SlurmController:
 
     def poll_status(self, jobid: str) -> SlurmJobStatus:
         cmd = self._execute_and_wait_or_raise_on_error(
-            f"sacct -j {jobid} -o jobid,jobname%30,state --noheader")
+            f"sacct -j {jobid} -o jobid,jobname%30,state --noheader"
+        )
         return SlurmJobStatus.from_output(cmd.stdout())
 
     def cancel(self, jobid: str) -> None:

@@ -2,7 +2,7 @@ import fnmatch
 import os.path
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union, cast
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union, cast
 from unittest.mock import DEFAULT, Mock, patch
 
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
@@ -28,7 +28,7 @@ class DummyFilesystem(Filesystem):
         source: str,
         target: str,
         overwrite: bool = False,
-        filesystem: "Filesystem" = None,
+        filesystem: Optional["Filesystem"] = None,
     ) -> None:
         pass
 
@@ -39,8 +39,8 @@ class DummyFilesystem(Filesystem):
 class MemoryFilesystemFactoryStub(FilesystemFactory):
     def __init__(
         self,
-        local_fs: "MemoryFilesystemFake" = None,
-        ssh_fs: "MemoryFilesystemFake" = None,
+        local_fs: Optional["MemoryFilesystemFake"] = None,
+        ssh_fs: Optional["MemoryFilesystemFake"] = None,
     ) -> None:
         self.local_filesystem = local_fs or MemoryFilesystemFake()
         self.ssh_filesystem = ssh_fs or MemoryFilesystemFake()
@@ -158,7 +158,7 @@ class MemoryFilesystemFake(Filesystem):
         other: "MemoryFilesystemFake",
         target: str,
         overwrite: bool,
-    ):
+    ) -> None:
         if overwrite:
             return
 
@@ -195,11 +195,19 @@ class MemoryFilesystemFake(Filesystem):
 
         self._create_file_copy(fs, file_to_copy, source, target, overwrite)
 
-    def _overwrite_file_content(self, file_to_copy: FileStub, existing_file: FileStub):
-        existing_file = cast(FileStub, existing_file)
+    def _overwrite_file_content(
+        self, file_to_copy: FileStub, existing_file: FileStub
+    ) -> None:
         existing_file.content = file_to_copy.content
 
-    def _create_file_copy(self, fs, file, source, target, overwrite):
+    def _create_file_copy(
+        self,
+        fs: "MemoryFilesystemFake",
+        file: FileStub,
+        source: str,
+        target: str,
+        overwrite: bool,
+    ) -> None:
         target_path = self._final_target_path(file, source, target)
         self._raise_if_target_file_exists(fs, target_path, overwrite)
         fs.create_file_stub(target_path, file.content)
@@ -216,18 +224,25 @@ class MemoryFilesystemFake(Filesystem):
         return os.path.join(target, base)
 
     def _minimal_matching_subpath(self, file: FileStub, pattern: str) -> str:
-        path_components = file.path.split(os.path.sep)
-        walked_path = ""
-        for component in path_components:
-            walked_path += component
-            if component != path_components[-1]:
-                walked_path += os.path.sep
-
+        for walked_path in self._walk_path(file.path):
             path_matches = fnmatch.fnmatch(walked_path, pattern)
             if path_matches:
                 break
 
         return walked_path
+
+    def _walk_path(self, path: str) -> Generator[str, None, None]:
+        def is_last_component(component: str, all_components: List[str]) -> bool:
+            return component != all_components[-1]
+
+        path_components = path.split(os.path.sep)
+        walked_path = ""
+        for component in path_components:
+            walked_path += component
+            if is_last_component(component, path_components):
+                walked_path += os.path.sep
+
+            yield walked_path
 
     def delete(self, path: str) -> None:
         items = self._get_matching_items(path)
@@ -238,12 +253,12 @@ class MemoryFilesystemFake(Filesystem):
         for item in items:
             self._filesystem.remove(item)
 
-    def _get_matching_items(self, path):
+    def _get_matching_items(self, path: str) -> List[FilesystemItem]:
         if "*" in path:
             items = self._get_items_by_glob(path)
         else:
             item = self._find_matching_item(path)
-            items = [item] if item else self._find_children(path)  # type: ignore
+            items = [item] if item else self._find_children(path)
         return items
 
     def _find_children(self, path: str) -> List[FilesystemItem]:
@@ -253,17 +268,19 @@ class MemoryFilesystemFake(Filesystem):
         return self._find_matching_item(path) is not None
 
     def _find_matching_item(self, path: str) -> Optional[FilesystemItem]:
-        return next(filter(lambda f: f.path == path, self._filesystem), None)
+        return next(
+            filter(lambda f: f.path == path if f else False, self._filesystem), None
+        )
 
 
 @contextmanager
-def sshfs_with_connection_fake(sshclient_mock):
-    def emulate_connect(*args, **kwargs):
+def sshfs_with_connection_fake(sshclient_mock: Mock) -> Generator[Mock, None, None]:
+    def emulate_connect(*args: Any, **kwargs: str) -> Any:
         map_to_paramiko_arguments(kwargs)
         sshclient_mock.connect(*args, **kwargs)
         return DEFAULT
 
-    def map_to_paramiko_arguments(kwargs):
+    def map_to_paramiko_arguments(kwargs: Dict[str, str]) -> None:
         kwargs["hostname"] = kwargs["host"]
         kwargs["username"] = kwargs["user"]
         kwargs["password"] = kwargs["passwd"]

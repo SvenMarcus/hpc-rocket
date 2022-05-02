@@ -1,7 +1,7 @@
 from test.application.launchoptions import watch_options_with_proxy
 from test.slurm_assertions import assert_job_polled
 from test.slurmoutput import completed_slurm_job, running_slurm_job
-from test.testdoubles.executor import (FailedSlurmJobCommandStub,
+from test.testdoubles.executor import (failed_slurm_job_command_stub,
                                        LongRunningSlurmJobExecutorSpy,
                                        SlurmJobExecutorSpy)
 from test.testdoubles.filesystem import DummyFilesystemFactory
@@ -48,7 +48,7 @@ def test__given_watch_options__when_running_with_successful_job__should_exit_wit
 
 
 def test__given_watch_options__when_running_with_failing_job__should_exit_with_1():
-    executor = SlurmJobExecutorSpy(sacct_cmd=FailedSlurmJobCommandStub())
+    executor = SlurmJobExecutorSpy(sacct_cmd=failed_slurm_job_command_stub())
     sut = make_sut(executor)
 
     actual = sut.run(watch_options_with_proxy())

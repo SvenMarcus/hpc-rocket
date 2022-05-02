@@ -8,7 +8,7 @@ from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 
 class CallOrderVerification(SlurmJobExecutorSpy, Filesystem):
 
-    def __init__(self, expected):
+    def __init__(self, expected) -> None:
         super().__init__()
         self.log = []
         self.expected = expected

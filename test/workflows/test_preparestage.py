@@ -1,3 +1,5 @@
+from typing import List
+from hpcrocket.core.filesystem import FilesystemFactory
 from test.testdoubles.filesystem import (
     DummyFilesystemFactory,
     MemoryFilesystemFactoryStub,
@@ -9,18 +11,20 @@ from hpcrocket.core.workflows.stages import PrepareStage
 from hpcrocket.ui import UI
 
 
-def run_prepare_stage(filesystem_factory, files_to_copy):
+def run_prepare_stage(
+    filesystem_factory: FilesystemFactory, files_to_copy: List[CopyInstruction]
+) -> bool:
     sut = PrepareStage(filesystem_factory, files_to_copy)
     return sut(Mock(spec=UI))
 
 
-def test__run_prepare_stage__should_return_true():
+def test__run_prepare_stage__should_return_true() -> None:
     actual = run_prepare_stage(DummyFilesystemFactory(), [])
 
     assert actual is True
 
 
-def test__given_copy_instructions__when_running__should_copy_files_to_remote_with_given_overwrite_settings():
+def test__given_copy_instructions__when_running__should_copy_files_to_remote_with_given_overwrite_settings() -> None:
     copy_instructions = [CopyInstruction("myfile.txt", "mycopy.txt", True)]
 
     factory = MemoryFilesystemFactoryStub()
@@ -31,7 +35,7 @@ def test__given_copy_instructions__when_running__should_copy_files_to_remote_wit
     assert factory.ssh_filesystem.exists("mycopy.txt")
 
 
-def test__given_copy_instructions__when_file_exists_error_during_copy__should_rollback_copied_files():
+def test__given_copy_instructions__when_file_exists_error_during_copy__should_rollback_copied_files() -> None:
     copy_instructions = [
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("myfile.txt", "mycopy.txt"),
@@ -45,7 +49,7 @@ def test__given_copy_instructions__when_file_exists_error_during_copy__should_ro
     assert factory.ssh_filesystem.exists("mycopy.txt") is False
 
 
-def test__given_copy_instructions__when_file_not_found_during_copy__should_rollback_copied_files():
+def test__given_copy_instructions__when_file_not_found_during_copy__should_rollback_copied_files() -> None:
     copy_instructions = [
         CopyInstruction("myfile.txt", "mycopy.txt"),
         CopyInstruction("other.txt", "othercopy.txt"),
@@ -59,7 +63,7 @@ def test__given_copy_instructions__when_file_not_found_during_copy__should_rollb
     assert factory.ssh_filesystem.exists("mycopy.txt") is False
 
 
-def test__given_copy_instructions__when_error_during_copy__should_return_false():
+def test__given_copy_instructions__when_error_during_copy__should_return_false() -> None:
     copy_instructions = [CopyInstruction("myfile.txt", "mycopy.txt")]
     factory = MemoryFilesystemFactoryStub()
 

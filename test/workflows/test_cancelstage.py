@@ -8,13 +8,13 @@ from hpcrocket.core.workflows.stages import CancelStage
 from hpcrocket.ui import UI
 
 
-def make_sut(executor):
+def make_sut(executor: SlurmJobExecutorSpy) -> CancelStage:
     controller = SlurmController(executor)
     sut = CancelStage(controller, DEFAULT_JOB_ID)
     return sut
 
 
-def test__when_running__should_cancel_job():
+def test__when_running__should_cancel_job() -> None:
     executor = SlurmJobExecutorSpy()
     sut = make_sut(executor)
 
