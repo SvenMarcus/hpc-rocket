@@ -20,7 +20,7 @@ _PathResolver = Callable[[str, str], str]
 
 
 def _join_dest_and_src(src: str, dest: str) -> str:
-    return os.path.join(dest, src)
+    return os.path.join(dest, os.path.basename(src))
 
 
 def _always_dest(src: str, dest: str) -> str:

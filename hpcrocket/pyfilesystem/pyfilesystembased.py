@@ -45,7 +45,7 @@ class PyFilesystemBased(Filesystem, ABC):
         source: str,
         target: str,
         overwrite: bool = False,
-        filesystem: Optional['Filesystem'] = None
+        filesystem: Optional["Filesystem"] = None,
     ) -> None:
         if _is_glob(source):
             self._copy_glob(source, target, overwrite, filesystem)
@@ -58,7 +58,7 @@ class PyFilesystemBased(Filesystem, ABC):
         source: str,
         target: str,
         overwrite: bool,
-        filesystem: Optional['Filesystem']
+        filesystem: Optional["Filesystem"],
     ) -> None:
         glob = self.internal_fs.glob(source)
         for match in glob:
@@ -71,7 +71,7 @@ class PyFilesystemBased(Filesystem, ABC):
         source: str,
         target: str,
         overwrite: bool = False,
-        filesystem: Optional['Filesystem'] = None
+        filesystem: Optional["Filesystem"] = None,
     ) -> None:
         self._raise_if_source_does_not_exist(source)
         self._raise_if_target_exists(target, overwrite, filesystem)
@@ -85,9 +85,7 @@ class PyFilesystemBased(Filesystem, ABC):
         self._try_copy(source, target, overwrite)
 
     def _create_missing_target_dirs(
-        self,
-        target: str,
-        filesystem: Optional[Filesystem]
+        self, target: str, filesystem: Optional[Filesystem]
     ) -> None:
         target_fs = cast(PyFilesystemBased, filesystem) or self
         target_parent_dir = os.path.dirname(target)
@@ -119,36 +117,55 @@ class PyFilesystemBased(Filesystem, ABC):
     def exists(self, path: str) -> bool:
         return self.internal_fs.exists(path)
 
-    def _try_copy_to_filesystem(self, source: str, target: str, filesystem: Optional[Filesystem]) -> None:
+    def _try_copy_to_filesystem(
+        self, source: str, target: str, filesystem: Optional[Filesystem]
+    ) -> None:
         other_filesystem = cast(PyFilesystemBased, filesystem).internal_fs
         if self.internal_fs.isdir(source):
-            fscp.copy_dir(self.internal_fs, source,
-                          other_filesystem, target)
+            fscp.copy_dir(self.internal_fs, source, other_filesystem, target)
             return
 
-        fscp.copy_file(self.internal_fs, source,
-                       other_filesystem, target)
+        target = self._append_filename_if_target_is_dir(
+            other_filesystem, source, target
+        )
+        fscp.copy_file(self.internal_fs, source, other_filesystem, target)
 
     def _try_copy(self, source: str, target: str, overwrite: bool) -> None:
         if self.internal_fs.isdir(source):
             self.internal_fs.copydir(source, target, create=True)
             return
 
+        target = self._append_filename_if_target_is_dir(
+            self.internal_fs, source, target
+        )
         self.internal_fs.copy(source, target, overwrite=overwrite)
+
+    def _append_filename_if_target_is_dir(
+        self, fs: fs.base.FS, source: str, target: str
+    ) -> str:
+        if fs.isdir(target):
+            target = os.path.join(target, os.path.basename(source))
+
+        return target
 
     def _raise_if_source_does_not_exist(self, source: str) -> None:
         if not self.exists(source):
             raise FileNotFoundError(source)
 
-    def _raise_if_target_exists(self, target: str, overwrite: bool, filesystem: Optional[Filesystem]) -> None:
+    def _raise_if_target_exists(
+        self, target: str, overwrite: bool, filesystem: Optional[Filesystem]
+    ) -> None:
         if overwrite:
             return
 
         target_filesystem = cast(PyFilesystemBased, filesystem) or self
-        if target_filesystem.exists(target) and not target_filesystem.internal_fs.isdir(target):
+        if target_filesystem.exists(target) and not target_filesystem.internal_fs.isdir(
+            target
+        ):
             raise FileExistsError(target)
 
     def _raise_if_no_pyfilesystem(self, filesystem: Optional[Filesystem]) -> None:
         if filesystem and not isinstance(filesystem, PyFilesystemBased):
             raise RuntimeError(
-                f"{str(type(self))} currently only works with PyFilesystem2 based Filesystems")
+                f"{str(type(self))} currently only works with PyFilesystem2 based Filesystems"
+            )

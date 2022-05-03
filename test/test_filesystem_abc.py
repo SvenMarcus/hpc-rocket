@@ -42,6 +42,14 @@ class FilesystemTest(ABC):
 
         assert sut.exists(self.TARGET)
         self.assert_file_content_equals(sut, self.TARGET, content)
+    
+    def test__when_copying_file_to_other_dir__it_copies_file_to_target_path(self) -> None:
+        sut = self.create_filesystem()
+        self.create_file(sut, "dir/sub/file.txt")
+
+        sut.copy("dir/sub/file.txt", "other/")
+
+        assert sut.exists("other/file.txt")
 
     def test__when_copying_file__but_parent_dir_missing__should_create_missing_dirs(
         self,
@@ -76,6 +84,15 @@ class FilesystemTest(ABC):
 
         assert target_fs.exists(self.TARGET)
         self.assert_file_content_equals(target_fs, self.TARGET, "content")
+
+    def test__when_copying_file_to_dir_on_other_filesystem__it_copies_file_to_target_path(self) -> None:
+        target_fs = self.create_filesystem()
+        sut = self.create_filesystem()
+        self.create_file(sut, "dir/sub/file.txt")
+
+        sut.copy("dir/sub/file.txt", "other/", filesystem=target_fs)
+
+        assert target_fs.exists("other/file.txt")
 
     def test__when_copying_file_to_other_filesystem__but_parent_dir_missing__should_create_missing_dirs(
         self,
@@ -181,7 +198,9 @@ class FilesystemTest(ABC):
 
         assert not sut.exists(self.SOURCE)
 
-    def test__when_deleting_directory__should_delete_directory_with_contents(self) -> None:
+    def test__when_deleting_directory__should_delete_directory_with_contents(
+        self,
+    ) -> None:
         dir_path = "mydir"
         sut = self.create_filesystem()
         self.create_file(sut, os.path.join(dir_path, self.SOURCE))
@@ -233,6 +252,19 @@ class FilesystemTest(ABC):
 
         assert sut.exists("otherdir/first/file.txt")
         assert sut.exists("otherdir/second/another.txt")
+
+    def test__when_copying_nested_files_with_glob_pattern_to_dir__it_copies_matching_files_into_target_dir(
+        self,
+    ) -> None:
+        sut = self.create_filesystem()
+        other = self.create_filesystem()
+        self.create_file(sut, "dir/sub/sub2/first.txt")
+        self.create_file(sut, "dir/sub/sub2/second.txt")
+
+        sut.copy("dir/sub/sub2/*.txt", "otherdir/", filesystem=other)
+
+        assert other.exists("otherdir/first.txt")
+        assert other.exists("otherdir/second.txt")
 
     def test__when_deleting_with_glob_pattern__it_deletes_matching_files(self) -> None:
         sut = self.create_filesystem()

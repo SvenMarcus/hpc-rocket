@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional, Tuple
 import unittest
 from hpcrocket.core.filesystem import FilesystemFactory
@@ -28,7 +29,11 @@ from hpcrocket.core.executor import CommandExecutor, RunningCommand
 from hpcrocket.ssh.errors import SSHError
 
 LOCAL_FILE = "myfile.txt"
+LOCAL_DIR = "localdir/"
+
 REMOTE_FILE = "mycopy.txt"
+REMOTE_DIR = "remotedir/"
+
 COLLECTED_FILE = "mycollect.txt"
 
 GLOB_PATTERN = "*.txt"
@@ -184,17 +189,39 @@ class Application_With_Options_To_Copy(unittest.TestCase):
 
         assert_exists_on_remote(self.fs_factory, REMOTE_FILE)
 
-    def test__with_globbing__when_running__copies_only_matching_files(self) -> None:
-        self.fs_factory.create_local_files(LOCAL_FILE, NON_MATCHING_FILE)
-
-        options = launch_options(copy=[CopyInstruction(GLOB_PATTERN, "store_dir")])
+    def test__file_into_dir__when_running__copies_file_into_remote_dir(self) -> None:
+        self.fs_factory.create_local_files(LOCAL_FILE)
+        options = launch_options()
+        options.copy_files = [CopyInstruction(LOCAL_FILE, REMOTE_DIR)]
 
         self.sut.run(options)
 
-        assert_exists_on_remote(self.fs_factory, f"store_dir/{LOCAL_FILE}")
-        assert_does_not_exist_on_remote(
-            self.fs_factory, f"store_dir/{NON_MATCHING_FILE}"
-        )
+        expected_path = os.path.join(REMOTE_DIR, LOCAL_FILE)
+        assert_exists_on_remote(self.fs_factory, expected_path)
+
+    def test__with_globbing__when_running__copies_only_matching_files(self) -> None:
+        self.fs_factory.create_local_files(LOCAL_FILE, NON_MATCHING_FILE)
+
+        options = launch_options(copy=[CopyInstruction(GLOB_PATTERN, REMOTE_DIR)])
+
+        self.sut.run(options)
+
+        expected_path = os.path.join(REMOTE_DIR, LOCAL_FILE)
+        invalid_path = os.path.join(REMOTE_DIR, NON_MATCHING_FILE)
+        assert_exists_on_remote(self.fs_factory, expected_path)
+        assert_does_not_exist_on_remote(self.fs_factory, invalid_path)
+
+    def test__with_globbing_into_nested_dir__when_running_copies_files_into_target_dir(self) -> None:
+        nested_file = os.path.join(LOCAL_DIR, LOCAL_FILE)
+        nested_glob = os.path.join(LOCAL_DIR, GLOB_PATTERN)
+        self.fs_factory.create_local_files(nested_file)
+
+        options = launch_options(copy=[CopyInstruction(nested_glob, REMOTE_DIR)])
+
+        self.sut.run(options)
+
+        expected_path = os.path.join(REMOTE_DIR, LOCAL_FILE)
+        assert_exists_on_remote(self.fs_factory, expected_path)
 
     def test__with_glob_copy_to_existing_path__when_running__it_rolls_back_copied_files(
         self,
@@ -276,7 +303,9 @@ class Application_With_Options_To_Copy_Collect_Clean(unittest.TestCase):
         assert_exists_on_remote(self.fs_factory, REMOTE_FILE)
         assert_does_not_exist_locally(self.fs_factory, COLLECTED_FILE)
 
-    def test__when_running_without_watching__it_only_copies_and_runs_job_in_order(self) -> None:
+    def test__when_running_without_watching__it_only_copies_and_runs_job_in_order(
+        self,
+    ) -> None:
         self.options.watch = False
 
         expected = ["copy myfile.txt mycopy.txt", "sbatch"]

@@ -133,8 +133,6 @@ class MemoryFilesystemFake(Filesystem):
             filesystem, (MemoryFilesystemFake, Mock)
         )
         other = cast(MemoryFilesystemFake, filesystem) or self
-        source = source.strip("/")
-        target = target.strip("/")
         self._raise_if_target_file_exists(other, target, overwrite)
         self._perform_copy(other, source, target, overwrite)
 
@@ -209,8 +207,16 @@ class MemoryFilesystemFake(Filesystem):
         overwrite: bool,
     ) -> None:
         target_path = self._final_target_path(file, source, target)
+        target_path = self._append_filename_if_dir(file, target_path)
         self._raise_if_target_file_exists(fs, target_path, overwrite)
+
         fs.create_file_stub(target_path, file.content)
+
+    def _append_filename_if_dir(self, file: FileStub, target_path: str) -> str:
+        if target_path.endswith(os.path.sep):
+            target_path = os.path.join(target_path, os.path.basename(file.path))
+
+        return target_path
 
     def _final_target_path(self, file: FileStub, source: str, target: str) -> str:
         if not "*" in source:

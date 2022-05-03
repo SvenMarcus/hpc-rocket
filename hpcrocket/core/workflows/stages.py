@@ -1,15 +1,20 @@
 from typing import List, Optional, cast
 
-from hpcrocket.core.environmentpreparation import (CopyInstruction,
-                                                   EnvironmentPreparation)
+from hpcrocket.core.environmentpreparation import (
+    CopyInstruction,
+    EnvironmentPreparation,
+)
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.typesafety import get_or_raise
 from hpcrocket.ui import UI
-from hpcrocket.watcher.jobwatcher import (JobWatcher, NotWatchingError,
-                                          SlurmJobStatusCallback)
+from hpcrocket.watcher.jobwatcher import (
+    JobWatcher,
+    NotWatchingError,
+    SlurmJobStatusCallback,
+)
 
 try:
     from typing import Protocol
@@ -58,7 +63,6 @@ class WatchStage:
     """
 
     class BatchJobProvider(Protocol):
-
         def get_batch_job(self) -> SlurmBatchJob:
             """
             Provides the watch stage with a batch job to watch
@@ -75,7 +79,9 @@ class WatchStage:
                 ui (UI): The UI instance WatchStage was called with
             """
 
-    def __init__(self, batch_job_provider: BatchJobProvider, poll_interval: int) -> None:
+    def __init__(
+        self, batch_job_provider: BatchJobProvider, poll_interval: int
+    ) -> None:
         self._poll_interval = poll_interval
         self._provider = batch_job_provider
         self._watcher: Optional[JobWatcher] = None
@@ -87,8 +93,7 @@ class WatchStage:
         self._watcher.watch(self._get_callback(ui), self._poll_interval)
         self._watcher.wait_until_done()
 
-        return (self._job_status is not None
-                and self._job_status.success)
+        return self._job_status is not None and self._job_status.success
 
     def _get_callback(self, ui: UI) -> SlurmJobStatusCallback:
         def callback(new_status: SlurmJobStatus) -> None:
@@ -107,7 +112,11 @@ class PrepareStage:
     Copies the given files to the target filesystem.
     """
 
-    def __init__(self, filesystem_factory: FilesystemFactory, copy_instructions: List[CopyInstruction]) -> None:
+    def __init__(
+        self,
+        filesystem_factory: FilesystemFactory,
+        copy_instructions: List[CopyInstruction],
+    ) -> None:
         self._factory = filesystem_factory
         self._files = copy_instructions
 
@@ -133,15 +142,14 @@ class PrepareStage:
         env_prep = EnvironmentPreparation(
             self._factory.create_local_filesystem(),
             self._factory.create_ssh_filesystem(),
-            ui
+            ui,
         )
 
         env_prep.files_to_copy(self._files)
         return env_prep
 
     @staticmethod
-    def _do_rollback(env_prep: EnvironmentPreparation,
-                     err: Exception, ui: UI) -> None:
+    def _do_rollback(env_prep: EnvironmentPreparation, err: Exception, ui: UI) -> None:
         ui.error(get_error_message(err))
         ui.info("Performing rollback")
         env_prep.rollback()
@@ -154,8 +162,11 @@ class FinalizeStage:
     """
 
     def __init__(
-            self, filesystem_factory: FilesystemFactory, collect_instructions: List[CopyInstruction],
-            clean_instructions: List[str]) -> None:
+        self,
+        filesystem_factory: FilesystemFactory,
+        collect_instructions: List[CopyInstruction],
+        clean_instructions: List[str],
+    ) -> None:
         self._factory = filesystem_factory
         self._collect = collect_instructions
         self._clean = clean_instructions
@@ -164,7 +175,7 @@ class FinalizeStage:
         env_prep = EnvironmentPreparation(
             self._factory.create_local_filesystem(),
             self._factory.create_ssh_filesystem(),
-            ui
+            ui,
         )
 
         self._collect_files(env_prep, ui)
