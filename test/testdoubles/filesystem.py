@@ -1,8 +1,10 @@
 import fnmatch
+from io import TextIOWrapper
+import io
 import os.path
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, Generator, List, Optional, TextIO, Tuple, Union, cast
 from unittest.mock import DEFAULT, Mock, patch
 
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
@@ -34,6 +36,9 @@ class DummyFilesystem(Filesystem):
 
     def delete(self, path: str) -> None:
         pass
+
+    def openread(self, path: str) -> TextIOWrapper:
+        return TextIOWrapper(io.BytesIO())
 
 
 class MemoryFilesystemFactoryStub(FilesystemFactory):
@@ -116,12 +121,6 @@ class MemoryFilesystemFake(Filesystem):
             if fnmatch.fnmatch(file.path, pattern)
         ]
 
-    def _get_items_by_glob(self, pattern: str) -> List[FilesystemItem]:
-        pattern = pattern.replace("**/", "*")
-        return [
-            file for file in self._filesystem if fnmatch.fnmatch(file.path, pattern)
-        ]
-
     def copy(
         self,
         source: str,
@@ -135,6 +134,32 @@ class MemoryFilesystemFake(Filesystem):
         other = cast(MemoryFilesystemFake, filesystem) or self
         self._raise_if_target_file_exists(other, target, overwrite)
         self._perform_copy(other, source, target, overwrite)
+
+    def delete(self, path: str) -> None:
+        items = self._get_matching_items(path)
+
+        if not items:
+            raise FileNotFoundError(path)
+
+        for item in items:
+            self._filesystem.remove(item)
+
+    def openread(self, path: str) -> TextIOWrapper:
+        file = self._find_matching_item(path)
+        if file is None or file.is_dir():
+            raise FileNotFoundError(path)
+
+        file = cast(FileStub, file)
+        content_as_bytes = io.BytesIO()
+        content_as_bytes.write(file.content.encode())
+        content_as_bytes.seek(0, 0)
+        return TextIOWrapper(content_as_bytes)
+
+    def _get_items_by_glob(self, pattern: str) -> List[FilesystemItem]:
+        pattern = pattern.replace("**/", "*")
+        return [
+            file for file in self._filesystem if fnmatch.fnmatch(file.path, pattern)
+        ]
 
     def _perform_copy(
         self, other: "MemoryFilesystemFake", source: str, target: str, overwrite: bool
@@ -230,6 +255,7 @@ class MemoryFilesystemFake(Filesystem):
         return os.path.join(target, base)
 
     def _minimal_matching_subpath(self, file: FileStub, pattern: str) -> str:
+        walked_path = ""
         for walked_path in self._walk_path(file.path):
             path_matches = fnmatch.fnmatch(walked_path, pattern)
             if path_matches:
@@ -249,15 +275,6 @@ class MemoryFilesystemFake(Filesystem):
                 walked_path += os.path.sep
 
             yield walked_path
-
-    def delete(self, path: str) -> None:
-        items = self._get_matching_items(path)
-
-        if not items:
-            raise FileNotFoundError(path)
-
-        for item in items:
-            self._filesystem.remove(item)
 
     def _get_matching_items(self, path: str) -> List[FilesystemItem]:
         if "*" in path:

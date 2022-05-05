@@ -1,12 +1,14 @@
+from hpcrocket.core.executor import CommandExecutor
 from test.application.launchoptions import launch_options
-from test.slurm_assertions import assert_job_polled
-from test.slurmoutput import (DEFAULT_JOB_ID, completed_slurm_job,
-                              running_slurm_job)
-from test.testdoubles.executor import (CommandExecutorStub,
-                                       failed_slurm_job_command_stub,
-                                       LongRunningSlurmJobExecutorSpy,
-                                       SlurmJobExecutorSpy)
-from typing import List
+from test.slurm_assertions import assert_job_polled, assert_job_polled_times
+from test.slurmoutput import DEFAULT_JOB_ID, completed_slurm_job, running_slurm_job
+from test.testdoubles.executor import (
+    CommandExecutorStub,
+    failed_slurm_job_command_stub,
+    LongRunningSlurmJobExecutorSpy,
+    SlurmJobExecutorSpy,
+)
+from typing import List, Optional
 from unittest.mock import Mock, call
 
 import pytest
@@ -14,12 +16,14 @@ from hpcrocket.core.slurmbatchjob import SlurmBatchJob
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.stages import WatchStage
 from hpcrocket.ui import UI
-from hpcrocket.watcher.jobwatcher import (JobWatcher, JobWatcherFactory,
-                                          NotWatchingError)
+from hpcrocket.watcher.jobwatcher import (
+    JobWatcher,
+    JobWatcherFactory,
+    NotWatchingError,
+)
 
 
 class WatcherSpy:
-
     def __init__(self) -> None:
         self._log: List[str] = []
 
@@ -34,8 +38,12 @@ class WatcherSpy:
 
 
 class BatchJobProviderSpy:
-
-    def __init__(self, controller: SlurmController, jobid: str, factory: JobWatcherFactory) -> None:
+    def __init__(
+        self,
+        controller: SlurmController,
+        jobid: str,
+        factory: Optional[JobWatcherFactory],
+    ) -> None:
         self.controller = controller
         self.jobid = jobid
         self.factory = factory
@@ -45,16 +53,20 @@ class BatchJobProviderSpy:
     def get_batch_job(self) -> SlurmBatchJob:
         return SlurmBatchJob(self.controller, self.jobid, self.factory)
 
-    def cancel(self, ui: UI):
+    def cancel(self, ui: UI) -> None:
         self.was_canceled = True
 
 
-def make_job_provider(executor, factory=None):
+def make_job_provider(
+    executor: CommandExecutor, factory: Optional[JobWatcherFactory] = None
+) -> BatchJobProviderSpy:
     controller = SlurmController(executor, factory)
     return BatchJobProviderSpy(controller, DEFAULT_JOB_ID, factory)
 
 
-def make_sut(executor, factory=None):
+def make_sut(
+    executor: CommandExecutor, factory: Optional[JobWatcherFactory] = None
+) -> WatchStage:
     poll_interval = launch_options().poll_interval
     provider = make_job_provider(executor, factory)
     return WatchStage(provider, poll_interval)
@@ -93,14 +105,14 @@ def test__when_job_completes_with_failure__should_return_false():
 
 
 def test__given_long_running_job__when_running__should_poll_job_until_done():
-    executor = LongRunningSlurmJobExecutorSpy()
+    required_polls_until_done = 2
+    executor = LongRunningSlurmJobExecutorSpy(required_polls_until_done)
     sut = make_sut(executor)
 
     sut(Mock(spec=UI))
 
-    assert_job_polled(executor, DEFAULT_JOB_ID, command_index=0)
-    assert_job_polled(executor, DEFAULT_JOB_ID, command_index=1)
-    assert_job_polled(executor, DEFAULT_JOB_ID, command_index=2)
+    expected_polls = required_polls_until_done + 1
+    assert_job_polled_times(executor, expected_polls, DEFAULT_JOB_ID)
 
 
 def test__given_successful_job_and_watching__should_wait_until_job_is_done():

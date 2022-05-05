@@ -1,0 +1,28 @@
+
+host: $TARGET_HOST
+user: $TARGET_USER
+private_key: $TARGET_KEY
+
+# proxyjumps:
+#   - host: $PROXY_HOST
+#     user: $PROXY_USER
+#     private_key: $PROXY_KEY
+
+copy:
+  - from: test/acceptance/slurm.job
+    to: $REMOTE_SLURM_SCRIPT
+    overwrite: true
+
+  - from: test/acceptance/dir/*.txt
+    to: dir/
+    overwrite: true
+
+collect:
+  - from: ./dir/*.txt
+    to: .
+
+clean:
+  - $REMOTE_SLURM_SCRIPT
+  - dir/*.txt
+
+sbatch: $REMOTE_SLURM_SCRIPT

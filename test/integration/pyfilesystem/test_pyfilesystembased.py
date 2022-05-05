@@ -1,3 +1,4 @@
+from io import TextIOWrapper
 import os.path
 from typing import List, Optional, cast
 import unittest
@@ -44,6 +45,10 @@ class NonPyFilesystemBasedFilesystem(Filesystem):
         pass
 
     def exists(self, path: str) -> bool:
+        pass
+
+
+    def openread(self, path: str) -> TextIOWrapper:
         pass
 
 

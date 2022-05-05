@@ -1,15 +1,15 @@
 from abc import ABC, abstractmethod
+from io import TextIOWrapper
 from typing import List, Optional
 
 
 class FilesystemFactory(ABC):
-
     @abstractmethod
-    def create_local_filesystem(self) -> 'Filesystem':
+    def create_local_filesystem(self) -> "Filesystem":
         pass
 
     @abstractmethod
-    def create_ssh_filesystem(self) -> 'Filesystem':
+    def create_ssh_filesystem(self) -> "Filesystem":
         pass
 
 
@@ -31,9 +31,13 @@ class Filesystem(ABC):
         """
 
     @abstractmethod
-    def copy(self, source: str, target: str,
-             overwrite: bool = False,
-             filesystem: Optional['Filesystem'] = None) -> None:
+    def copy(
+        self,
+        source: str,
+        target: str,
+        overwrite: bool = False,
+        filesystem: Optional["Filesystem"] = None,
+    ) -> None:
         """Copies the `source` file to the `target` location.
         Can transfer between filesystems if `filesystem` argument is specified.
 
@@ -67,4 +71,15 @@ class Filesystem(ABC):
 
         Returns:
             bool: True if the file exists
+        """
+
+    @abstractmethod
+    def openread(self, path: str) -> TextIOWrapper:
+        """Opens a file in read mode
+
+        Args:
+            path (str): The path to a file
+
+        Returns:
+            TextIOWrapper: A TextIOWrapper to the file
         """

@@ -1,5 +1,7 @@
+from io import TextIOWrapper
+import io
 from test.testdoubles.executor import SlurmJobExecutorSpy
-from typing import Any, List
+from typing import Any, List, Optional
 from unittest.mock import Mock
 
 from hpcrocket.core.executor import RunningCommand
@@ -7,10 +9,9 @@ from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 
 
 class CallOrderVerification(SlurmJobExecutorSpy, Filesystem):
-
-    def __init__(self, expected) -> None:
+    def __init__(self, expected: List[str]) -> None:
         super().__init__()
-        self.log = []
+        self.log: List[str] = []
         self.expected = expected
 
     def __getattr__(self, name: str) -> Any:
@@ -30,7 +31,16 @@ class CallOrderVerification(SlurmJobExecutorSpy, Filesystem):
     def glob(self, pattern: str) -> List[str]:
         return []
 
-    def copy(self, source: str, target: str, overwrite: bool = False, filesystem: 'Filesystem' = None) -> None:
+    def openread(self, path: str) -> TextIOWrapper:
+        return TextIOWrapper(io.BytesIO())
+
+    def copy(
+        self,
+        source: str,
+        target: str,
+        overwrite: bool = False,
+        filesystem: Optional["Filesystem"] = None,
+    ) -> None:
         self.log.append(f"copy {source} {target}")
 
     def delete(self, path: str) -> None:
@@ -44,12 +54,11 @@ class CallOrderVerification(SlurmJobExecutorSpy, Filesystem):
 
 
 class VerifierReturningFilesystemFactory(FilesystemFactory):
-
     def __init__(self, verifier: CallOrderVerification) -> None:
         self.verifier = verifier
 
-    def create_local_filesystem(self) -> 'Filesystem':
+    def create_local_filesystem(self) -> "Filesystem":
         return self.verifier
 
-    def create_ssh_filesystem(self) -> 'Filesystem':
+    def create_ssh_filesystem(self) -> "Filesystem":
         return self.verifier

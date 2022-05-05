@@ -1,11 +1,12 @@
 import os
 from abc import ABC, abstractmethod
+from io import TextIOWrapper
 from typing import List, Optional, cast
 
-import fs.glob
 import fs.base
 import fs.copy as fscp
-
+import fs.errors
+import fs.glob
 from hpcrocket.core.filesystem import Filesystem
 
 
@@ -39,6 +40,12 @@ class PyFilesystemBased(Filesystem, ABC):
 
     def glob(self, pattern: str) -> List[str]:
         return [match.path.lstrip("/") for match in self.internal_fs.glob(pattern)]
+
+    def openread(self, path: str) -> TextIOWrapper:
+        try:
+            return cast(TextIOWrapper, self.internal_fs.open(path, mode="r"))
+        except (fs.errors.ResourceNotFound, fs.errors.FileExpected):
+            raise FileNotFoundError(path)
 
     def copy(
         self,

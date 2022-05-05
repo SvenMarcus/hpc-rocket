@@ -1,3 +1,4 @@
+from io import TextIOWrapper
 import os.path
 from abc import ABC, abstractmethod
 
@@ -42,8 +43,10 @@ class FilesystemTest(ABC):
 
         assert sut.exists(self.TARGET)
         self.assert_file_content_equals(sut, self.TARGET, content)
-    
-    def test__when_copying_file_to_other_dir__it_copies_file_to_target_path(self) -> None:
+
+    def test__when_copying_file_to_other_dir__it_copies_file_to_target_path(
+        self,
+    ) -> None:
         sut = self.create_filesystem()
         self.create_file(sut, "dir/sub/file.txt")
 
@@ -85,7 +88,9 @@ class FilesystemTest(ABC):
         assert target_fs.exists(self.TARGET)
         self.assert_file_content_equals(target_fs, self.TARGET, "content")
 
-    def test__when_copying_file_to_dir_on_other_filesystem__it_copies_file_to_target_path(self) -> None:
+    def test__when_copying_file_to_dir_on_other_filesystem__it_copies_file_to_target_path(
+        self,
+    ) -> None:
         target_fs = self.create_filesystem()
         sut = self.create_filesystem()
         self.create_file(sut, "dir/sub/file.txt")
@@ -295,3 +300,24 @@ class FilesystemTest(ABC):
             "sub/match.txt",
             "sub/dir/match.txt",
         ]
+
+    def test__when_reading_file__returns_text_io_wrapper(self) -> None:
+        file_content = "the content"
+
+        sut = self.create_filesystem()
+        self.create_file(sut, "myfile.txt", file_content)
+        with sut.openread("myfile.txt") as file:
+            assert file.read() == file_content
+
+    def test__when_reading_nonexisting_file__raises_file_not_found(self) -> None:
+        sut = self.create_filesystem()
+
+        with pytest.raises(FileNotFoundError):
+            sut.openread("nonexisting")
+
+    def test__when_reading_directory__raises_file_not_found(self) -> None:
+        sut = self.create_filesystem()
+        self.create_dir(sut, "mydir")
+
+        with pytest.raises(FileNotFoundError):
+            sut.openread("mydir")
