@@ -44,7 +44,9 @@ class PyFilesystemBased(Filesystem, ABC):
     def openread(self, path: str) -> TextIOWrapper:
         try:
             return cast(TextIOWrapper, self.internal_fs.open(path, mode="r"))
-        except (fs.errors.ResourceNotFound, fs.errors.FileExpected):
+        except fs.errors.ResourceNotFound:
+            raise FileNotFoundError(path)
+        except fs.errors.FileExpected:
             raise FileNotFoundError(path)
 
     def copy(

@@ -55,12 +55,12 @@ class MemoryPyFilesystemFactory(FilesystemFactory):
 
 
 def test__when_running_launch__it_connects_to_remote_and_launches_job_with_executor() -> None:
-    prepare_environment_variables()
     fs_factory = MemoryPyFilesystemFactory()
-    prepare_local_filesystem(fs_factory.local.internal_fs)
-
     executor = SlurmJobExecutorSpy()
     registry = _TestServiceRegistry(executor, fs_factory)
+
+    prepare_environment_variables()
+    prepare_local_filesystem(fs_factory.local.internal_fs)
 
     args = ["hpc-rocket", "launch", "config.yml"]
     exit_code = run_with_args(registry, args)

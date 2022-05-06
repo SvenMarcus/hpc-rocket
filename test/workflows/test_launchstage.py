@@ -19,15 +19,23 @@ def executor_spy() -> SlurmJobExecutorSpy:
     return SlurmJobExecutorSpy()
 
 
-def run_launch_workflow(
+def create_launch_stage(
+    options: LaunchOptions,
+    executor: Optional[CommandExecutor] = None,
+    watcher_factory: Optional[JobWatcherFactory] = None,
+) -> LaunchStage:
+    executor = executor or SlurmJobExecutorSpy()
+    controller = SlurmController(executor, watcher_factory)
+    sut = LaunchStage(controller, options.sbatch)
+    return sut
+
+
+def run_launch_stage(
     options: LaunchOptions,
     executor: Optional[CommandExecutor] = None,
     watcher_factory: Optional[JobWatcherFactory] = None,
 ) -> int:
-    executor = executor or SlurmJobExecutorSpy()
-    controller = SlurmController(executor, watcher_factory)
-    sut = LaunchStage(controller, options.sbatch)
-
+    sut = create_launch_stage(options, executor, watcher_factory)
     return sut(Mock(spec=UI))
 
 
@@ -35,23 +43,22 @@ def test__given_simple_launchoptions__when_running__should_run_sbatch_with_execu
     executor_spy: SlurmJobExecutorSpy,
 ) -> None:
     opts = launch_options()
-    run_launch_workflow(opts, executor=executor_spy)
+    run_launch_stage(opts, executor=executor_spy)
 
     assert_job_submitted(executor_spy, opts.sbatch)
 
 
 def test__given_launchoptions__when_running__should_return_true() -> None:
-    actual = run_launch_workflow(launch_options(watch=True))
+    actual = run_launch_stage(launch_options(watch=True))
 
     assert actual is True
 
 
 def test__given_running_workflow__when_canceling__should_call_cancel_on_job() -> None:
     executor = SlurmJobExecutorSpy()
-    controller = SlurmController(executor)
 
     opts = launch_options(watch=True)
-    sut = LaunchStage(controller, opts.sbatch)
+    sut = create_launch_stage(opts, executor)
 
     sut(Mock(spec=UI))
 
@@ -61,9 +68,8 @@ def test__given_running_workflow__when_canceling__should_call_cancel_on_job() ->
 
 
 def test__when_canceling_before_running__should_raise_no_job_launched_error() -> None:
-    controller = SlurmController(CommandExecutorStub())
     opts = launch_options(watch=True)
-    sut = LaunchStage(controller, opts.sbatch)
+    sut = create_launch_stage(opts, CommandExecutorStub())
 
     with pytest.raises(NoJobLaunchedError):
         sut.cancel(Mock())

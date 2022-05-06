@@ -1,6 +1,6 @@
 import signal
 import sys
-from typing import Any, List, Protocol
+from typing import Any, List
 from hpcrocket.cli import parse_cli_args
 from hpcrocket.core.application import Application
 from hpcrocket.core.executor import CommandExecutor
@@ -10,6 +10,11 @@ from hpcrocket.pyfilesystem.factory import PyFilesystemFactory
 from hpcrocket.pyfilesystem.localfilesystem import LocalFilesystem
 from hpcrocket.ssh.sshexecutor import SSHExecutor
 from hpcrocket.ui import UI, RichUI
+
+try:
+    from typing import Protocol
+except ImportError:  # pragma: no cover
+    from typing_extensions import Protocol  # type: ignore
 
 
 class ServiceRegistry(Protocol):

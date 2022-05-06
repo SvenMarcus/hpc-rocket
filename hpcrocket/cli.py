@@ -18,6 +18,10 @@ from hpcrocket.ssh.connectiondata import ConnectionData
 def parse_cli_args(args: List[str], filesystem: Filesystem) -> Options:
     parser = _setup_parser()
     config = parser.parse_args(args)
+    return _create_options(config, filesystem)
+
+
+def _create_options(config: argparse.Namespace, filesystem: Filesystem) -> Options:
     yaml_config = _parse_yaml(config.configfile, filesystem)
     option_builders = {"launch": _build_launch_options, "watch": _build_watch_options}
 
