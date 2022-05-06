@@ -1,10 +1,15 @@
 from dataclasses import dataclass
 import os
-from typing import Callable, List, NamedTuple, Optional, Protocol, Tuple
+from typing import Callable, List, NamedTuple, Optional, Tuple
 
 from hpcrocket.core.errors import error_type
 from hpcrocket.core.filesystem import Filesystem
 from hpcrocket.ui import UI, NullUI
+
+try:
+    from typing import Protocol
+except ImportError:  # pragma: no cover
+    from typing_extensions import Protocol  # type: ignore
 
 
 class CopyInstruction(NamedTuple):
