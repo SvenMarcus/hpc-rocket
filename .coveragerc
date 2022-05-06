@@ -3,9 +3,6 @@ branch = True
 
 [report]
 omit = 
-    # Omitting ui.py because it is just responsible for printing on the console
-    hpcrocket/ui.py
-
     # Omitting chmodsshfs because it is just a decorator for the fs.sshfs implementation
     hpcrocket/ssh/chmodsshfs.py
 
