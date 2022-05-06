@@ -12,6 +12,10 @@ except ImportError:  # pragma: no cover
     from typing_extensions import Protocol  # type: ignore
 
 
+def _join_dest_and_src(src: str, dest: str) -> str:
+    return os.path.join(dest, os.path.basename(src))
+
+
 class CopyInstruction(NamedTuple):
     """
     Copy instruction for a file.
@@ -21,33 +25,24 @@ class CopyInstruction(NamedTuple):
     destination: str
     overwrite: bool = False
 
+    def unglob(self, filesystem: Filesystem) -> List["CopyInstruction"]:
+        if "*" in self.source:
+            files = filesystem.glob(self.source)
+            return [
+                CopyInstruction(
+                    file,
+                    _join_dest_and_src(file, self.destination),
+                    self.overwrite,
+                )
+                for file in files
+            ]
 
-_PathResolver = Callable[[str, str], str]
-
-
-def _join_dest_and_src(src: str, dest: str) -> str:
-    return os.path.join(dest, os.path.basename(src))
-
-
-def _always_dest(src: str, dest: str) -> str:
-    return dest
-
-
-def _files_and_resolver(
-    filesystem: Filesystem, src: str
-) -> Tuple[List[str], _PathResolver]:
-    if "*" in src:
-        files = filesystem.glob(src)
-        return files, _join_dest_and_src
-
-    return [src], _always_dest
+        return [self]
 
 
 class _CopyFunction(Protocol):
     def __call__(
         self,
-        src_fs: Filesystem,
-        target_fs: Filesystem,
         copy_instruction: CopyInstruction,
     ) -> None:
         ...
@@ -60,29 +55,20 @@ class _CopyResult:
 
 
 class _Copier:
-    def __init__(
-        self, src_fs: Filesystem, target_fs: Filesystem, copy_function: _CopyFunction
-    ) -> None:
+    def __init__(self, src_fs: Filesystem, copy_function: _CopyFunction) -> None:
         self._src_fs = src_fs
-        self._target_fs = target_fs
         self._copy_function = copy_function
 
     def copy(self, copy_instruction: CopyInstruction) -> _CopyResult:
-        src, dest, overwrite = copy_instruction
-        files, path_resolver = _files_and_resolver(self._src_fs, src)
-        return self._copy_all(files, dest, overwrite, path_resolver)
+        unpacked_instructions = copy_instruction.unglob(self._src_fs)
+        return self._copy_all(unpacked_instructions)
 
     def _copy_all(
         self,
-        files: List[str],
-        desired_dest: str,
-        overwrite: bool,
-        path_resolver: _PathResolver,
+        files: List[CopyInstruction],
     ) -> _CopyResult:
         copied_files: List[str] = []
-        for source in files:
-            destination = path_resolver(source, desired_dest)
-            instruction = CopyInstruction(source, destination, overwrite)
+        for instruction in files:
             result = self._copy_file(instruction, copied_files)
             if result.error:
                 return result
@@ -93,7 +79,7 @@ class _Copier:
         self, instruction: CopyInstruction, copied_files: List[str]
     ) -> _CopyResult:
         try:
-            self._copy_function(self._src_fs, self._target_fs, instruction)
+            self._copy_function(instruction)
             copied_files.append(instruction.destination)
         except (FileNotFoundError, FileExistsError) as err:
             return _CopyResult(copied_files, err)
@@ -101,30 +87,28 @@ class _Copier:
         return _CopyResult(copied_files)
 
 
-def _make_failure_logging_copy_function(ui: UI) -> _CopyFunction:
-    copy_function = _make_copy_function()
+def _make_failure_logging_copy_function(
+    src_fs: Filesystem, target_fs: Filesystem, ui: UI
+) -> _CopyFunction:
+    copy_function = _make_copy_function(src_fs, target_fs)
 
-    def _copy_file(
-        src_fs: Filesystem, target_fs: Filesystem, copy_instruction: CopyInstruction
-    ) -> None:
+    def _copy_file(copy_instruction: CopyInstruction) -> None:
         try:
-            copy_function(src_fs, target_fs, copy_instruction)
+            copy_function(copy_instruction)
         except (FileNotFoundError, FileExistsError) as err:
             ui.error(f"{error_type(err)}: Cannot copy file '{copy_instruction.source}'")
 
     return _copy_file
 
 
-def _make_copy_function() -> _CopyFunction:
-    def _copy_file(
-        src_fs: Filesystem, target_fs: Filesystem, copy_instruction: CopyInstruction
-    ) -> None:
+def _make_copy_function(src_fs: Filesystem, target_fs: Filesystem) -> _CopyFunction:
+    def _copy_file(copy_instruction: CopyInstruction) -> None:
         src_fs.copy(*copy_instruction, filesystem=target_fs)
 
     return _copy_file
 
 
-def _make_deleter(filesystem: Filesystem, ui: UI) -> Callable[[str], bool]:
+def _make_delete_function(filesystem: Filesystem, ui: UI) -> Callable[[str], bool]:
     def _try_delete(file: str) -> bool:
         try:
             filesystem.delete(file)
@@ -149,11 +133,9 @@ class EnvironmentPreparation:
         target_filesystem: Filesystem,
         ui: Optional[UI] = None,
     ) -> None:
-        self._src_to_target_copier = _Copier(
-            source_filesystem, target_filesystem, _make_copy_function()
-        )
-
-        self._delete = _make_deleter(target_filesystem, ui or NullUI())
+        copy_function = _make_copy_function(source_filesystem, target_filesystem)
+        self._src_to_target_copier = _Copier(source_filesystem, copy_function)
+        self._delete = _make_delete_function(target_filesystem, ui or NullUI())
         self._copy: List[CopyInstruction] = list()
         self._copied_files: List[str] = list()
 
@@ -214,7 +196,7 @@ class EnvironmentPreparation:
 
 class EnvironmentCleaner:
     def __init__(self, filesystem: Filesystem, ui: Optional[UI] = None) -> None:
-        self._delete = _make_deleter(filesystem, ui or NullUI())
+        self._delete = _make_delete_function(filesystem, ui or NullUI())
         self._clean_files: List[str] = []
 
     def files_to_clean(self, files: List[str]) -> None:
@@ -253,10 +235,13 @@ class EnvironmentCollector:
         local_filesystem: Filesystem,
         ui: Optional[UI] = None,
     ) -> None:
+        copy_function = _make_failure_logging_copy_function(
+            remote_filesystem, local_filesystem, ui or NullUI()
+        )
+
         self._target_to_src_copier = _Copier(
             remote_filesystem,
-            local_filesystem,
-            _make_failure_logging_copy_function(ui or NullUI()),
+            copy_function,
         )
 
         self._collect: List[CopyInstruction] = []

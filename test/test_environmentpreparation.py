@@ -1,5 +1,5 @@
 from typing import List, Optional
-from unittest.mock import MagicMock, call, create_autospec
+from unittest.mock import MagicMock, call
 
 import pytest
 from hpcrocket.core.environmentpreparation import (
