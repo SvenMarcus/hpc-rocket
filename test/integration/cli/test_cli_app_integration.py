@@ -8,7 +8,7 @@ from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 from hpcrocket.core.launchoptions import Options
 from hpcrocket.pyfilesystem.pyfilesystembased import PyFilesystemBased
-from hpcrocket.ui import UI
+from hpcrocket.ui import UI, RichUI
 from test.slurm_assertions import assert_job_submitted
 from test.testdoubles.executor import SlurmJobExecutorSpy
 
@@ -70,9 +70,10 @@ def test__when_running_launch__it_connects_to_remote_and_launches_job_with_execu
 
 
 def run_with_args(registry: ServiceRegistry, args: List[str]) -> int:
-    sut = RuntimeContainer(args, registry, Mock(spec=UI))
-    exit_code = sut.run()
-    return exit_code
+    with RichUI() as ui:
+        sut = RuntimeContainer(args, registry, ui)
+        exit_code = sut.run()
+        return exit_code
 
 
 def prepare_local_filesystem(local_fs: fs.base.FS) -> None:
