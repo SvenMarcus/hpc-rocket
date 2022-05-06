@@ -1,23 +1,22 @@
 import os
+from test.slurm_assertions import assert_job_submitted
+from test.testdoubles.executor import SlurmJobExecutorSpy
 from typing import List
-from unittest.mock import Mock
 
 import fs.base
+import pytest
+from fs.memoryfs import MemoryFS
 from hpcrocket import RuntimeContainer, ServiceRegistry
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 from hpcrocket.core.launchoptions import Options
 from hpcrocket.pyfilesystem.pyfilesystembased import PyFilesystemBased
-from hpcrocket.ui import UI, RichUI
-from test.slurm_assertions import assert_job_submitted
-from test.testdoubles.executor import SlurmJobExecutorSpy
-
-from fs.memoryfs import MemoryFS
+from hpcrocket.ui import RichUI
 
 
 class _TestServiceRegistry:
     def __init__(
-        self, executor: CommandExecutor, fs_factory: FilesystemFactory
+        self, executor: CommandExecutor, fs_factory: "MemoryPyFilesystemFactory"
     ) -> None:
         self.executor = executor
         self.fs_factory = fs_factory
@@ -32,7 +31,7 @@ class _TestServiceRegistry:
         return self.fs_factory
 
 
-class MemoryPyfilesystem(PyFilesystemBased):
+class MemoryPyFilesystem(PyFilesystemBased):
     def __init__(self) -> None:
         super().__init__()
         self._internal_fs = MemoryFS()
@@ -44,8 +43,8 @@ class MemoryPyfilesystem(PyFilesystemBased):
 
 class MemoryPyFilesystemFactory(FilesystemFactory):
     def __init__(self) -> None:
-        self.local = MemoryPyfilesystem()
-        self.remote = MemoryPyfilesystem()
+        self.local = MemoryPyFilesystem()
+        self.remote = MemoryPyFilesystem()
 
     def create_local_filesystem(self) -> "Filesystem":
         return self.local
@@ -54,10 +53,11 @@ class MemoryPyFilesystemFactory(FilesystemFactory):
         return self.remote
 
 
+@pytest.mark.integration
 def test__when_running_launch__it_connects_to_remote_and_launches_job_with_executor() -> None:
-    fs_factory = MemoryPyFilesystemFactory()
-    executor = SlurmJobExecutorSpy()
-    registry = _TestServiceRegistry(executor, fs_factory)
+    registry = create_service_registry()
+    fs_factory = registry.fs_factory
+    executor = registry.executor
 
     prepare_environment_variables()
     prepare_local_filesystem(fs_factory.local.internal_fs)
@@ -67,6 +67,27 @@ def test__when_running_launch__it_connects_to_remote_and_launches_job_with_execu
 
     assert_job_submitted(executor, "my_slurm_job.job")
     assert exit_code == 0
+
+
+@pytest.mark.integration
+def test__when_running_launch_with_watching__it_copies_runs_job_collects_and_cleans_files() -> None:
+    registry = create_service_registry()
+    fs_factory = registry.fs_factory
+
+    prepare_environment_variables()
+    prepare_local_filesystem(fs_factory.local.internal_fs)
+
+    args = ["hpc-rocket", "launch", "--watch", "config.yml"]
+    run_with_args(registry, args)
+
+    assert fs_factory.local.exists("test.txt")
+    assert fs_factory.local.exists("hello.txt")
+    assert not fs_factory.remote.exists("my_slurm_job.job")
+
+
+def create_service_registry():
+    registry = _TestServiceRegistry(SlurmJobExecutorSpy(), MemoryPyFilesystemFactory())
+    return registry
 
 
 def run_with_args(registry: ServiceRegistry, args: List[str]) -> int:
@@ -83,6 +104,7 @@ def prepare_local_filesystem(local_fs: fs.base.FS) -> None:
 
     local_fs.makedirs("localdir")
     local_fs.writetext("localdir/test.txt", "testfile")
+    local_fs.writetext("localdir/hello.txt", "hellofile")
     local_fs.create("local_slurm.job")
 
     with open("test/testconfig/integration_launch_config.yml", "r") as file:
