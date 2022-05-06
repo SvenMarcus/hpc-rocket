@@ -211,7 +211,9 @@ class Application_With_Options_To_Copy(unittest.TestCase):
         assert_exists_on_remote(self.fs_factory, expected_path)
         assert_does_not_exist_on_remote(self.fs_factory, invalid_path)
 
-    def test__with_globbing_into_nested_dir__when_running_copies_files_into_target_dir(self) -> None:
+    def test__with_globbing_into_nested_dir__when_running_copies_files_into_target_dir(
+        self,
+    ) -> None:
         nested_file = os.path.join(LOCAL_DIR, LOCAL_FILE)
         nested_glob = os.path.join(LOCAL_DIR, GLOB_PATTERN)
         self.fs_factory.create_local_files(nested_file)
@@ -258,6 +260,19 @@ class Application_With_Options_To_Collect(unittest.TestCase):
 
         assert_exists_locally(self.fs_factory, f"store_dir/{REMOTE_FILE}")
         assert_does_not_exist_locally(self.fs_factory, f"store_dir/{NON_MATCHING_FILE}")
+
+    def test__with_globbing__but_file_exists_locally__when_running__still_collects_other_files(
+        self,
+    ) -> None:
+        options = launch_options(watch=True)
+        existing_file = "existing.txt"
+        options.collect_files = [CopyInstruction("*.txt", "store_dir")]
+        self.fs_factory.create_remote_files(existing_file, REMOTE_FILE)
+        self.fs_factory.create_local_files(f"store_dir/{existing_file}")
+
+        self.sut.run(options)
+
+        assert_exists_locally(self.fs_factory, f"store_dir/{REMOTE_FILE}")
 
 
 class Application_With_Options_To_Clean(unittest.TestCase):

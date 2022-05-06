@@ -72,3 +72,17 @@ def test__given_collect_instructions__when_file_exists_locally__should_still_col
     run_finalize_stage(factory, files_to_collect, [])
 
     assert local_fs.exists("collected.txt") is True
+
+
+def test__given_collect_instructions_with_glob__when_file_exists_locally__still_collects_remaining_files() -> None:
+    local_fs = MemoryFilesystemFake(files=["existing.txt"])
+    ssh_fs = MemoryFilesystemFake(files=["existing.txt", "collected.txt"])
+    factory = MemoryFilesystemFactoryStub(local_fs, ssh_fs)
+
+    files_to_collect = [
+        CopyInstruction("*.txt", ""),
+    ]
+
+    run_finalize_stage(factory, files_to_collect, [])
+
+    assert local_fs.exists("existing.txt") is True

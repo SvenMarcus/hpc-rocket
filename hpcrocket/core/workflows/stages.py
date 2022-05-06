@@ -3,6 +3,8 @@ from typing import List, Optional, cast
 from hpcrocket.core.environmentpreparation import (
     CopyInstruction,
     EnvironmentPreparation,
+    EnvironmentCleaner,
+    EnvironmentCollector,
 )
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.filesystem import FilesystemFactory
@@ -172,27 +174,27 @@ class FinalizeStage:
         self._clean = clean_instructions
 
     def __call__(self, ui: UI) -> bool:
-        env_prep = EnvironmentPreparation(
-            self._factory.create_local_filesystem(),
-            self._factory.create_ssh_filesystem(),
-            ui,
-        )
-
-        self._collect_files(env_prep, ui)
-        self._clean_files(env_prep, ui)
+        self._collect_files(ui)
+        self._clean_files(ui)
 
         return True
 
-    def _collect_files(self, env_prep: EnvironmentPreparation, ui: UI) -> None:
-        env_prep.files_to_collect(self._collect)
+    def _collect_files(self, ui: UI) -> None:
+        collector = EnvironmentCollector(
+            self._factory.create_ssh_filesystem(),
+            self._factory.create_local_filesystem(),
+            ui,
+        )
+        collector.files_to_collect(self._collect)
         ui.info("Collecting files...")
-        env_prep.collect()
+        collector.collect()
         ui.success("Done")
 
-    def _clean_files(self, env_prep: EnvironmentPreparation, ui: UI) -> None:
-        env_prep.files_to_clean(self._clean)
+    def _clean_files(self, ui: UI) -> None:
+        cleaner = EnvironmentCleaner(self._factory.create_ssh_filesystem(), ui)
+        cleaner.files_to_clean(self._clean)
         ui.info("Cleaning files...")
-        env_prep.clean()
+        cleaner.clean()
         ui.success("Done")
 
     def cancel(self, ui: UI) -> None:
