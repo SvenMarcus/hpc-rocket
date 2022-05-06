@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import os
-from typing import Callable, List, NamedTuple, Optional, Tuple
+from typing import Callable, List, NamedTuple, Optional
 
 from hpcrocket.core.errors import error_type
 from hpcrocket.core.filesystem import Filesystem
