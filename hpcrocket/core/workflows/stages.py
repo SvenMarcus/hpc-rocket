@@ -144,10 +144,10 @@ class PrepareStage:
         env_prep = EnvironmentPreparation(
             self._factory.create_local_filesystem(),
             self._factory.create_ssh_filesystem(),
+            self._files,
             ui,
         )
 
-        env_prep.files_to_copy(self._files)
         return env_prep
 
     @staticmethod
@@ -183,16 +183,17 @@ class FinalizeStage:
         collector = EnvironmentCollector(
             self._factory.create_ssh_filesystem(),
             self._factory.create_local_filesystem(),
+            self._collect,
             ui,
         )
-        collector.files_to_collect(self._collect)
         ui.info("Collecting files...")
         collector.collect()
         ui.success("Done")
 
     def _clean_files(self, ui: UI) -> None:
-        cleaner = EnvironmentCleaner(self._factory.create_ssh_filesystem(), ui)
-        cleaner.files_to_clean(self._clean)
+        cleaner = EnvironmentCleaner(
+            self._factory.create_ssh_filesystem(), self._clean, ui
+        )
         ui.info("Cleaning files...")
         cleaner.clean()
         ui.success("Done")
