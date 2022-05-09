@@ -1,7 +1,7 @@
 import os
 from test.slurm_assertions import assert_job_submitted
-from test.testdoubles.executor import SlurmJobExecutorSpy
-from typing import List
+from test.testdoubles.executor import LoggingCommandExecutorSpy, SlurmJobExecutorSpy
+from typing import List, cast
 
 import fs.base
 import pytest
@@ -57,7 +57,7 @@ class MemoryPyFilesystemFactory(FilesystemFactory):
 def test__when_running_launch__it_connects_to_remote_and_launches_job_with_executor() -> None:
     registry = create_service_registry()
     fs_factory = registry.fs_factory
-    executor = registry.executor
+    executor = cast(LoggingCommandExecutorSpy, registry.executor)
 
     prepare_environment_variables()
     prepare_local_filesystem(fs_factory.local.internal_fs)
@@ -85,7 +85,7 @@ def test__when_running_launch_with_watching__it_copies_runs_job_collects_and_cle
     assert not fs_factory.remote.exists("my_slurm_job.job")
 
 
-def create_service_registry():
+def create_service_registry() -> _TestServiceRegistry:
     registry = _TestServiceRegistry(SlurmJobExecutorSpy(), MemoryPyFilesystemFactory())
     return registry
 

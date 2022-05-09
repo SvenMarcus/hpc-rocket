@@ -208,18 +208,6 @@ class EnvironmentCollector:
 
         self._collect: List[CopyInstruction] = files_to_collect
 
-    def files_to_collect(self, copy_instructions: List[CopyInstruction]) -> None:
-        """
-        Sets the files to collect from the target filesystem.
-
-        Args:
-            copy_instructions: A list of copy instructions (essentially tuples) of the form (src, dest, overwrite)
-
-        Returns:
-            None
-        """
-        self._collect = list(copy_instructions)
-
     def collect(self) -> None:
         """
         Collects the files from the target filesystem.
