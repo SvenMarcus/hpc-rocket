@@ -90,40 +90,25 @@ class _Copier:
         return None
 
 
-class Deleter:
-    def __init__(self, filesystem: Filesystem, ui: UI) -> None:
-        self._filesystem = filesystem
-        self._ui = ui or NullUI()
-
-    def __call__(self, files: List[str]) -> List[str]:
-        deleted_files = []
-        for file in files:
-            try:
-                self._filesystem.delete(file)
-                deleted_files.append(file)
-            except FileNotFoundError as err:
-                self._ui.error(f"{error_type(err)}: Cannot delete file '{file}'")
-
-        return deleted_files
-
-
 def prepare(
     source_filesystem: Filesystem,
     target_filesystem: Filesystem,
-    files_to_copy: List[CopyInstruction],
+    files: List[CopyInstruction],
 ) -> CopyResult:
     """
     Copies the files to the target filesystem.
 
     Args:
-        None
+        source_filesystem (Filesystem): The filesystem to copy FROM
+        target_filesystem (Filesystem): The filesystem to copy TO
+        files (list[CopyInstruction]): A list of CopyInstructions
 
     Returns:
         CopyResult
     """
     copier = _Copier(source_filesystem, target_filesystem)
     result = CopyResult.empty()
-    for copy_instruction in files_to_copy:
+    for copy_instruction in files:
         tmp_result = copier(copy_instruction)
         result.copied_files.extend(tmp_result.copied_files)
         if tmp_result.error:
@@ -134,13 +119,15 @@ def prepare(
 
 
 def clean(
-    filesystem: Filesystem, files_to_clean: List[str], ui: Optional[UI] = None
+    filesystem: Filesystem, files: List[str], ui: Optional[UI] = None
 ) -> None:
     """
     Deletes the files from the target filesystem. Files that are not found are ignored.
 
     Args:
-        None
+        filesystem (Filesystem): The filesystem to delete files from
+        files (list[str]): A list of paths to delete
+        ui (Optional[UI]): A UI instance
 
     Returns:
         None
@@ -148,15 +135,18 @@ def clean(
     Raises:
         None
     """
-    delete = Deleter(filesystem, ui or NullUI())
-    clean_files: List[str] = files_to_clean
-    delete(clean_files)
+    _ui = ui or NullUI()
+    for file in files:
+        try:
+            filesystem.delete(file)
+        except FileNotFoundError as err:
+            _ui.error(f"{error_type(err)}: Cannot delete file '{file}'")
 
 
 def collect(
-    remote_filesystem: Filesystem,
-    local_filesystem: Filesystem,
-    files_to_collect: List[CopyInstruction],
+    source_filesystem: Filesystem,
+    target_filesystem: Filesystem,
+    files: List[CopyInstruction],
     ui: Optional[UI] = None,
 ) -> None:
     """
@@ -164,7 +154,10 @@ def collect(
     Files that are not found or already present on the source filesystem are ignored.
 
     Args:
-        None
+        source_filesystem (Filesystem): The filesystem to copy FROM
+        target_filesystem (Filesystem): The filesystem to copy TO
+        files (list[CopyInstruction]): A list of CopyInstructions
+        ui (Optional[UI]): A UI instance
 
     Returns:
         None
@@ -175,11 +168,11 @@ def collect(
         _ui.error(f"{error_type(error)}: Cannot copy file '{instruction.source}'")
 
     copier = _Copier(
-        remote_filesystem,
-        local_filesystem,
+        source_filesystem,
+        target_filesystem,
         abort_on_error=False,
         error_callback=log_error,
     )
 
-    for copy_instruction in files_to_collect:
+    for copy_instruction in files:
         copier(copy_instruction)
