@@ -34,13 +34,13 @@ class CopyInstruction(NamedTuple):
         )
 
 
-@dataclass(frozen=True)
-class _CopyResult:
+@dataclass
+class CopyResult:
     copied_files: List[str]
     error: Optional[Exception] = None
 
     @classmethod
-    def empty(cls) -> "_CopyResult":
+    def empty(cls) -> "CopyResult":
         return cls([])
 
 
@@ -61,15 +61,15 @@ class _Copier:
         self._abort_on_error = abort_on_error
         self._error_callback = error_callback or (lambda _, __: None)
 
-    def __call__(self, copy_instruction: CopyInstruction) -> _CopyResult:
+    def __call__(self, copy_instruction: CopyInstruction) -> CopyResult:
         unpacked_instructions = copy_instruction.unglob(self._src_fs)
         return functools.reduce(
-            self._reduce_to_copy_result, unpacked_instructions, _CopyResult([])
+            self._reduce_to_copy_result, unpacked_instructions, CopyResult([])
         )
 
     def _reduce_to_copy_result(
-        self, current_result: _CopyResult, instruction: CopyInstruction
-    ) -> _CopyResult:
+        self, current_result: CopyResult, instruction: CopyInstruction
+    ) -> CopyResult:
         if current_result.error and self._abort_on_error:
             return current_result
 
@@ -78,7 +78,7 @@ class _Copier:
         if error is None:
             current_result.copied_files.append(instruction.destination)
 
-        return _CopyResult(current_result.copied_files, error)
+        return CopyResult(current_result.copied_files, error)
 
     def _try_copy(self, instruction: CopyInstruction) -> Optional[Exception]:
         try:
@@ -107,117 +107,79 @@ class Deleter:
         return deleted_files
 
 
-class EnvironmentPreparation:
+def prepare(
+    source_filesystem: Filesystem,
+    target_filesystem: Filesystem,
+    files_to_copy: List[CopyInstruction],
+) -> CopyResult:
     """
-    This class is responsible for copying files to the remote filesystem.
-    Can perform a rollback of copied files in case copying fails.
+    Copies the files to the target filesystem.
+
+    Args:
+        None
+
+    Returns:
+        CopyResult
     """
+    copier = _Copier(source_filesystem, target_filesystem)
+    result = CopyResult.empty()
+    for copy_instruction in files_to_copy:
+        tmp_result = copier(copy_instruction)
+        result.copied_files.extend(tmp_result.copied_files)
+        if tmp_result.error:
+            result.error = tmp_result.error
+            break
 
-    def __init__(
-        self,
-        source_filesystem: Filesystem,
-        target_filesystem: Filesystem,
-        files_to_copy: List[CopyInstruction],
-        ui: Optional[UI] = None,
-    ) -> None:
-        self._copier = _Copier(source_filesystem, target_filesystem)
-        self._delete = Deleter(target_filesystem, ui or NullUI())
-        self._copy: List[CopyInstruction] = files_to_copy
-        self._copied_files: List[str] = list()
-
-    def prepare(self) -> None:
-        """
-        Copies the files to the target filesystem.
-
-        Args:
-            None
-
-        Returns:
-            None
-
-        Raises:
-            FileNotFoundError: If a file to copy is not found on the source filesystem
-            FileExistsError: If a file to copy already exists on the target filesystem
-        """
-        for copy_instruction in self._copy:
-            result = self._copier(copy_instruction)
-            self._copied_files.extend(result.copied_files)
-            if result.error:
-                raise result.error
-
-    def rollback(self) -> None:
-        """
-        Rolls back the files that were copied to the target filesystem.
-
-        Args:
-            None
-
-        Returns:
-            None
-
-        Raises:
-            FileNotFoundError: If a file to rollback is not found on the target filesystem
-        """
-        deleted_files = self._delete(self._copied_files)
-        for file in deleted_files:
-            self._copied_files.remove(file)
+    return result
 
 
-class EnvironmentCleaner:
-    def __init__(
-        self, filesystem: Filesystem, files_to_clean: List[str], ui: Optional[UI] = None
-    ) -> None:
-        self._delete = Deleter(filesystem, ui or NullUI())
-        self._clean_files: List[str] = files_to_clean
+def clean(
+    filesystem: Filesystem, files_to_clean: List[str], ui: Optional[UI] = None
+) -> None:
+    """
+    Deletes the files from the target filesystem. Files that are not found are ignored.
 
-    def clean(self) -> None:
-        """
-        Deletes the files from the target filesystem. Files that are not found are ignored.
+    Args:
+        None
 
-        Args:
-            None
+    Returns:
+        None
 
-        Returns:
-            None
-
-        Raises:
-            None
-        """
-        self._delete(self._clean_files)
+    Raises:
+        None
+    """
+    delete = Deleter(filesystem, ui or NullUI())
+    clean_files: List[str] = files_to_clean
+    delete(clean_files)
 
 
-class EnvironmentCollector:
-    def __init__(
-        self,
-        remote_filesystem: Filesystem,
-        local_filesystem: Filesystem,
-        files_to_collect: List[CopyInstruction],
-        ui: Optional[UI] = None,
-    ) -> None:
-        _ui = ui or NullUI()
+def collect(
+    remote_filesystem: Filesystem,
+    local_filesystem: Filesystem,
+    files_to_collect: List[CopyInstruction],
+    ui: Optional[UI] = None,
+) -> None:
+    """
+    Collects the files from the target filesystem.
+    Files that are not found or already present on the source filesystem are ignored.
 
-        def log_error(error: Exception, instruction: CopyInstruction) -> None:
-            _ui.error(f"{error_type(error)}: Cannot copy file '{instruction.source}'")
+    Args:
+        None
 
-        self._copier = _Copier(
-            remote_filesystem,
-            local_filesystem,
-            abort_on_error=False,
-            error_callback=log_error,
-        )
+    Returns:
+        None
+    """
+    _ui = ui or NullUI()
 
-        self._collect: List[CopyInstruction] = files_to_collect
+    def log_error(error: Exception, instruction: CopyInstruction) -> None:
+        _ui.error(f"{error_type(error)}: Cannot copy file '{instruction.source}'")
 
-    def collect(self) -> None:
-        """
-        Collects the files from the target filesystem.
-        Files that are not found or already present on the source filesystem are ignored.
+    copier = _Copier(
+        remote_filesystem,
+        local_filesystem,
+        abort_on_error=False,
+        error_callback=log_error,
+    )
 
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        for copy_instruction in self._collect:
-            self._copier(copy_instruction)
+    for copy_instruction in files_to_collect:
+        copier(copy_instruction)

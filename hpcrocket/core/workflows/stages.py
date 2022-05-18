@@ -2,9 +2,9 @@ from typing import List, Optional, cast
 
 from hpcrocket.core.environmentpreparation import (
     CopyInstruction,
-    EnvironmentPreparation,
-    EnvironmentCleaner,
-    EnvironmentCollector,
+    collect,
+    prepare,
+    clean,
 )
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.filesystem import FilesystemFactory
@@ -119,42 +119,27 @@ class PrepareStage:
         filesystem_factory: FilesystemFactory,
         copy_instructions: List[CopyInstruction],
     ) -> None:
-        self._factory = filesystem_factory
+        self._local_fs = filesystem_factory.create_local_filesystem()
+        self._remote_fs = filesystem_factory.create_ssh_filesystem()
         self._files = copy_instructions
 
     def __call__(self, ui: UI) -> bool:
-        env_prep = self._create_env_prep(ui)
-        return self._try_prepare(env_prep, ui)
+        ui.info("Copying files...")
+        result = prepare(self._local_fs, self._remote_fs, self._files)
+        if result.error:
+            self._do_rollback(result.copied_files, result.error, ui)
+            return False
+
+        ui.success("Done")
+        return True
 
     def cancel(self, ui: UI) -> None:
         pass
 
-    def _try_prepare(self, env_prep: EnvironmentPreparation, ui: UI) -> bool:
-        try:
-            ui.info("Copying files...")
-            env_prep.prepare()
-            ui.success("Done")
-        except (FileExistsError, FileNotFoundError) as err:
-            self._do_rollback(env_prep, err, ui)
-            return False
-
-        return True
-
-    def _create_env_prep(self, ui: UI) -> EnvironmentPreparation:
-        env_prep = EnvironmentPreparation(
-            self._factory.create_local_filesystem(),
-            self._factory.create_ssh_filesystem(),
-            self._files,
-            ui,
-        )
-
-        return env_prep
-
-    @staticmethod
-    def _do_rollback(env_prep: EnvironmentPreparation, err: Exception, ui: UI) -> None:
+    def _do_rollback(self, files: List[str], err: Exception, ui: UI) -> None:
         ui.error(get_error_message(err))
         ui.info("Performing rollback")
-        env_prep.rollback()
+        clean(self._remote_fs, files)
         ui.success("Done")
 
 
@@ -169,7 +154,8 @@ class FinalizeStage:
         collect_instructions: List[CopyInstruction],
         clean_instructions: List[str],
     ) -> None:
-        self._factory = filesystem_factory
+        self._local_fs = filesystem_factory.create_local_filesystem()
+        self._remote_fs = filesystem_factory.create_ssh_filesystem()
         self._collect = collect_instructions
         self._clean = clean_instructions
 
@@ -180,22 +166,13 @@ class FinalizeStage:
         return True
 
     def _collect_files(self, ui: UI) -> None:
-        collector = EnvironmentCollector(
-            self._factory.create_ssh_filesystem(),
-            self._factory.create_local_filesystem(),
-            self._collect,
-            ui,
-        )
         ui.info("Collecting files...")
-        collector.collect()
+        collect(self._remote_fs, self._local_fs, self._collect, ui)
         ui.success("Done")
 
     def _clean_files(self, ui: UI) -> None:
-        cleaner = EnvironmentCleaner(
-            self._factory.create_ssh_filesystem(), self._clean, ui
-        )
         ui.info("Cleaning files...")
-        cleaner.clean()
+        clean(self._remote_fs, self._clean, ui)
         ui.success("Done")
 
     def cancel(self, ui: UI) -> None:

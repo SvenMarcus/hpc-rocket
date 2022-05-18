@@ -25,14 +25,23 @@ def test__run_prepare_stage__should_return_true() -> None:
 
 
 def test__given_copy_instructions__when_running__should_copy_files_to_remote_with_given_overwrite_settings() -> None:
-    copy_instructions = [CopyInstruction("myfile.txt", "mycopy.txt", True)]
+    copy_instructions = [
+        CopyInstruction("myfile.txt", "mycopy.txt", True),
+        CopyInstruction("*.gif", ""),
+    ]
 
     factory = MemoryFilesystemFactoryStub()
-    factory.create_local_files("myfile.txt")
+    factory.local_filesystem.create_file_stub("myfile.txt", content="the content")
+    factory.create_local_files("funny.gif", "other.gif")
+    factory.create_remote_files("mycopy.txt")
 
     run_prepare_stage(factory, copy_instructions)
 
-    assert factory.ssh_filesystem.exists("mycopy.txt")
+    remotefs = factory.ssh_filesystem
+    assert remotefs.exists("mycopy.txt")
+    assert remotefs.get_content_of_file_stub("mycopy.txt") == "the content"
+    assert remotefs.exists("funny.gif")
+    assert remotefs.exists("other.gif")
 
 
 def test__given_copy_instructions__when_file_exists_error_during_copy__should_rollback_copied_files() -> None:
