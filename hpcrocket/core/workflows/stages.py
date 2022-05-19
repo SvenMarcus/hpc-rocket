@@ -1,10 +1,9 @@
-from typing import List, Optional, cast
+from typing import List, Optional, Tuple, cast
 
-from hpcrocket.core.environmentpreparation import (
+from hpcrocket.core.progressive_file_operations import (
     CopyInstruction,
-    collect,
-    prepare,
-    clean,
+    progressive_copy,
+    progressive_clean,
 )
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.filesystem import FilesystemFactory
@@ -26,6 +25,11 @@ except ImportError:  # pragma: no cover
 
 class NoJobLaunchedError(Exception):
     pass
+
+
+def _log_errors(errors: List[Exception], ui: UI) -> None:
+    for error in errors:
+        ui.error(get_error_message(error))
 
 
 class LaunchStage:
@@ -125,9 +129,10 @@ class PrepareStage:
 
     def __call__(self, ui: UI) -> bool:
         ui.info("Copying files...")
-        result = prepare(self._local_fs, self._remote_fs, self._files)
-        if result.error:
-            self._do_rollback(result.copied_files, result.error, ui)
+        copied_files, errors = self._try_copy_files()
+
+        if errors:
+            self._do_rollback(copied_files, errors, ui)
             return False
 
         ui.success("Done")
@@ -136,10 +141,22 @@ class PrepareStage:
     def cancel(self, ui: UI) -> None:
         pass
 
-    def _do_rollback(self, files: List[str], err: Exception, ui: UI) -> None:
-        ui.error(get_error_message(err))
+    def _try_copy_files(self) -> Tuple[List[str], List[Exception]]:
+        copied_files = []
+        errors = []
+        for cr in progressive_copy(self._local_fs, self._remote_fs, self._files):
+            copied_files.extend(cr.copied_files)
+            if cr.errors:
+                errors.extend(cr.errors)
+                break
+
+        return copied_files, errors
+
+    def _do_rollback(self, files: List[str], errors: List[Exception], ui: UI) -> None:
+        _log_errors(errors, ui)
         ui.info("Performing rollback")
-        clean(self._remote_fs, files)
+        errors = list(progressive_clean(self._remote_fs, files))
+        _log_errors(errors, ui)
         ui.success("Done")
 
 
@@ -156,7 +173,7 @@ class FinalizeStage:
     ) -> None:
         self._local_fs = filesystem_factory.create_local_filesystem()
         self._remote_fs = filesystem_factory.create_ssh_filesystem()
-        self._collect = collect_instructions
+        self._files = collect_instructions
         self._clean = clean_instructions
 
     def __call__(self, ui: UI) -> bool:
@@ -167,12 +184,17 @@ class FinalizeStage:
 
     def _collect_files(self, ui: UI) -> None:
         ui.info("Collecting files...")
-        collect(self._remote_fs, self._local_fs, self._collect, ui)
+        for cr in progressive_copy(
+            self._remote_fs, self._local_fs, self._files, abort_on_error=False
+        ):
+            _log_errors(cr.errors, ui)
+
         ui.success("Done")
 
     def _clean_files(self, ui: UI) -> None:
         ui.info("Cleaning files...")
-        clean(self._remote_fs, self._clean, ui)
+        errors = list(progressive_clean(self._remote_fs, self._clean))
+        _log_errors(errors, ui)
         ui.success("Done")
 
     def cancel(self, ui: UI) -> None:

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import yaml
 
-from hpcrocket.core.environmentpreparation import CopyInstruction
+from hpcrocket.core.progressive_file_operations import CopyInstruction
 from hpcrocket.core.filesystem import Filesystem
 from hpcrocket.core.launchoptions import (
     LaunchOptions,

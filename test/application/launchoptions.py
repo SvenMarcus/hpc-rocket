@@ -2,7 +2,7 @@ import dataclasses
 from test.slurmoutput import DEFAULT_JOB_ID
 from typing import List, Optional
 
-from hpcrocket.core.environmentpreparation import CopyInstruction
+from hpcrocket.core.progressive_file_operations import CopyInstruction
 from hpcrocket.core.launchoptions import (LaunchOptions, SimpleJobOptions,
                                           WatchOptions)
 from hpcrocket.ssh.connectiondata import ConnectionData

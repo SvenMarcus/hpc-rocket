@@ -24,7 +24,7 @@ from test.testdoubles.filesystem import (
 from unittest.mock import Mock
 
 from hpcrocket.core.application import Application
-from hpcrocket.core.environmentpreparation import CopyInstruction
+from hpcrocket.core.progressive_file_operations import CopyInstruction
 from hpcrocket.core.executor import CommandExecutor, RunningCommand
 from hpcrocket.ssh.errors import SSHError
 

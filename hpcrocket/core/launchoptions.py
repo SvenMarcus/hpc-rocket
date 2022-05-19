@@ -2,17 +2,16 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import List, Union
 
-from hpcrocket.core.environmentpreparation import CopyInstruction
+from hpcrocket.core.progressive_file_operations import CopyInstruction
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
-Options = Union['LaunchOptions', 'SimpleJobOptions', 'WatchOptions']
-JobBasedOptions = Union['SimpleJobOptions', 'WatchOptions']
+Options = Union["LaunchOptions", "SimpleJobOptions", "WatchOptions"]
+JobBasedOptions = Union["SimpleJobOptions", "WatchOptions"]
 
 
 @dataclass
 class SimpleJobOptions:
-
     class Action(Enum):
         status = auto()
         cancel = auto()

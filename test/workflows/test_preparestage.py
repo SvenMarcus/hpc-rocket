@@ -6,7 +6,7 @@ from test.testdoubles.filesystem import (
 )
 from unittest.mock import Mock
 
-from hpcrocket.core.environmentpreparation import CopyInstruction
+from hpcrocket.core.progressive_file_operations import CopyInstruction
 from hpcrocket.core.workflows.stages import PrepareStage
 from hpcrocket.ui import UI
 
