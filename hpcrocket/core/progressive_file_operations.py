@@ -101,7 +101,7 @@ def progressive_copy(
         files (list[CopyInstruction]): A list of CopyInstructions
 
     Returns:
-        CopyResult
+        Generator[CopyResult]: A generator yielding individual copy results
     """
     copier = _Copier(
         source_filesystem, target_filesystem, abort_on_error=abort_on_error
@@ -125,10 +125,7 @@ def progressive_clean(
         ui (Optional[UI]): A UI instance
 
     Returns:
-        None
-
-    Raises:
-        None
+        Generator[Exception]: A generator yielding exceptions that occured during cleaning
     """
     for file in files:
         try:
