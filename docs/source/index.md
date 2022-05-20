@@ -11,7 +11,7 @@ What is HPC Rocket? <about.md>
 Installation <install.md>
 Setting up a configuration file <config.md>
 Command line usage <quickstart.md>
-What HPC Rocket looks like in action <demo.md>
 Generating SSH keys to log into a remote machine <sshkeys.md>
 Using HPC Rocket with GitLab CI <gitlabci.md>
+What HPC Rocket looks like in action <demo.md>
 ```
