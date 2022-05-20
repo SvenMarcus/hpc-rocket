@@ -3,7 +3,7 @@ name: Build documentation
 on: 
   push:
     branches: [ main ]
-    paths: [ 'docs/**' ]
+    paths: [ 'docs/**', '.github/workflows/build-docs.yml' ]
 
 jobs:
   build:
