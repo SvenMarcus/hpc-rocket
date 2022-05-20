@@ -3,11 +3,11 @@
 [![Python application](https://github.com/SvenMarcus/ssh-slurm-runner/actions/workflows/python-app.yml/badge.svg)](https://github.com/SvenMarcus/ssh-slurm-runner/actions/workflows/python-app.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SvenMarcus_ssh-slurm-runner&metric=alert_status)](https://sonarcloud.io/dashboard?id=SvenMarcus_ssh-slurm-runner)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=SvenMarcus_ssh-slurm-runner&metric=coverage)](https://sonarcloud.io/dashboard?id=SvenMarcus_ssh-slurm-runner)
-[![Python](pythonversions.svg)](https://python.org)
+[![Python](docs/source/_static/pythonversions.svg)](https://python.org)
 
 HPC Rocket is a tool to send slurm commands to a remote machine and monitor the job progress. It was primarily written to launch slurm jobs from a CI pipeline.
 
-![](demo/hpc-rocket-demo.gif)
+![](docs/source/_static/hpc-rocket-demo.gif)
 
 ### Installation
 
