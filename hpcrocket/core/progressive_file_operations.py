@@ -122,7 +122,6 @@ def progressive_clean(
     Args:
         filesystem (Filesystem): The filesystem to delete files from
         files (list[str]): A list of paths to delete
-        ui (Optional[UI]): A UI instance
 
     Returns:
         Generator[Exception]: A generator yielding exceptions that occured during cleaning
