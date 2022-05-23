@@ -25,11 +25,12 @@ jobs:
         curl -fsSL https://get.docker.com -o get-docker.sh
         sudo sh get-docker.sh
     
+    - uses: actions/checkout@v2
+
     - name: Build SSH Test container
       run: |
         sudo docker build --tag hpc-rocket/openssh-test-server -f docker/Dockerfile.openssh docker
 
-    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python }}
       uses: actions/setup-python@v2
       with:
