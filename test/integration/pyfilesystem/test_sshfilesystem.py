@@ -15,6 +15,7 @@ class TestSSHFilesystem(PyFilesystemBasedTest, unittest.TestCase):  # type: igno
     def setUpClass(cls) -> None:
         exit_code = subprocess.call(
             [
+                "sudo",
                 "docker",
                 "run",
                 "-d",

@@ -4,7 +4,7 @@ branch = True
 [report]
 omit = 
     # Omitting chmodsshfs because it is just a decorator for the fs.sshfs implementation
-    hpcrocket/ssh/chmodsshfs.py
+    # hpcrocket/ssh/chmodsshfs.py
 
 exclude_lines =
     # Have to re-enable the standard pragma

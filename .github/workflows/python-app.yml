@@ -20,12 +20,14 @@ jobs:
         python: [3.6, 3.7, 3.8, 3.9, '3.10']
 
     steps:
-    - name: setup-docker
-      uses: docker-practice/actions-setup-docker@v1
+    - name: Install docker
+      run: |
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sudo sh get-docker.sh
     
     - name: Build SSH Test container
       run: |
-        docker build --tag hpc-rocket/openssh-test-server -f docker/Dockerfile.openssh docker
+        sudo docker build --tag hpc-rocket/openssh-test-server -f docker/Dockerfile.openssh docker
 
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python }}
