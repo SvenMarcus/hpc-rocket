@@ -20,6 +20,11 @@ jobs:
         python: [3.6, 3.7, 3.8, 3.9, '3.10']
 
     steps:
+    - name: setup-docker
+      uses: docker-practice/actions-setup-docker@v1
+      run: |
+        docker build --tag hpc-rocket/openssh-test-server -f docker/Dockerfile.openssh docker
+
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python }}
       uses: actions/setup-python@v2
