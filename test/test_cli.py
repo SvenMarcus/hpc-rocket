@@ -1,5 +1,6 @@
 import os
-from typing import List
+from typing import Dict, Generator, List
+from unittest.mock import patch
 
 import pytest
 from hpcrocket.cli import parse_cli_args
@@ -66,8 +67,9 @@ PROXYJUMPS = [
 
 
 @pytest.fixture(autouse=True)
-def setup_env() -> None:
-    os.environ.update(ENV)
+def setup_env() -> Generator[Dict[str, str], None, None]:
+    with patch.dict(os.environ, ENV) as env:
+        yield env
 
 
 def run_parser(args: List[str]) -> Options:
