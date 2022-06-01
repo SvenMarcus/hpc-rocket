@@ -37,3 +37,4 @@ clean:
   - $REMOTE_SLURM_SCRIPT_PATH
 
 sbatch: $REMOTE_SLURM_SCRIPT_PATH
+continue_if_job_fails: true

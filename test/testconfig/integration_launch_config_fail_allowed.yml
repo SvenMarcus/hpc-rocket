@@ -26,3 +26,4 @@ clean:
   - dir/*.txt
 
 sbatch: $REMOTE_SLURM_SCRIPT
+continue_if_job_fails: true

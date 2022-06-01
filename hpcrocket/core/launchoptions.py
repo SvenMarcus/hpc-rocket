@@ -32,6 +32,7 @@ class LaunchOptions:
     collect_files: List[CopyInstruction] = field(default_factory=lambda: [])
     poll_interval: int = 5
     watch: bool = False
+    continue_if_job_fails: bool = False
 
 
 @dataclass

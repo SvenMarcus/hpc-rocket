@@ -14,6 +14,12 @@ class Stage(Protocol):
     An isolated step that is part of a larger Workflow
     """
 
+    def allowed_to_fail(self) -> bool:
+        """
+        Returns whether this stage is allowed to fail
+        """
+        pass
+
     def __call__(self, ui: UI) -> bool:
         """
         Starts running the stage. Returns true if the stage completed successfully.
@@ -61,10 +67,13 @@ class Workflow:
                 break
 
             result = stage(ui)
-            if not result:
+            if self._workflow_failed(stage, result):
                 return False
 
         return True
+
+    def _workflow_failed(self, stage: Stage, result: bool) -> bool:
+        return not (result or stage.allowed_to_fail())
 
     def cancel(self, ui: UI) -> None:
         """

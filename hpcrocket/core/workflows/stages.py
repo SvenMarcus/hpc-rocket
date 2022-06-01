@@ -43,6 +43,9 @@ class LaunchStage:
         self._batch_script = batch_script
         self._batch_job: Optional[SlurmBatchJob] = None
 
+    def allowed_to_fail(self) -> bool:
+        return False
+
     def __call__(self, ui: UI) -> bool:
         self._batch_job = self._controller.submit(self._batch_script)
         ui.launch(f"Launched job {self._batch_job.jobid}")
@@ -86,12 +89,20 @@ class WatchStage:
             """
 
     def __init__(
-        self, batch_job_provider: BatchJobProvider, poll_interval: int
+        self,
+        batch_job_provider: BatchJobProvider,
+        poll_interval: int,
+        allowed_to_fail: bool = False,
     ) -> None:
         self._poll_interval = poll_interval
         self._provider = batch_job_provider
         self._watcher: Optional[JobWatcher] = None
         self._job_status: Optional[SlurmJobStatus] = None
+
+        self._allowed_to_fail = allowed_to_fail
+
+    def allowed_to_fail(self) -> bool:
+        return self._allowed_to_fail
 
     def __call__(self, ui: UI) -> bool:
         batch_job = self._provider.get_batch_job()
@@ -126,6 +137,9 @@ class PrepareStage:
         self._local_fs = filesystem_factory.create_local_filesystem()
         self._remote_fs = filesystem_factory.create_ssh_filesystem()
         self._files = copy_instructions
+
+    def allowed_to_fail(self) -> bool:
+        return False
 
     def __call__(self, ui: UI) -> bool:
         ui.info("Copying files...")
@@ -176,6 +190,9 @@ class FinalizeStage:
         self._files = collect_instructions
         self._clean = clean_instructions
 
+    def allowed_to_fail(self) -> bool:
+        return False
+
     def __call__(self, ui: UI) -> bool:
         self._collect_files(ui)
         self._clean_files(ui)
@@ -210,6 +227,9 @@ class StatusStage:
         self._controller = controller
         self._jobid = jobid
 
+    def allowed_to_fail(self) -> bool:
+        return False
+
     def __call__(self, ui: UI) -> bool:
         ui.update(self._controller.poll_status(self._jobid))
         return True
@@ -226,6 +246,9 @@ class CancelStage:
     def __init__(self, controller: SlurmController, jobid: str):
         self._controller = controller
         self._jobid = jobid
+
+    def allowed_to_fail(self) -> bool:
+        return False
 
     def __call__(self, ui: UI) -> bool:
         self._controller.cancel(self._jobid)

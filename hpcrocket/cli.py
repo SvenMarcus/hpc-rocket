@@ -42,6 +42,7 @@ def _build_launch_options(
         copy_files=_collect_copy_instructions(yaml_config.get("copy", [])),
         clean_files=_clean_instructions(yaml_config.get("clean", [])),
         collect_files=_collect_copy_instructions(yaml_config.get("collect", [])),
+        continue_if_job_fails=yaml_config.get("continue_if_job_fails", False),
         **_connection_dict(yaml_config)  # type: ignore
     )
 

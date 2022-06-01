@@ -95,6 +95,7 @@ def test__given_valid_launch_args__should_return_matching_config() -> None:
         ],
         clean_files=["mycopy.txt", REMOTE_SLURM_SCRIPT_PATH],
         collect_files=[CopyInstruction(REMOTE_RESULT_FILEPATH, "result.txt", True)],
+        continue_if_job_fails=True,
         watch=True,
     )
 

@@ -346,3 +346,13 @@ class Application_With_Options_To_Copy_Collect_Clean(unittest.TestCase):
         sut.run(self.options)
 
         verify()
+
+    def test__whe_job_fails__but_allowed_to_fail__collects_and_cleans(self) -> None:
+        self.options.continue_if_job_fails = True
+        executor = SlurmJobExecutorSpy(sacct_cmd=failed_slurm_job_command_stub())
+        self.sut = make_sut(executor=executor, filesystem_factory=self.fs_factory)
+
+        self.sut.run(self.options)
+
+        assert_exists_locally(self.fs_factory, "mycollect.txt")
+        assert_does_not_exist_on_remote(self.fs_factory, "mycopy.txt")
