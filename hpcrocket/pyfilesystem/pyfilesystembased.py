@@ -1,6 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 from io import TextIOWrapper
+from pathlib import PurePath
 from typing import List, Optional, cast
 
 import fs.base
@@ -24,24 +25,34 @@ def _is_glob(path: str) -> bool:
     return "*" in path
 
 
-class PyFilesystemBased(Filesystem, ABC):
+class PyFilesystemBased(Filesystem):
     """
-    Abstract base class for Filesystems based on PyFilesystem2
+    A Filesystem based on PyFilesystem2
     """
 
+    def __init__(self, internal_fs: fs.base.FS, dir: str = "/") -> None:
+        self._internal_fs = internal_fs
+        self._curdir = PurePath(dir)
+
     @property
-    @abstractmethod
+    def current_dir(self) -> PurePath:
+        return self._curdir
+
+    @property
     def internal_fs(self) -> fs.base.FS:
         """Returns the internally used PyFilesystem
 
         Returns:
             fs.base.FS: The internal PyFilesystem
         """
+        return self._internal_fs
 
     def glob(self, pattern: str) -> List[str]:
+        pattern = str(self.current_dir.joinpath(pattern))
         return [match.path.lstrip("/") for match in self.internal_fs.glob(pattern)]
 
     def openread(self, path: str) -> TextIOWrapper:
+        path = str(self._curdir.joinpath(path))
         try:
             return cast(TextIOWrapper, self.internal_fs.open(path, mode="r"))
         except fs.errors.ResourceNotFound:
@@ -56,6 +67,7 @@ class PyFilesystemBased(Filesystem, ABC):
         overwrite: bool = False,
         filesystem: Optional["Filesystem"] = None,
     ) -> None:
+        source = str(self._curdir.joinpath(source))
         if _is_glob(source):
             self._copy_glob(source, target, overwrite, filesystem)
             return
@@ -83,25 +95,28 @@ class PyFilesystemBased(Filesystem, ABC):
         filesystem: Optional["Filesystem"] = None,
     ) -> None:
         self._raise_if_source_does_not_exist(source)
-        self._raise_if_target_exists(target, overwrite, filesystem)
         self._raise_if_no_pyfilesystem(filesystem)
+
+        filesystem = filesystem or self
+        pyfilesystem_based = cast(PyFilesystemBased, filesystem)
+        suffix = ""
+        if target.endswith(os.path.sep):
+            suffix = os.path.sep
+        target = str(pyfilesystem_based.current_dir.joinpath(target)) + suffix
+
+        self._raise_if_target_exists(target, overwrite, filesystem)
         self._create_missing_target_dirs(target, filesystem)
+        self._try_copy_to_filesystem(source, target, filesystem)
 
-        if filesystem:
-            self._try_copy_to_filesystem(source, target, filesystem)
-            return
-
-        self._try_copy(source, target, overwrite)
-
-    def _create_missing_target_dirs(
-        self, target: str, filesystem: Optional[Filesystem]
-    ) -> None:
-        target_fs = cast(PyFilesystemBased, filesystem) or self
+    def _create_missing_target_dirs(self, target: str, filesystem: Filesystem) -> None:
+        filesystem = cast(PyFilesystemBased, filesystem) or self
         target_parent_dir = os.path.dirname(target)
-        if not target_fs.exists(target_parent_dir):
-            target_fs.internal_fs.makedirs(target_parent_dir)
+        print(target, target_parent_dir)
+        if not filesystem.exists(target_parent_dir):
+            filesystem.internal_fs.makedirs(target_parent_dir)
 
     def delete(self, path: str) -> None:
+        path = str(self._curdir.joinpath(path))
         if _is_glob(path):
             self._delete_glob(path)
             return
@@ -124,30 +139,22 @@ class PyFilesystemBased(Filesystem, ABC):
         self.internal_fs.remove(path)
 
     def exists(self, path: str) -> bool:
-        return self.internal_fs.exists(path)
+        whole_path = str(self._curdir.joinpath(path))
+        return self.internal_fs.exists(whole_path)
 
     def _try_copy_to_filesystem(
-        self, source: str, target: str, filesystem: Optional[Filesystem]
+        self, source: str, target: str, filesystem: Filesystem
     ) -> None:
-        other_filesystem = cast(PyFilesystemBased, filesystem).internal_fs
+        pyfilesystem_based = cast(PyFilesystemBased, filesystem)
+        other_filesystem = pyfilesystem_based.internal_fs
         if self.internal_fs.isdir(source):
             fscp.copy_dir(self.internal_fs, source, other_filesystem, target)
             return
-
+        
         target = self._append_filename_if_target_is_dir(
             other_filesystem, source, target
         )
         fscp.copy_file(self.internal_fs, source, other_filesystem, target)
-
-    def _try_copy(self, source: str, target: str, overwrite: bool) -> None:
-        if self.internal_fs.isdir(source):
-            self.internal_fs.copydir(source, target, create=True)
-            return
-
-        target = self._append_filename_if_target_is_dir(
-            self.internal_fs, source, target
-        )
-        self.internal_fs.copy(source, target, overwrite=overwrite)
 
     def _append_filename_if_target_is_dir(
         self, fs: fs.base.FS, source: str, target: str
@@ -159,15 +166,16 @@ class PyFilesystemBased(Filesystem, ABC):
 
     def _raise_if_source_does_not_exist(self, source: str) -> None:
         if not self.exists(source):
-            raise FileNotFoundError(source)
+            pure_source = source.lstrip(str(self._curdir))
+            raise FileNotFoundError(pure_source)
 
     def _raise_if_target_exists(
-        self, target: str, overwrite: bool, filesystem: Optional[Filesystem]
+        self, target: str, overwrite: bool, filesystem: Filesystem
     ) -> None:
         if overwrite:
             return
 
-        target_filesystem = cast(PyFilesystemBased, filesystem) or self
+        target_filesystem = cast(PyFilesystemBased, filesystem)
         if target_filesystem.exists(target) and not target_filesystem.internal_fs.isdir(
             target
         ):

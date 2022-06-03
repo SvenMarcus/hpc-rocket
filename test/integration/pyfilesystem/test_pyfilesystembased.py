@@ -17,12 +17,7 @@ from hpcrocket.pyfilesystem.pyfilesystembased import PyFilesystemBased
 # This class name starts with an underscore because pytest tries to collect it as test otherwise
 class _TestFilesystemImpl(PyFilesystemBased):
     def __init__(self, fs_mock: MemoryFS) -> None:
-        super().__init__()
-        self._internal_fs = fs_mock
-
-    @property
-    def internal_fs(self) -> fs.base.FS:
-        return self._internal_fs
+        super().__init__(fs_mock)
 
 
 class NonPyFilesystemBasedFilesystem(Filesystem):
@@ -47,7 +42,6 @@ class NonPyFilesystemBasedFilesystem(Filesystem):
     def exists(self, path: str) -> bool:
         pass
 
-
     def openread(self, path: str) -> TextIOWrapper:
         pass
 
@@ -57,7 +51,9 @@ class PyFilesystemBasedTest(FilesystemTest, unittest.TestCase):
         return _TestFilesystemImpl(MemoryFS())
 
     def create_file(self, filesystem: Filesystem, path: str, content: str = "") -> None:
-        mem_fs = cast(PyFilesystemBased, filesystem).internal_fs
+        pyfs = cast(PyFilesystemBased, filesystem)
+        path = str(pyfs.current_dir.joinpath(path))
+        mem_fs = pyfs.internal_fs
         head, _ = os.path.split(path)
         if head and not mem_fs.exists(head):
             mem_fs.makedirs(head)
@@ -65,11 +61,16 @@ class PyFilesystemBasedTest(FilesystemTest, unittest.TestCase):
         mem_fs.writetext(path, content)
 
     def create_dir(self, filesystem: Filesystem, directory: str) -> None:
+        pyfs = cast(PyFilesystemBased, filesystem)
+        directory = str(pyfs.current_dir.joinpath(directory))
+        print(directory)
         mem_fs = cast(PyFilesystemBased, filesystem).internal_fs
         mem_fs.makedirs(directory)
 
     def get_file_content(self, filesystem: Filesystem, path: str) -> str:
-        mem_fs = cast(PyFilesystemBased, filesystem).internal_fs
+        pyfs = cast(PyFilesystemBased, filesystem)
+        path = str(pyfs.current_dir.joinpath(path))
+        mem_fs = pyfs.internal_fs
         return mem_fs.readtext(path)
 
     def test__when_copying_file_to_other_filesystem__and_parent_dir_exists__should_not_try_to_create_dirs(
@@ -82,8 +83,7 @@ class PyFilesystemBasedTest(FilesystemTest, unittest.TestCase):
         target_fs_wrapping_mock = MagicMock(spec=MemoryFS, wraps=target_fs)
 
         sut = cast(_TestFilesystemImpl, self.create_filesystem())
-        origin_fs = sut.internal_fs
-        origin_fs.create(self.SOURCE)
+        self.create_file(sut, self.SOURCE, "")
 
         complete_path = f"{target_parent_dir}/{self.TARGET}"
         sut.copy(

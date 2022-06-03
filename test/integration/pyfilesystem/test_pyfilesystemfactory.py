@@ -1,4 +1,5 @@
 
+from hpcrocket.pyfilesystem.pyfilesystembased import PyFilesystemBased
 from test.testdoubles.filesystem import sshfs_with_connection_fake
 from test.testdoubles.sshclient import ProxyJumpVerifyingSSHClient
 from unittest.mock import ANY, Mock, patch
@@ -6,11 +7,11 @@ from unittest.mock import ANY, Mock, patch
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.pyfilesystem.factory import PyFilesystemFactory
 from hpcrocket.pyfilesystem.localfilesystem import LocalFilesystem
-from hpcrocket.pyfilesystem.sshfilesystem import SSHFilesystem
+from hpcrocket.pyfilesystem.sshfilesystem import sshfilesystem
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
-def options():
+def options() -> LaunchOptions:
     return LaunchOptions(
         sbatch="",
         connection=ConnectionData(
@@ -27,7 +28,7 @@ def options():
 
 
 @patch("fs.osfs.OSFS")
-def test__when_creating_local_filesystem__should_return_local_filesystem_in_current_dir(mock: Mock):
+def test__when_creating_local_filesystem__should_return_local_filesystem_in_current_dir(mock: Mock) -> None:
     sut = PyFilesystemFactory(options())
 
     actual = sut.create_local_filesystem()
@@ -37,7 +38,7 @@ def test__when_creating_local_filesystem__should_return_local_filesystem_in_curr
 
 
 @patch("paramiko.SSHClient")
-def test__when_creating_ssh_filesystem__should_return_connected_ssh_filesystem(sshclient_type_mock: Mock):
+def test__when_creating_ssh_filesystem__should_return_connected_ssh_filesystem(sshclient_type_mock: Mock) -> None:
     opts = options()
     sshclient_mock = ProxyJumpVerifyingSSHClient(opts.connection, opts.proxyjumps)
     sshclient_type_mock.return_value = sshclient_mock
@@ -46,7 +47,7 @@ def test__when_creating_ssh_filesystem__should_return_connected_ssh_filesystem(s
     with sshfs_with_connection_fake(sshclient_mock):
         actual = sut.create_ssh_filesystem()
 
-        assert isinstance(actual, SSHFilesystem)
+        assert isinstance(actual, PyFilesystemBased)
         sshclient_mock.verify()
 
 

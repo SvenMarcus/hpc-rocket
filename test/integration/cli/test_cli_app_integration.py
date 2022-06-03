@@ -40,20 +40,14 @@ class _TestServiceRegistry:
         return self.fs_factory
 
 
-class MemoryPyFilesystem(PyFilesystemBased):
-    def __init__(self) -> None:
-        super().__init__()
-        self._internal_fs = MemoryFS()
-
-    @property
-    def internal_fs(self) -> fs.base.FS:
-        return self._internal_fs
+def memory_fs() -> PyFilesystemBased:
+    return PyFilesystemBased(MemoryFS())
 
 
 class MemoryPyFilesystemFactory(FilesystemFactory):
     def __init__(self) -> None:
-        self.local = MemoryPyFilesystem()
-        self.remote = MemoryPyFilesystem()
+        self.local = memory_fs()
+        self.remote = memory_fs()
 
     def create_local_filesystem(self) -> "Filesystem":
         return self.local

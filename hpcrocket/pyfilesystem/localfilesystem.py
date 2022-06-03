@@ -14,8 +14,4 @@ class LocalFilesystem(PyFilesystemBased):
         Args:
             rootpath (str): The path the filesystem should be opened in
         """
-        self._internal_fs = fs.osfs.OSFS(rootpath)
-
-    @property
-    def internal_fs(self) -> fs.base.FS:
-        return self._internal_fs
+        super().__init__(fs.osfs.OSFS(rootpath))

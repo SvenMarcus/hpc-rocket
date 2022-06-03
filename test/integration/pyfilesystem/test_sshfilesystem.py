@@ -5,7 +5,7 @@ from test.integration.pyfilesystem.test_pyfilesystembased import PyFilesystemBas
 
 import pytest
 from hpcrocket.core.filesystem import Filesystem
-from hpcrocket.pyfilesystem.sshfilesystem import SSHFilesystem
+from hpcrocket.pyfilesystem.sshfilesystem import sshfilesystem
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
@@ -15,7 +15,7 @@ class TestSSHFilesystem(PyFilesystemBasedTest, unittest.TestCase):  # type: igno
     def setUpClass(cls) -> None:
         exit_code = subprocess.call(
             [
-                "sudo",
+                # "sudo",
                 "docker",
                 "run",
                 "-d",
@@ -49,4 +49,4 @@ class TestSSHFilesystem(PyFilesystemBasedTest, unittest.TestCase):  # type: igno
         conn = ConnectionData(
             hostname="localhost", username="myuser", password="1234", port=2222
         )
-        return SSHFilesystem(conn)
+        return sshfilesystem(conn)
