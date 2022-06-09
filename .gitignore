@@ -9,6 +9,9 @@ __pycache__/
 .coverage
 coverage.xml
 
+# pyenv
+.python-version
+
 # setuptools
 *.egg-info
 *.whl
