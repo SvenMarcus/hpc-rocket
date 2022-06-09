@@ -1,7 +1,7 @@
 import os
 from io import TextIOWrapper
 from pathlib import PurePath
-from typing import Generator, List, Optional, Tuple, cast
+from typing import Callable, Generator, List, Optional, Tuple, cast
 
 import fs.base
 import fs.copy as fscp
@@ -25,13 +25,15 @@ def _is_glob(path: str) -> bool:
 
 
 def _removeprefix(string: str, prefix: str) -> str:
-    if hasattr(string, "removeprefix"):
-        return string.removeprefix(prefix)
-    elif string.startswith(prefix):
-        len_prefix = len(prefix)
-        return string[len_prefix:]
-    else:
-        return string
+    def __removeprefix(prefix: str) -> str:
+        if string.startswith(prefix):
+            len_prefix = len(prefix)
+            return string[len_prefix:]
+        else:
+            return string
+
+    removeprefix: Callable[[str], str] = getattr(string, "removeprefix", __removeprefix)
+    return removeprefix(prefix)
 
 
 class PyFilesystemBased(Filesystem):
