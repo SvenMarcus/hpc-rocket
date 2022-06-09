@@ -1,4 +1,3 @@
-from io import TextIOWrapper
 import os.path
 from abc import ABC, abstractmethod
 
@@ -13,7 +12,7 @@ class FilesystemTest(ABC):
     TARGET = "copy.txt"
 
     @abstractmethod
-    def create_filesystem(self) -> Filesystem:
+    def create_filesystem(self, dir: str = "/") -> Filesystem:
         pass
 
     @abstractmethod
@@ -27,6 +26,9 @@ class FilesystemTest(ABC):
     @abstractmethod
     def get_file_content(self, filesystem: Filesystem, path: str) -> str:
         pass
+
+    def working_dir_abs(self) -> str:
+        return "/"
 
     def assert_file_content_equals(
         self, filesystem: Filesystem, path: str, content: str
@@ -271,6 +273,14 @@ class FilesystemTest(ABC):
         assert other.exists("otherdir/first.txt")
         assert other.exists("otherdir/second.txt")
 
+    def test__glob_in_dir__returns_matching_files(self) -> None:
+        sut = self.create_filesystem()
+        self.create_file(sut, "localdir/myfile.txt")
+
+        actual = sut.glob("localdir/*.txt")
+
+        assert actual == ["localdir/myfile.txt"]
+
     def test__when_deleting_with_glob_pattern__it_deletes_matching_files(self) -> None:
         sut = self.create_filesystem()
         self.create_file(sut, "hello.txt")
@@ -321,3 +331,57 @@ class FilesystemTest(ABC):
 
         with pytest.raises(FileNotFoundError):
             sut.openread("mydir")
+
+    def test__filesystem_opened_in_subdir__absolute_path_to_file_exists(self) -> None:
+        subdir = os.path.join(self.working_dir_abs(), "subdir")
+        sut = self.create_filesystem(dir=subdir)
+        self.create_file(sut, "file.txt")
+
+        assert sut.exists(f"{subdir}/file.txt")
+
+    def test__filesystem_opened_in_subdir__globbing_with_abs_path_returns_matching_files(
+        self,
+    ) -> None:
+        subdir = os.path.join(self.working_dir_abs(), "subdir")
+        sut = self.create_filesystem(dir=subdir)
+        self.create_file(sut, "file.txt")
+        self.create_file(sut, "anotherfile.txt")
+        self.create_file(sut, "nope.gif")
+
+        matches = sut.glob(f"{subdir}/*.txt")
+
+        assert set(matches) == {f"{subdir}/file.txt", f"{subdir}/anotherfile.txt"}
+
+    def test__filesystem_opened_in_subdir__copying_abs_path_to_rel_path__copies_to_target(
+        self,
+    ) -> None:
+        subdir = os.path.join(self.working_dir_abs(), "subdir")
+        sut = self.create_filesystem(dir=subdir)
+        self.create_file(sut, self.SOURCE)
+
+        sut.copy(os.path.join(subdir, self.SOURCE), self.TARGET)
+
+        assert sut.exists(self.TARGET)
+
+    def test__filesystem_opened_in_subdir__copying_rel_path_to_abs_path__copies_files_to_target(
+        self,
+    ) -> None:
+        subdir = os.path.join(self.working_dir_abs(), "subdir")
+        sut = self.create_filesystem(dir=subdir)
+        self.create_file(sut, self.SOURCE)
+
+        sut.copy(self.SOURCE, os.path.join(subdir, self.TARGET))
+
+        assert sut.exists(self.TARGET)
+
+    def test__filesystem_opened_in_subdir__copying_abs_path_with_glob__copies_matching_files_to_target(self) -> None:
+        subdir = os.path.join(self.working_dir_abs(), "subdir")
+        sut = self.create_filesystem(dir=subdir)
+        self.create_file(sut, "file.txt")
+        self.create_file(sut, "anotherfile.txt")
+        self.create_file(sut, "nope.gif")
+
+        sut.copy(f"{subdir}/*.txt", "otherdir/")
+
+        assert sut.exists("otherdir/file.txt")
+        assert sut.exists(f"{subdir}/otherdir/anotherfile.txt")

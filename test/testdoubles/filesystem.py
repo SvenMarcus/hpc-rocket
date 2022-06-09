@@ -4,7 +4,8 @@ import io
 import os.path
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Dict, Generator, List, Optional, TextIO, Tuple, Union, cast
+from pathlib import PurePath
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union, cast
 from unittest.mock import DEFAULT, Mock, patch
 
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
@@ -90,12 +91,14 @@ FilesystemItem = Union[FileStub, DirectoryStub]
 
 
 class MemoryFilesystemFake(Filesystem):
-    def __init__(self, files: List[str] = []) -> None:
-        self._filesystem: List[FilesystemItem] = []
+    def __init__(self, files: List[str] = [], dir: str = "/") -> None:
+        self._filesystem: List[FilesystemItem] = [DirectoryStub("/")]
+        self._current_dir = PurePath(os.path.join(os.path.sep, dir))
         for file in files:
             self.create_file_stub(file, "")
 
     def create_file_stub(self, path: str, content: str) -> None:
+        path = str(self._current_dir.joinpath(path))
         parent, _ = os.path.split(path)
         if parent and not self.exists(parent):
             self.create_dir_stub(parent)
@@ -103,23 +106,30 @@ class MemoryFilesystemFake(Filesystem):
         self._filesystem.append(FileStub(path, content))
 
     def create_dir_stub(self, path: str) -> None:
+        path = str(self._current_dir.joinpath(path))
         parent, _ = os.path.split(path)
-        while parent and not self.exists(parent):
+        while parent and parent != str(self._current_dir) and not self.exists(parent):
             self.create_dir_stub(parent)
             parent, _ = os.path.split(path)
+
         self._filesystem.append(DirectoryStub(path))
 
     def get_content_of_file_stub(self, path: str) -> str:
-        file = next(filter(lambda f: f.path == path, self._filesystem))
+        file = next(filter(lambda f: PurePath(f.path).match(path), self._filesystem))
         return cast(FileStub, file).content
 
     def glob(self, pattern: str) -> List[str]:
-        pattern = pattern.replace("**/", "*")
+        strip_token = ""
+        if not os.path.isabs(pattern):
+            strip_token = os.path.sep
+
         return [
-            file.path
-            for file in self._filesystem
-            if fnmatch.fnmatch(file.path, pattern)
+            file.path.strip(strip_token) for file in self._get_items_by_glob(pattern)
         ]
+
+    def _get_items_by_glob(self, pattern: str) -> List[FilesystemItem]:
+        pattern = pattern.replace("**/", "*")
+        return [file for file in self._filesystem if PurePath(file.path).match(pattern)]
 
     def copy(
         self,
@@ -155,17 +165,10 @@ class MemoryFilesystemFake(Filesystem):
         content_as_bytes.seek(0, 0)
         return TextIOWrapper(content_as_bytes)
 
-    def _get_items_by_glob(self, pattern: str) -> List[FilesystemItem]:
-        pattern = pattern.replace("**/", "*")
-        return [
-            file for file in self._filesystem if fnmatch.fnmatch(file.path, pattern)
-        ]
-
     def _perform_copy(
         self, other: "MemoryFilesystemFake", source: str, target: str, overwrite: bool
     ) -> None:
         matches = self._get_matching_items(source)
-
         if not matches:
             raise FileNotFoundError(source)
 
@@ -176,19 +179,6 @@ class MemoryFilesystemFake(Filesystem):
                 match = cast(FileStub, match)
                 self._copy_single_file(other, match, source, target, overwrite)
 
-    def _raise_if_target_file_exists(
-        self,
-        other: "MemoryFilesystemFake",
-        target: str,
-        overwrite: bool,
-    ) -> None:
-        if overwrite:
-            return
-
-        target_item = other._find_matching_item(target)
-        if target_item and not target_item.is_dir():
-            raise FileExistsError(target)
-
     def _copy_directory(
         self,
         source: str,
@@ -197,45 +187,35 @@ class MemoryFilesystemFake(Filesystem):
     ) -> None:
         children = self._find_children(source)
         for child in children:
+            if "*" in source:
+                path_start = source.find("*")
+                child_path = child.path[path_start + 1 :]
+            else:
+                child_path = os.path.basename(child.path)
+
             if not child.is_dir():
-                basename = os.path.basename(child.path)
-                target_path = os.path.join(target, basename)
+                target_path = os.path.join(target, child_path)
                 child = cast(FileStub, child)
                 other.create_file_stub(target_path, child.content)
 
     def _copy_single_file(
         self,
-        fs: "MemoryFilesystemFake",
+        target_fs: "MemoryFilesystemFake",
         file_to_copy: FileStub,
         source: str,
         target: str,
         overwrite: bool,
     ) -> None:
-        existing_file = cast(FileStub, fs._find_matching_item(target))
+        existing_file = cast(FileStub, target_fs._find_matching_item(target))
+        target_path = self._final_target_path(file_to_copy, source, target)
+        target_path = self._append_filename_if_dir(file_to_copy, target_path)
+
         if existing_file and overwrite:
-            self._overwrite_file_content(file_to_copy, existing_file)
+            existing_file.content = file_to_copy.content
             return
 
-        self._create_file_copy(fs, file_to_copy, source, target, overwrite)
-
-    def _overwrite_file_content(
-        self, file_to_copy: FileStub, existing_file: FileStub
-    ) -> None:
-        existing_file.content = file_to_copy.content
-
-    def _create_file_copy(
-        self,
-        fs: "MemoryFilesystemFake",
-        file: FileStub,
-        source: str,
-        target: str,
-        overwrite: bool,
-    ) -> None:
-        target_path = self._final_target_path(file, source, target)
-        target_path = self._append_filename_if_dir(file, target_path)
-        self._raise_if_target_file_exists(fs, target_path, overwrite)
-
-        fs.create_file_stub(target_path, file.content)
+        self._raise_if_target_file_exists(target_fs, target_path, overwrite)
+        target_fs.create_file_stub(target_path, file_to_copy.content)
 
     def _append_filename_if_dir(self, file: FileStub, target_path: str) -> str:
         if target_path.endswith(os.path.sep):
@@ -253,6 +233,19 @@ class MemoryFilesystemFake(Filesystem):
             base = file.path[len(subpath) :].strip("/")
 
         return os.path.join(target, base)
+
+    def _raise_if_target_file_exists(
+        self,
+        other: "MemoryFilesystemFake",
+        target: str,
+        overwrite: bool,
+    ) -> None:
+        if overwrite:
+            return
+
+        target_item = other._find_matching_item(target)
+        if target_item and not target_item.is_dir():
+            raise FileExistsError(target)
 
     def _minimal_matching_subpath(self, file: FileStub, pattern: str) -> str:
         walked_path = ""
@@ -278,10 +271,10 @@ class MemoryFilesystemFake(Filesystem):
 
     def _get_matching_items(self, path: str) -> List[FilesystemItem]:
         if "*" in path:
-            items = self._get_items_by_glob(path)
-        else:
-            item = self._find_matching_item(path)
-            items = [item] if item else self._find_children(path)
+            return self._get_items_by_glob(path)
+
+        item = self._find_matching_item(path)
+        items = [item] if item else self._find_children(path)
         return items
 
     def _find_children(self, path: str) -> List[FilesystemItem]:
@@ -291,9 +284,10 @@ class MemoryFilesystemFake(Filesystem):
         return self._find_matching_item(path) is not None
 
     def _find_matching_item(self, path: str) -> Optional[FilesystemItem]:
-        return next(
-            filter(lambda f: f.path == path if f else False, self._filesystem), None
-        )
+        def matches_path(f: Optional[FilesystemItem]) -> bool:
+            return PurePath(f.path).match(path) if f else False
+
+        return next(filter(matches_path, self._filesystem), None)
 
 
 @contextmanager
