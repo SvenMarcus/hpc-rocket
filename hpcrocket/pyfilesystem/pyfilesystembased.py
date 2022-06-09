@@ -28,7 +28,8 @@ def _removeprefix(string: str, prefix: str) -> str:
     if hasattr(string, "removeprefix"):
         return string.removeprefix(prefix)
     elif string.startswith(prefix):
-        return string[len(prefix) :]
+        len_prefix = len(prefix)
+        return string[len_prefix:]
     else:
         return string
 
