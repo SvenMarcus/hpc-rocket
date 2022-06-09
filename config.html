@@ -1,14 +1,14 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 <link rel="author" title="About these documents" href="about.html" /><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Command line usage" href="quickstart.html" /><link rel="prev" title="Installation" href="install.html" />
 
-    <meta name="generator" content="sphinx-4.5.0, furo 2022.04.07"/>
+    <meta name="generator" content="sphinx-5.0.1, furo 2022.06.04.1"/>
         <title>Setting up a configuration file - HPC Rocket 0.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -180,7 +180,8 @@
           </svg>
           <span>Back to top</span>
         </a>
-        <div class="content-icon-container"><div class="theme-toggle-container theme-toggle-content">
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -195,10 +196,10 @@
         </div>
         <article role="main">
           <section id="setting-up-a-configuration-file">
-<h1>Setting up a configuration file<a class="headerlink" href="#setting-up-a-configuration-file" title="Permalink to this headline">#</a></h1>
+<h1>Setting up a configuration file<a class="headerlink" href="#setting-up-a-configuration-file" title="Permalink to this heading">#</a></h1>
 <p>Create a <code class="docutils literal notranslate"><span class="pre">YAML</span></code> file for the HPC Rocket configuration, e.g. <code class="docutils literal notranslate"><span class="pre">rocket.yaml</span></code> and open it.</p>
 <section id="connection-data">
-<h2>Connection data<a class="headerlink" href="#connection-data" title="Permalink to this headline">#</a></h2>
+<h2>Connection data<a class="headerlink" href="#connection-data" title="Permalink to this heading">#</a></h2>
 <p>Enter the connection data as shown below into the configuration file. For use in CI pipelines it is recommended to use environment variables, however it is also possible to fill the information in directly in the configuration file. HPC Rocket allows the use of a private key file or a password for authentication. Private key files are recommended. It is also possible to specify proxyjumps if necessary.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_HOST</span><span class="w"></span>
 <span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_USER</span><span class="w"></span>
@@ -206,7 +207,7 @@
 <span class="nt">private_keyfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PRIVATE_KEY</span><span class="w"></span>
 <span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PASSWORD</span><span class="w"></span>
 
-<span class="c1"># Skip this section if you don't need proxyjumps</span><span class="w"></span>
+<span class="c1"># Skip this section if you don&#39;t need proxyjumps</span><span class="w"></span>
 <span class="nt">proxyjumps</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_HOST</span><span class="w"></span>
 <span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_USER</span><span class="w"></span>
@@ -215,7 +216,7 @@
 </div>
 </section>
 <section id="copying-files-to-the-remote-machine">
-<h2>Copying files to the remote machine<a class="headerlink" href="#copying-files-to-the-remote-machine" title="Permalink to this headline">#</a></h2>
+<h2>Copying files to the remote machine<a class="headerlink" href="#copying-files-to-the-remote-machine" title="Permalink to this heading">#</a></h2>
 <p>Add all file you want to copy to the remote machine to the <code class="docutils literal notranslate"><span class="pre">copy</span></code> section. <code class="docutils literal notranslate"><span class="pre">from</span></code> refers to the location of a file on the local machine, <code class="docutils literal notranslate"><span class="pre">to</span></code> specifies the location on the remote machine the file will be copied to. If a file is already present on the remote machine the application will abort unless <code class="docutils literal notranslate"><span class="pre">overwrite:</span> <span class="pre">true</span></code> is set for a file.
 This section must include the Slurm batch script to be run if it is not already present on the remote machine. HPC Rocket does support simple glob style notation (e.g. <code class="docutils literal notranslate"><span class="pre">folder/*.txt</span></code>).</p>
 <p><strong>NOTE</strong>: all paths in this section must be relative. On the local machine they will be evaluated from the current working directory, on the remote machine from the user’s home directory. Moreover it is not allowed to break out of these directories. A path like <code class="docutils literal notranslate"><span class="pre">../myfile.txt</span></code> is not valid.</p>
@@ -236,7 +237,7 @@ This section must include the Slurm batch script to be run if it is not already 
 </div>
 </section>
 <section id="collecting-files-from-the-remote-machine-back-to-the-local-machine">
-<h2>Collecting files from the remote machine back to the local machine<a class="headerlink" href="#collecting-files-from-the-remote-machine-back-to-the-local-machine" title="Permalink to this headline">#</a></h2>
+<h2>Collecting files from the remote machine back to the local machine<a class="headerlink" href="#collecting-files-from-the-remote-machine-back-to-the-local-machine" title="Permalink to this heading">#</a></h2>
 <p>Add all files you want to copy from the remote machine back to the local machine to the <code class="docutils literal notranslate"><span class="pre">collect</span></code> section. The same rules as in the <code class="docutils literal notranslate"><span class="pre">copy</span></code> sections apply, only that <code class="docutils literal notranslate"><span class="pre">from</span></code> now refers to the remote location and <code class="docutils literal notranslate"><span class="pre">to</span></code> specifies the local location of files. The <code class="docutils literal notranslate"><span class="pre">collect</span></code> step will be executed after the Slurm job was completed. Currently it will only run if the Slurm job completed successfully. This is subject to change in the future.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">collect</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myresultfile.log</span><span class="w"></span>
@@ -247,7 +248,7 @@ This section must include the Slurm batch script to be run if it is not already 
 </div>
 </section>
 <section id="cleaning-up-the-remote-machine">
-<h2>Cleaning up the remote machine<a class="headerlink" href="#cleaning-up-the-remote-machine" title="Permalink to this headline">#</a></h2>
+<h2>Cleaning up the remote machine<a class="headerlink" href="#cleaning-up-the-remote-machine" title="Permalink to this heading">#</a></h2>
 <p>Add all files you want to delete from the remote machine to the <code class="docutils literal notranslate"><span class="pre">clean</span></code> section. The <code class="docutils literal notranslate"><span class="pre">clean</span></code> step will be executed after the <code class="docutils literal notranslate"><span class="pre">collect</span></code> step, but only if the Slurm job exited successfully.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">clean</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm_script.sh</span><span class="w"></span>
@@ -259,14 +260,14 @@ This section must include the Slurm batch script to be run if it is not already 
 </div>
 </section>
 <section id="specifying-the-slurm-batch-script">
-<h2>Specifying the Slurm Batch script<a class="headerlink" href="#specifying-the-slurm-batch-script" title="Permalink to this headline">#</a></h2>
+<h2>Specifying the Slurm Batch script<a class="headerlink" href="#specifying-the-slurm-batch-script" title="Permalink to this heading">#</a></h2>
 <p>Specify the name of the Slurm batch script with the <code class="docutils literal notranslate"><span class="pre">sbatch</span></code> entry.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">sbatch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm_script.sh</span><span class="w"></span>
 </pre></div>
 </div>
 </section>
 <section id="example-configuration-file">
-<h2>Example configuration file<a class="headerlink" href="#example-configuration-file" title="Permalink to this headline">#</a></h2>
+<h2>Example configuration file<a class="headerlink" href="#example-configuration-file" title="Permalink to this heading">#</a></h2>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_HOST</span><span class="w"></span>
 <span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_USER</span><span class="w"></span>
 <span class="nt">private_keyfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PRIVATE_KEY</span><span class="w"></span>
@@ -378,6 +379,7 @@ This section must include the Slurm batch script to be run if it is not already 
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/furo.js"></script>
     </body>

@@ -1,14 +1,14 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 <link rel="author" title="About these documents" href="about.html" /><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="What HPC Rocket looks like in action" href="demo.html" /><link rel="prev" title="Generating SSH keys to log into a remote machine" href="sshkeys.html" />
 
-    <meta name="generator" content="sphinx-4.5.0, furo 2022.04.07"/>
+    <meta name="generator" content="sphinx-5.0.1, furo 2022.06.04.1"/>
         <title>Using HPC Rocket with GitLab CI - HPC Rocket 0.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -180,7 +180,8 @@
           </svg>
           <span>Back to top</span>
         </a>
-        <div class="content-icon-container"><div class="theme-toggle-container theme-toggle-content">
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -195,21 +196,21 @@
         </div>
         <article role="main">
           <section id="using-hpc-rocket-with-gitlab-ci">
-<h1>Using HPC Rocket with GitLab CI<a class="headerlink" href="#using-hpc-rocket-with-gitlab-ci" title="Permalink to this headline">#</a></h1>
+<h1>Using HPC Rocket with GitLab CI<a class="headerlink" href="#using-hpc-rocket-with-gitlab-ci" title="Permalink to this heading">#</a></h1>
 <section id="add-the-ssh-key">
-<h2>Add the SSH key<a class="headerlink" href="#add-the-ssh-key" title="Permalink to this headline">#</a></h2>
+<h2>Add the SSH key<a class="headerlink" href="#add-the-ssh-key" title="Permalink to this heading">#</a></h2>
 <ol class="arabic">
 <li><p>Open the file containing the SSH key for the remote machine with a text editor. Copy its content to the clipboard.</p></li>
 <li><p>Go to your project in GitLab and navigate to <code class="docutils literal notranslate"><span class="pre">Settings</span> <span class="pre">&gt;</span> <span class="pre">CI/CD</span> <span class="pre">&gt;</span> <span class="pre">Variables</span></code>. Expand the <code class="docutils literal notranslate"><span class="pre">Variables</span></code> section and click the <code class="docutils literal notranslate"><span class="pre">Add</span> <span class="pre">variable</span></code> button.</p></li>
 <li><p>Paste the copied private key into the <code class="docutils literal notranslate"><span class="pre">Value</span></code> field. Enter the name <code class="docutils literal notranslate"><span class="pre">PRIVATE_KEY</span></code> into the <code class="docutils literal notranslate"><span class="pre">Key</span></code> field. Then select <code class="docutils literal notranslate"><span class="pre">File</span></code> from the <code class="docutils literal notranslate"><span class="pre">Type</span></code> dropdown menu. The final result should look similar to the image below. After entering the data, click <code class="docutils literal notranslate"><span class="pre">Add</span> <span class="pre">variable</span></code> to save.</p>
-<p><img alt="" src="_images/AddPrivateKey.png"/></p>
+<p><img alt="" src="_images/AddPrivateKey.png" /></p>
 </li>
 <li><p>Add another variable with the key <code class="docutils literal notranslate"><span class="pre">REMOTE_HOST</span></code>. Copy the address of the remote machine into the <code class="docutils literal notranslate"><span class="pre">Value</span></code> field. Select <code class="docutils literal notranslate"><span class="pre">Variable</span></code> from the <code class="docutils literal notranslate"><span class="pre">Type</span></code> dropdown menu. Click <code class="docutils literal notranslate"><span class="pre">Add</span> <span class="pre">variable</span></code> to save.</p></li>
 <li><p>Add another variable with the key <code class="docutils literal notranslate"><span class="pre">REMOTE_USER</span></code>. Enter the name of your user account on the remote machine into the <code class="docutils literal notranslate"><span class="pre">Value</span></code> field. Select <code class="docutils literal notranslate"><span class="pre">Variable</span></code> from the <code class="docutils literal notranslate"><span class="pre">Type</span></code> dropdown menu. Click <code class="docutils literal notranslate"><span class="pre">Add</span> <span class="pre">variable</span></code> to save.</p></li>
 </ol>
 </section>
 <section id="add-a-job-for-hpc-rocket-in-your-gitlab-ci-yml">
-<h2>Add a job for HPC Rocket in your .gitlab-ci.yml<a class="headerlink" href="#add-a-job-for-hpc-rocket-in-your-gitlab-ci-yml" title="Permalink to this headline">#</a></h2>
+<h2>Add a job for HPC Rocket in your .gitlab-ci.yml<a class="headerlink" href="#add-a-job-for-hpc-rocket-in-your-gitlab-ci-yml" title="Permalink to this heading">#</a></h2>
 <p>After adding the SSH keys to GitLab CI you can add a job to your <code class="docutils literal notranslate"><span class="pre">.gitlab-ci.yml</span></code> as shown below.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">run-slurm-job</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:latest</span><span class="w"></span>
@@ -297,6 +298,7 @@
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/furo.js"></script>
     </body>

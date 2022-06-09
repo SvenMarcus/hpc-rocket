@@ -1,14 +1,14 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 <link rel="author" title="About these documents" href="about.html" /><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Generating SSH keys to log into a remote machine" href="sshkeys.html" /><link rel="prev" title="Setting up a configuration file" href="config.html" />
 
-    <meta name="generator" content="sphinx-4.5.0, furo 2022.04.07"/>
+    <meta name="generator" content="sphinx-5.0.1, furo 2022.06.04.1"/>
         <title>Command line usage - HPC Rocket 0.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=68f4518137b9aefe99b631505a2064c3c42c9852" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
     
     
@@ -180,7 +180,8 @@
           </svg>
           <span>Back to top</span>
         </a>
-        <div class="content-icon-container"><div class="theme-toggle-container theme-toggle-content">
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -195,9 +196,9 @@
         </div>
         <article role="main">
           <section id="command-line-usage">
-<h1>Command line usage<a class="headerlink" href="#command-line-usage" title="Permalink to this headline">#</a></h1>
+<h1>Command line usage<a class="headerlink" href="#command-line-usage" title="Permalink to this heading">#</a></h1>
 <section id="launching-a-job-on-the-remote-machine">
-<h2>Launching a job on the remote machine<a class="headerlink" href="#launching-a-job-on-the-remote-machine" title="Permalink to this headline">#</a></h2>
+<h2>Launching a job on the remote machine<a class="headerlink" href="#launching-a-job-on-the-remote-machine" title="Permalink to this heading">#</a></h2>
 <p>Use the <code class="docutils literal notranslate"><span class="pre">launch</span></code> command to launch a job on the remote machine. You must provide a configuration file. The optional <code class="docutils literal notranslate"><span class="pre">--watch</span></code> flag makes <code class="docutils literal notranslate"><span class="pre">hpc-rocket</span></code> wait until your job is finished (defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>). The collection and cleaning steps in the configuration file are only executed if <code class="docutils literal notranslate"><span class="pre">--watch</span></code> is set.
 Note the all Slurm configuration must happen in the slurm job submitted with <code class="docutils literal notranslate"><span class="pre">sbatch</span></code> file.
 HPC Rocket does currently not offer any other way of configuring your batch jobs.</p>
@@ -206,7 +207,7 @@ HPC Rocket does currently not offer any other way of configuring your batch jobs
 </div>
 </section>
 <section id="checking-a-job-s-status">
-<h2>Checking a job’s status<a class="headerlink" href="#checking-a-job-s-status" title="Permalink to this headline">#</a></h2>
+<h2>Checking a job’s status<a class="headerlink" href="#checking-a-job-s-status" title="Permalink to this heading">#</a></h2>
 <p>If a job was launched without <code class="docutils literal notranslate"><span class="pre">--watch</span></code> you can still check its status using the <code class="docutils literal notranslate"><span class="pre">status</span></code> command.
 You will need to provide a configuration file with connection data and a job ID to check.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket status config.yml <span class="m">12345</span>
@@ -214,14 +215,14 @@ You will need to provide a configuration file with connection data and a job ID 
 </div>
 </section>
 <section id="monitoring-a-job-until-it-finishes">
-<h2>Monitoring a job until it finishes<a class="headerlink" href="#monitoring-a-job-until-it-finishes" title="Permalink to this headline">#</a></h2>
+<h2>Monitoring a job until it finishes<a class="headerlink" href="#monitoring-a-job-until-it-finishes" title="Permalink to this heading">#</a></h2>
 <p>Similar to the <code class="docutils literal notranslate"><span class="pre">status</span></code> command, <code class="docutils literal notranslate"><span class="pre">hpc-rocket</span></code> also provides the <code class="docutils literal notranslate"><span class="pre">watch</span></code> command to monitor a job’s status continuously by entering a config file and a job id.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket watch config.yml <span class="m">12345</span>
 </pre></div>
 </div>
 </section>
 <section id="canceling-a-running-job">
-<h2>Canceling a running job<a class="headerlink" href="#canceling-a-running-job" title="Permalink to this headline">#</a></h2>
+<h2>Canceling a running job<a class="headerlink" href="#canceling-a-running-job" title="Permalink to this heading">#</a></h2>
 <p>Jobs may also be canceled using the <code class="docutils literal notranslate"><span class="pre">cancel</span></code> command. Like the previous commands it accepts a config file and the id of a running job.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket cancel config.yml <span class="m">12345</span>
 </pre></div>
@@ -305,6 +306,7 @@ You will need to provide a configuration file with connection data and a job ID 
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/furo.js"></script>
     </body>
