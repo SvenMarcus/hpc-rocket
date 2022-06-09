@@ -16,8 +16,8 @@ from hpcrocket.pyfilesystem.pyfilesystembased import PyFilesystemBased
 
 # This class name starts with an underscore because pytest tries to collect it as test otherwise
 class _TestFilesystemImpl(PyFilesystemBased):
-    def __init__(self, fs_mock: MemoryFS) -> None:
-        super().__init__(fs_mock)
+    def __init__(self, fs_mock: MemoryFS, dir: str = "/") -> None:
+        super().__init__(fs_mock, dir)
 
 
 class NonPyFilesystemBasedFilesystem(Filesystem):
@@ -47,8 +47,10 @@ class NonPyFilesystemBasedFilesystem(Filesystem):
 
 
 class PyFilesystemBasedTest(FilesystemTest, unittest.TestCase):
-    def create_filesystem(self) -> Filesystem:
-        return _TestFilesystemImpl(MemoryFS())
+    def create_filesystem(self, dir: str = "/") -> Filesystem:
+        mem_fs = MemoryFS()
+        fs = mem_fs.makedirs(dir, recreate=True)
+        return _TestFilesystemImpl(mem_fs, dir)
 
     def create_file(self, filesystem: Filesystem, path: str, content: str = "") -> None:
         pyfs = cast(PyFilesystemBased, filesystem)

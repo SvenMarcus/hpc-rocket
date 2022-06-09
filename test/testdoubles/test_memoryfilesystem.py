@@ -8,8 +8,8 @@ from test.testdoubles.filesystem import MemoryFilesystemFake
 
 class TestMemoryFilesystem(FilesystemTest, unittest.TestCase):
 
-    def create_filesystem(self) -> Filesystem:
-        return MemoryFilesystemFake()
+    def create_filesystem(self, dir: str = "/") -> Filesystem:
+        return MemoryFilesystemFake(dir=dir)
 
     def create_file(self, filesystem: Filesystem, path: str, content: str = "") -> None:
         fs = cast(MemoryFilesystemFake, filesystem)
@@ -23,7 +23,7 @@ class TestMemoryFilesystem(FilesystemTest, unittest.TestCase):
         fs = cast(MemoryFilesystemFake, filesystem)
         return fs.get_content_of_file_stub(path)
 
-    def test__when_creating_file__it_exists(self):
+    def test__when_creating_file__it_exists(self) -> None:
         path = "file.txt"
         sut = self.create_filesystem()
         self.create_file(sut, path, "content")
@@ -31,20 +31,20 @@ class TestMemoryFilesystem(FilesystemTest, unittest.TestCase):
         assert sut.exists(path)
         self.assert_file_content_equals(sut, path, "content")
 
-    def test__when_searching_non_existing_file__exists_is_false(self):
+    def test__when_searching_non_existing_file__exists_is_false(self) -> None:
         path = "file.txt"
         sut = self.create_filesystem()
 
         assert sut.exists(path) is False
 
-    def test__when_creating_nested_file__it_exists(self):
+    def test__when_creating_nested_file__it_exists(self) -> None:
         path = "sub/dir/file.txt"
         sut = self.create_filesystem()
         self.create_file(sut, path)
 
         assert sut.exists(path)
 
-    def test__when_pathname_only_partial_match__exists_is_false(self):
+    def test__when_pathname_only_partial_match__exists_is_false(self) -> None:
         path = "sub/dir/file.txt"
         search_path = "sub/dir/other.txt"
         sut = self.create_filesystem()

@@ -15,7 +15,7 @@ class TestSSHFilesystem(PyFilesystemBasedTest, unittest.TestCase):  # type: igno
     def setUpClass(cls) -> None:
         exit_code = subprocess.call(
             [
-                # "sudo",
+                "sudo",
                 "docker",
                 "run",
                 "-d",
@@ -45,8 +45,11 @@ class TestSSHFilesystem(PyFilesystemBasedTest, unittest.TestCase):  # type: igno
         subprocess.call(["docker", "stop", "openssh-server"])
         subprocess.call(["docker", "rm", "openssh-server"])
 
-    def create_filesystem(self) -> Filesystem:
+    def create_filesystem(self, dir: str = "/testdir") -> Filesystem:
         conn = ConnectionData(
             hostname="localhost", username="myuser", password="1234", port=2222
         )
-        return sshfilesystem(conn)
+        return sshfilesystem(conn, dir=dir)
+
+    def working_dir_abs(self) -> str:
+        return "/testdir"

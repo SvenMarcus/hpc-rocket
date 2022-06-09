@@ -105,17 +105,6 @@ def test__given_config_with_proxy__when_running__should_login_to_sshfs_over_prox
         mock.verify()
 
 
-def test__given_config__when_running__should_open_sshfs_in_home_dir(sshfs_type_mock: MagicMock):
-    sut = make_sut(launch_options())
-
-    sut.run(launch_options())
-
-    sshfs_mock: MagicMock = sshfs_type_mock.return_value
-    calls = sshfs_mock.mock_calls
-
-    assert call.opendir(HOME_DIR, factory=ANY) in calls
-
-
 def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem(osfs_type_mock,
                                                                                                 sshfs_type_mock):
     opts = launch_options(copy=[
