@@ -65,6 +65,7 @@ jobs:
     
     - name: Install SSH keys
       run: |
+        mkdir -p ~/.ssh
         echo "${{ secrets.PROXY_SECRET }}" >> $PROXY_KEY
         echo "${{ secrets.TARGET_SECRET }}" >> $TARGET_KEY
 
