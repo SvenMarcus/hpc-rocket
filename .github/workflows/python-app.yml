@@ -63,10 +63,12 @@ jobs:
     
     - name: Install SSH keys
       env:
-        PROXY_KEY: "${{ env.GITHUB_WORKSPACE }}/.ssh/proxy_key"
-        TARGET_KEY: "${{ env.GITHUB_WORKSPACE }}/.ssh/target_key"
+        PROXY_KEY: "$GITHUB_WORKSPACE/.ssh/proxy_key"
+        TARGET_KEY: "$GITHUB_WORKSPACE/.ssh/target_key"
       run: |
         echo $GITHUB_WORKSPACE
+        echo $PROXY_KEY
+        echo $TARGET_KEY
         mkdir -p $GITHUB_WORKSPACE/.ssh
         touch $PROXY_KEY
         touch $TARGET_KEY
@@ -75,9 +77,9 @@ jobs:
 
     - name: Test with pytest
       env:
-        PROXY_KEY: "${{ env.GITHUB_WORKSPACE }}/.ssh/proxy_key"
-        TARGET_KEY: "${{ env.GITHUB_WORKSPACE }}/.ssh/target_key"
-        ABS_DIR: "${{ env.GITHUB_WORKSPACE }}"
+        PROXY_KEY: "$GITHUB_WORKSPACE/.ssh/proxy_key"
+        TARGET_KEY: "$GITHUB_WORKSPACE/.ssh/target_key"
+        ABS_DIR: "$GITHUB_WORKSPACE"
         REMOTE_SLURM_SCRIPT: "slurm.job"
 
       run: |
