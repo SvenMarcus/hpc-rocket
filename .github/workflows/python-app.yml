@@ -66,7 +66,8 @@ jobs:
         PROXY_KEY: "${{ env.GITHUB_WORKSPACE }}/.ssh/proxy_key"
         TARGET_KEY: "${{ env.GITHUB_WORKSPACE }}/.ssh/target_key"
       run: |
-        mkdir -p ${GITHUB_WORKSPACE}/.ssh
+        echo $GITHUB_WORKSPACE
+        mkdir -p $GITHUB_WORKSPACE/.ssh
         touch $PROXY_KEY
         touch $TARGET_KEY
         echo "${{ secrets.PROXY_SECRET }}" >> $PROXY_KEY
