@@ -90,6 +90,18 @@ class DirectoryStub:
 FilesystemItem = Union[FileStub, DirectoryStub]
 
 
+def _first_wildcard(pattern: str) -> int:
+    first_star = pattern.find("*")
+    if first_star == -1:
+        first_star = 0
+
+    return first_star
+
+def _split_at_first_wildcard(pattern: str) -> Tuple[str, str]:
+    first_wildcard = _first_wildcard(pattern)
+    return pattern[:first_wildcard], pattern[first_wildcard:]
+
+
 class MemoryFilesystemFake(Filesystem):
     def __init__(self, files: List[str] = [], dir: str = "/") -> None:
         self._filesystem: List[FilesystemItem] = [DirectoryStub("/")]
@@ -122,6 +134,10 @@ class MemoryFilesystemFake(Filesystem):
         strip_token = ""
         if not os.path.isabs(pattern):
             strip_token = os.path.sep
+
+        _dir, _ = _split_at_first_wildcard(pattern)
+        if _dir and not self.exists(_dir):
+            raise FileNotFoundError(_dir)
 
         return [
             file.path.strip(strip_token) for file in self._get_items_by_glob(pattern)

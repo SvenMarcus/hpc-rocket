@@ -1,3 +1,4 @@
+import os
 import subprocess
 import time
 import unittest
@@ -13,23 +14,25 @@ from hpcrocket.ssh.connectiondata import ConnectionData
 class TestSSHFilesystem(PyFilesystemBasedTest, unittest.TestCase):  # type: ignore
     @classmethod
     def setUpClass(cls) -> None:
-        exit_code = subprocess.call(
-            [
-                "sudo",
-                "docker",
-                "run",
-                "-d",
-                "--name=openssh-server",
-                "-e",
-                "PASSWORD_ACCESS=true",
-                "-e",
-                "USER_PASSWORD=1234",
-                "-e",
-                "USER_NAME=myuser",
-                "--publish=2222:2222",
-                "hpc-rocket/openssh-test-server",
-            ]
-        )
+        docker_args = [
+            "docker",
+            "run",
+            "-d",
+            "--name=openssh-server",
+            "-e",
+            "PASSWORD_ACCESS=true",
+            "-e",
+            "USER_PASSWORD=1234",
+            "-e",
+            "USER_NAME=myuser",
+            "--publish=2222:2222",
+            "hpc-rocket/openssh-test-server",
+        ]
+
+        if "USE_SUDO" in os.environ:
+            docker_args.insert(0, "sudo")
+
+        exit_code = subprocess.call(docker_args)
 
         time.sleep(1)
         assert exit_code == 0

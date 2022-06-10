@@ -260,6 +260,14 @@ class FilesystemTest(ABC):
         assert sut.exists("otherdir/first/file.txt")
         assert sut.exists("otherdir/second/another.txt")
 
+    def test__when_copying_non_existing_file_with_glob_pattern__it_raises_an_error(
+        self,
+    ) -> None:
+        sut = self.create_filesystem()
+
+        with pytest.raises(FileNotFoundError):
+            sut.copy("dir/*.txt", "otherdir/")
+
     def test__when_copying_nested_files_with_glob_pattern_to_dir__it_copies_matching_files_into_target_dir(
         self,
     ) -> None:
@@ -280,6 +288,12 @@ class FilesystemTest(ABC):
         actual = sut.glob("localdir/*.txt")
 
         assert actual == ["localdir/myfile.txt"]
+
+    def test__glob_in_non_existing_dir__raises_an_error(self) -> None:
+        sut = self.create_filesystem()
+
+        with pytest.raises(FileNotFoundError):
+            sut.glob("localdir/*.txt")
 
     def test__when_deleting_with_glob_pattern__it_deletes_matching_files(self) -> None:
         sut = self.create_filesystem()
@@ -374,7 +388,9 @@ class FilesystemTest(ABC):
 
         assert sut.exists(self.TARGET)
 
-    def test__filesystem_opened_in_subdir__copying_abs_path_with_glob__copies_matching_files_to_target(self) -> None:
+    def test__filesystem_opened_in_subdir__copying_abs_path_with_glob__copies_matching_files_to_target(
+        self,
+    ) -> None:
         subdir = os.path.join(self.working_dir_abs(), "subdir")
         sut = self.create_filesystem(dir=subdir)
         self.create_file(sut, "file.txt")

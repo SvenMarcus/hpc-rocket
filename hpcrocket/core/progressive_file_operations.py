@@ -38,8 +38,8 @@ class CopyResult:
     errors: List[Exception] = field(default_factory=list)
 
     @classmethod
-    def empty(cls) -> "CopyResult":
-        return cls([])
+    def empty(cls, errors: Optional[List[Exception]] = None) -> "CopyResult":
+        return cls([], errors or [])
 
 
 class _Copier:
@@ -55,12 +55,15 @@ class _Copier:
         self._abort_on_error = abort_on_error
 
     def __call__(self, copy_instruction: CopyInstruction) -> CopyResult:
-        unpacked_instructions = copy_instruction.unglob(self._src_fs)
-        return functools.reduce(
-            self._reduce_to_copy_result, unpacked_instructions, CopyResult([])
-        )
+        try:
+            unpacked_instructions = copy_instruction.unglob(self._src_fs)
+            return functools.reduce(
+                self._accumulate_copy_result, unpacked_instructions, CopyResult([])
+            )
+        except FileNotFoundError as err:
+            return CopyResult.empty([err])
 
-    def _reduce_to_copy_result(
+    def _accumulate_copy_result(
         self, current_result: CopyResult, instruction: CopyInstruction
     ) -> CopyResult:
         if current_result.errors and self._abort_on_error:

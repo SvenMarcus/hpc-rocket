@@ -107,6 +107,20 @@ def test__given_copy_instructions_with_glob_and_file_already_on_remote__when_cop
     assert_error_types_equal(errors, [FileExistsError])
 
 
+def test__given_copy_instructions_with_glob_for_non_existing_dir__when_copying__returns_error() -> None:
+    copy_instructions = [CopyInstruction("dir/*.txt", "")]
+
+    source_fs = new_filesystem()
+    target_fs = new_filesystem()
+
+    files, errors = copied_files_and_errors(
+        progressive_copy(source_fs, target_fs, copy_instructions)
+    )
+
+    assert files == []
+    assert_error_types_equal(errors, [FileNotFoundError])
+
+
 def test__given_files_to_copy__when_copying_without_abort_on_error__copies_remaining_files_after_error() -> None:
     source_fs_spy = new_filesystem(["file.txt", "funny.gif", "other.gif"])
     target_fs = new_filesystem(["funny.gif"])

@@ -63,9 +63,9 @@ def prepare_local_filesystem(
     local_fs.create("/home/myuser/.ssh/id_ed25519")
     local_fs.create("/home/myuser/.ssh/proxy_key")
 
-    local_fs.makedirs("localdir")
-    local_fs.writetext("localdir/test.txt", "testfile")
-    local_fs.writetext("localdir/hello.txt", "hellofile")
+    local_fs.makedirs("/home/myuser/dir")
+    local_fs.writetext("/home/myuser/dir/test.txt", "testfile")
+    local_fs.writetext("/home/myuser/dir/hello.txt", "hellofile")
     local_fs.create("local_slurm.job")
 
     with open(config_file, "r") as file:
@@ -74,6 +74,7 @@ def prepare_local_filesystem(
 
 def prepare_environment_variables() -> Dict[str, str]:
     environ = {}
+    environ["ABSOLUTE_DIRECTORY"] = "/home/myuser/dir"
     environ["HOME"] = "/home/myuser"
     environ["TARGET_USER"] = "target_user"
     environ["TARGET_HOST"] = "target_host.example.com"

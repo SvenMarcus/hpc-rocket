@@ -123,6 +123,8 @@ class PyFilesystemBased(Filesystem):
         if pattern.endswith("*"):
             pattern += "*"
 
+        self._raise_if_does_not_exist(dir, fs)
+
         fs = fs.opendir(dir)
         for match in fs.glob(pattern):
             joined_path = os.path.join(dir, match.path.lstrip(os.path.sep))
@@ -155,7 +157,7 @@ class PyFilesystemBased(Filesystem):
         target: str,
         overwrite: bool = False,
     ) -> None:
-        self._raise_if_source_does_not_exist(source, source_fs)
+        self._raise_if_does_not_exist(source, source_fs)
         self._raise_if_target_exists(target, overwrite, target_fs)
         self._create_missing_target_dirs(target, target_fs)
         self._try_copy_to_filesystem(source_fs, source, target_fs, target)
@@ -210,7 +212,7 @@ class PyFilesystemBased(Filesystem):
 
         return target
 
-    def _raise_if_source_does_not_exist(
+    def _raise_if_does_not_exist(
         self, source: str, source_fs: fs.base.FS
     ) -> None:
         if not source_fs.exists(source):

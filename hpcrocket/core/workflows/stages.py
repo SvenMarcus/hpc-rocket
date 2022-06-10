@@ -146,7 +146,8 @@ class PrepareStage:
         copied_files, errors = self._try_copy_files()
 
         if errors:
-            self._do_rollback(copied_files, errors, ui)
+            _log_errors(errors, ui)
+            self._do_rollback(copied_files, ui)
             return False
 
         ui.success("Done")
@@ -166,8 +167,7 @@ class PrepareStage:
 
         return copied_files, errors
 
-    def _do_rollback(self, files: List[str], errors: List[Exception], ui: UI) -> None:
-        _log_errors(errors, ui)
+    def _do_rollback(self, files: List[str], ui: UI) -> None:
         ui.info("Performing rollback")
         errors = list(progressive_clean(self._remote_fs, files))
         _log_errors(errors, ui)
