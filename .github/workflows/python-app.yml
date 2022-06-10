@@ -24,8 +24,8 @@ jobs:
       TARGET_USER: ${{ secrets.TARGET_USER }}
       PROXY_HOST: ${{ secrets.PROXY_HOST }}
       PROXY_USER: ${{ secrets.PROXY_USER }}
-      PROXY_KEY: ~/.ssh/proxy_key
-      TARGET_KEY: ~/.ssh/target_key
+      PROXY_KEY: .ssh/proxy_key
+      TARGET_KEY: .ssh/target_key
 
 
     steps:
@@ -65,7 +65,9 @@ jobs:
     
     - name: Install SSH keys
       run: |
-        mkdir -p ~/.ssh
+        mkdir -p .ssh
+        touch $PROXY_KEY
+        touch $TARGET_KEY
         echo "${{ secrets.PROXY_SECRET }}" >> $PROXY_KEY
         echo "${{ secrets.TARGET_SECRET }}" >> $TARGET_KEY
 
