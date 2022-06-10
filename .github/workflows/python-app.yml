@@ -65,8 +65,8 @@ jobs:
     
     - name: Install SSH keys
       run: |
-        echo ${{ secrets.PROXY_SECRET }} >> $PROXY_KEY
-        echo ${{ secrets.TARGET_SECRET }} >> $TARGET_KEY
+        echo "${{ secrets.PROXY_SECRET }}" >> $PROXY_KEY
+        echo "${{ secrets.TARGET_SECRET }}" >> $TARGET_KEY
 
     - name: Test with pytest
       env:
