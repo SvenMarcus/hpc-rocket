@@ -75,6 +75,7 @@ jobs:
         export TARGET_KEY="$GITHUB_WORKSPACE/.ssh/target_key"
         export ABS_DIR="$GITHUB_WORKSPACE"
         export REMOTE_SLURM_SCRIPT="slurm.job"
+        echo $PROXY_KEY $TARGET_KEY
         coverage run --source=hpcrocket -m pytest test/
         coverage xml
 
