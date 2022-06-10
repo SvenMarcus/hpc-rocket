@@ -9,7 +9,7 @@ from test.integration.pyfilesystem.sshfilesystem_assertions import (
 from test.testdoubles.executor import SlurmJobExecutorSpy
 from test.testdoubles.filesystem import sshfs_with_connection_fake
 from test.testdoubles.sshclient import ProxyJumpVerifyingSSHClient
-from unittest.mock import ANY, MagicMock, Mock, call
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 from hpcrocket.core.application import Application
@@ -20,16 +20,15 @@ from hpcrocket.ssh.connectiondata import ConnectionData
 from hpcrocket.ssh.errors import SSHError
 
 
+@pytest.fixture(autouse=True)
+def patch_cwd():
+    getcwd = lambda: "/"
+    with patch("os.getcwd", getcwd) as patched:
+        yield patched
+
+
 def make_sut(options, ui=None):
     return Application(SlurmJobExecutorSpy(), PyFilesystemFactory(options), ui or Mock())
-
-
-def test__given_valid_config__when_running__should_open_local_fs_in_current_directory(osfs_type_mock):
-    sut = make_sut(launch_options())
-
-    sut.run(launch_options())
-
-    osfs_type_mock.assert_called_with(".")
 
 
 def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_credentials(sshfs_type_mock):

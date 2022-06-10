@@ -353,6 +353,13 @@ class FilesystemTest(ABC):
 
         assert sut.exists(f"{subdir}/file.txt")
 
+    def test__filesystem_opened_in_abs_path__rel_path_to_file_exists(self) -> None:
+        subdir = os.path.join(self.working_dir_abs(), "subdir")
+        sut = self.create_filesystem(dir="/" + subdir)
+        self.create_file(sut, "file.txt")
+
+        assert sut.exists(f"file.txt")
+
     def test__filesystem_opened_in_subdir__globbing_with_abs_path_returns_matching_files(
         self,
     ) -> None:

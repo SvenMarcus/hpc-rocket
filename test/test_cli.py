@@ -11,7 +11,7 @@ from hpcrocket.core.launchoptions import (
     SimpleJobOptions,
     WatchOptions,
 )
-from hpcrocket.pyfilesystem.localfilesystem import LocalFilesystem
+from hpcrocket.pyfilesystem.localfilesystem import localfilesystem
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
@@ -73,7 +73,7 @@ def setup_env() -> Generator[Dict[str, str], None, None]:
 
 
 def run_parser(args: List[str]) -> Options:
-    return parse_cli_args(args, LocalFilesystem("."))
+    return parse_cli_args(args, localfilesystem(os.getcwd()))
 
 
 def test__given_valid_launch_args__should_return_matching_config() -> None:

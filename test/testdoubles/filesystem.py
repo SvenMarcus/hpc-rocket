@@ -97,20 +97,27 @@ def _first_wildcard(pattern: str) -> int:
 
     return first_star
 
+
 def _split_at_first_wildcard(pattern: str) -> Tuple[str, str]:
     first_wildcard = _first_wildcard(pattern)
     return pattern[:first_wildcard], pattern[first_wildcard:]
 
 
 class MemoryFilesystemFake(Filesystem):
+
+    DOUBLE_SEP = os.path.sep * 2
+
     def __init__(self, files: List[str] = [], dir: str = "/") -> None:
         self._filesystem: List[FilesystemItem] = [DirectoryStub("/")]
-        self._current_dir = PurePath(os.path.join(os.path.sep, dir))
+        if not os.path.isabs(dir):
+            dir = os.path.join(os.path.sep, dir)
+
+        self._current_dir = PurePath(dir)
         for file in files:
             self.create_file_stub(file, "")
 
     def create_file_stub(self, path: str, content: str) -> None:
-        path = str(self._current_dir.joinpath(path))
+        path = self._clean_join(path)
         parent, _ = os.path.split(path)
         if parent and not self.exists(parent):
             self.create_dir_stub(parent)
@@ -118,13 +125,20 @@ class MemoryFilesystemFake(Filesystem):
         self._filesystem.append(FileStub(path, content))
 
     def create_dir_stub(self, path: str) -> None:
-        path = str(self._current_dir.joinpath(path))
+        path = self._clean_join(path)
         parent, _ = os.path.split(path)
         while parent and parent != str(self._current_dir) and not self.exists(parent):
             self.create_dir_stub(parent)
             parent, _ = os.path.split(path)
 
         self._filesystem.append(DirectoryStub(path))
+
+    def _clean_join(self, path):
+        path = str(self._current_dir.joinpath(path)).replace(
+            self.DOUBLE_SEP, os.path.sep
+        )
+
+        return path
 
     def get_content_of_file_stub(self, path: str) -> str:
         file = next(filter(lambda f: PurePath(f.path).match(path), self._filesystem))

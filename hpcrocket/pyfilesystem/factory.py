@@ -1,6 +1,7 @@
+import os
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 from hpcrocket.core.launchoptions import Options
-from hpcrocket.pyfilesystem.localfilesystem import LocalFilesystem
+from hpcrocket.pyfilesystem.localfilesystem import localfilesystem
 from hpcrocket.pyfilesystem.sshfilesystem import sshfilesystem
 
 
@@ -10,7 +11,8 @@ class PyFilesystemFactory(FilesystemFactory):
         self._options = options
 
     def create_local_filesystem(self) -> Filesystem:
-        return LocalFilesystem(".")
+        print(os.getcwd())
+        return localfilesystem(os.getcwd())
 
     def create_ssh_filesystem(self) -> Filesystem:
         connection = self._options.connection

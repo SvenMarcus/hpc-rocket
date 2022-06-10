@@ -62,12 +62,6 @@ class PyFilesystemBased(Filesystem):
         sub_fs = self._open_fs(self, pattern)
         return list(self._glob_raw_pyfs(sub_fs, pattern))
 
-    def _seperator_to_strip(self, pattern: str) -> str:
-        strip = ""
-        if not os.path.isabs(pattern):
-            strip = os.path.sep
-        return strip
-
     def openread(self, path: str) -> TextIOWrapper:
         path = str(self._curdir.joinpath(path))
         try:
@@ -212,9 +206,7 @@ class PyFilesystemBased(Filesystem):
 
         return target
 
-    def _raise_if_does_not_exist(
-        self, source: str, source_fs: fs.base.FS
-    ) -> None:
+    def _raise_if_does_not_exist(self, source: str, source_fs: fs.base.FS) -> None:
         if not source_fs.exists(source):
             raise FileNotFoundError(source)
 

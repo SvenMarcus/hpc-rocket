@@ -1,3 +1,4 @@
+import os
 import signal
 import sys
 from typing import Any, List
@@ -7,7 +8,7 @@ from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 from hpcrocket.core.launchoptions import Options
 from hpcrocket.pyfilesystem.factory import PyFilesystemFactory
-from hpcrocket.pyfilesystem.localfilesystem import LocalFilesystem
+from hpcrocket.pyfilesystem.localfilesystem import localfilesystem
 from hpcrocket.ssh.sshexecutor import SSHExecutor
 from hpcrocket.ui import UI, RichUI
 
@@ -47,7 +48,7 @@ class ProductionServiceRegistry:
     """
 
     def local_filesystem(self) -> Filesystem:
-        return LocalFilesystem(".")
+        return localfilesystem(os.getcwd())
 
     def get_executor(self, options: Options) -> CommandExecutor:
         return SSHExecutor(options.connection, options.proxyjumps)
