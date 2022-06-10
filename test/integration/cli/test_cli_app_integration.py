@@ -74,7 +74,7 @@ def prepare_local_filesystem(
 
 def prepare_environment_variables() -> Dict[str, str]:
     environ = {}
-    environ["ABS_DIR"] = "/home/myuser/dir"
+    environ["ABS_DIR"] = "/home/myuser"
     environ["HOME"] = "/home/myuser"
     environ["TARGET_USER"] = "target_user"
     environ["TARGET_HOST"] = "target_host.example.com"
