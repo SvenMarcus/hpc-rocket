@@ -13,7 +13,7 @@ copy:
     to: $REMOTE_SLURM_SCRIPT
     overwrite: true
 
-  - from: $HOME/dir/*.txt
+  - from: $ABS_DIR/dir/*.txt
     to: dir/
     overwrite: true
 

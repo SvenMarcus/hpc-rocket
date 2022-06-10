@@ -19,6 +19,15 @@ jobs:
       matrix:
         python: [3.7, 3.8, 3.9, '3.10']
 
+    env:
+      TARGET_HOST: ${{ secrets.TARGET_HOST }}
+      TARGET_USER: ${{ secrets.TARGET_USER }}
+      PROXY_HOST: ${{ secrets.PROXY_HOST }}
+      PROXY_USER: ${{ secrets.PROXY_USER }}
+      PROXY_KEY: ~/.ssh/proxy_key
+      TARGET_KEY: ~/.ssh/target_key
+
+
     steps:
     - name: Install docker
       run: |
@@ -54,7 +63,16 @@ jobs:
         mypy --install-types --non-interactive hpcrocket
         mypy --strict hpcrocket
     
+    - name: Install SSH keys
+      run: |
+        echo ${{ secrets.PROXY_SECRET }} >> $PROXY_KEY
+        echo ${{ secrets.TARGET_SECRET }} >> $TARGET_KEY
+
     - name: Test with pytest
+      env:
+        ABS_DIR: $working-directory
+        REMOTE_SLURM_SCRIPT: "slurm.job"
+
       run: |
          coverage run --source=hpcrocket -m pytest test/
          coverage xml

@@ -9,4 +9,8 @@
 #SBATCH --partition=standard
 
 srun cat dir/test.txt
+srun cat dir/hello.txt
+
+touch dir/a_created_file.txt
+
 echo "Done"
