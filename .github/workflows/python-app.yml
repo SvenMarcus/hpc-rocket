@@ -19,6 +19,8 @@ jobs:
         python: [3.7, 3.8, 3.9, '3.10']
 
     steps:
+    - uses: actions/checkout@v2
+
     - name: Set up Python ${{ matrix.python }}
       uses: actions/setup-python@v2
       with:
@@ -62,6 +64,12 @@ jobs:
     - name: Build SSH Test container
       run: |
         sudo docker build --tag hpc-rocket/openssh-test-server -f docker/Dockerfile.openssh docker
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f testrequirements.txt ]; then pip install -r testrequirements.txt; fi
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Test with pytest
       run: |
