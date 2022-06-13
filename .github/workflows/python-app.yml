@@ -73,7 +73,7 @@ jobs:
       run: |
         export PROXY_KEY="$GITHUB_WORKSPACE/.ssh/proxy_key"
         export TARGET_KEY="$GITHUB_WORKSPACE/.ssh/target_key"
-        export ABS_DIR="$GITHUB_WORKSPACE"
+        export ABS_DIR="$GITHUB_WORKSPACE/test/testconfig"
         export REMOTE_SLURM_SCRIPT="slurm.job"
         echo $PROXY_KEY $TARGET_KEY
         coverage run --source=hpcrocket -m pytest test/
