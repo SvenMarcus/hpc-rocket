@@ -107,12 +107,14 @@ class MemoryFilesystemFake(Filesystem):
 
     DOUBLE_SEP = os.path.sep * 2
 
-    def __init__(self, files: List[str] = [], dir: str = "/") -> None:
+    def __init__(self, files: List[str] = [], dir: str = "/", home: str = "/") -> None:
         self._filesystem: List[FilesystemItem] = [DirectoryStub("/")]
         if not os.path.isabs(dir):
             dir = os.path.join(os.path.sep, dir)
 
         self._current_dir = PurePath(dir)
+        self._home = PurePath(home)
+
         for file in files:
             self.create_file_stub(file, "")
 
@@ -133,7 +135,7 @@ class MemoryFilesystemFake(Filesystem):
 
         self._filesystem.append(DirectoryStub(path))
 
-    def _clean_join(self, path):
+    def _clean_join(self, path: str) -> str:
         path = str(self._current_dir.joinpath(path)).replace(
             self.DOUBLE_SEP, os.path.sep
         )
@@ -145,6 +147,8 @@ class MemoryFilesystemFake(Filesystem):
         return cast(FileStub, file).content
 
     def glob(self, pattern: str) -> List[str]:
+        pattern = self._expandhome(pattern, self)
+
         strip_token = ""
         if not os.path.isabs(pattern):
             strip_token = os.path.sep
@@ -156,6 +160,9 @@ class MemoryFilesystemFake(Filesystem):
         return [
             file.path.strip(strip_token) for file in self._get_items_by_glob(pattern)
         ]
+
+    def _expandhome(self, path: str, fs: "MemoryFilesystemFake") -> str:
+        return path.replace("~", str(fs._home))
 
     def _get_items_by_glob(self, pattern: str) -> List[FilesystemItem]:
         pattern = pattern.replace("**/", "*")
@@ -198,6 +205,8 @@ class MemoryFilesystemFake(Filesystem):
     def _perform_copy(
         self, other: "MemoryFilesystemFake", source: str, target: str, overwrite: bool
     ) -> None:
+        source = self._expandhome(source, self)
+        target = self._expandhome(target, other)
         matches = self._get_matching_items(source)
         if not matches:
             raise FileNotFoundError(source)
@@ -311,9 +320,11 @@ class MemoryFilesystemFake(Filesystem):
         return self._get_items_by_glob(os.path.join(path, "*"))
 
     def exists(self, path: str) -> bool:
+        path = self._expandhome(path, self)
         return self._find_matching_item(path) is not None
 
     def _find_matching_item(self, path: str) -> Optional[FilesystemItem]:
+        path = self._expandhome(path, self)
         def matches_path(f: Optional[FilesystemItem]) -> bool:
             return PurePath(f.path).match(path) if f else False
 

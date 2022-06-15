@@ -14,7 +14,7 @@ def test(session: nox.Session) -> None:
     session.install("pytest-cov")
     session.install("pytest-timeout")
 
-    session.run("pytest", "-vv", "-m", "not integration", "test")
+    session.run("pytest", "-vv", "-m", "not integration and not acceptance", "test")
 
 
 @nox.session(python=["3.7", "3.8", "3.9", "3.10"])

@@ -41,13 +41,20 @@ class PyFilesystemBased(Filesystem):
     A Filesystem based on PyFilesystem2
     """
 
-    def __init__(self, internal_fs: fs.base.FS, dir: str = "/") -> None:
+    def __init__(
+        self, internal_fs: fs.base.FS, dir: str = "/", home: str = "/"
+    ) -> None:
         self._internal_fs = internal_fs
         self._curdir = PurePath(dir)
+        self._homedir = PurePath(home)
 
     @property
     def current_dir(self) -> PurePath:
         return self._curdir
+
+    @property
+    def home(self) -> PurePath:
+        return self._homedir
 
     @property
     def internal_fs(self) -> fs.base.FS:
@@ -59,10 +66,15 @@ class PyFilesystemBased(Filesystem):
         return self._internal_fs
 
     def glob(self, pattern: str) -> List[str]:
+        pattern = self._expandhome(pattern, self)
         sub_fs = self._open_fs(self, pattern)
         return list(self._glob_raw_pyfs(sub_fs, pattern))
 
+    def _expandhome(self, path: str, filesystem: "PyFilesystemBased") -> str:
+        return path.replace("~", str(filesystem.home))
+
     def openread(self, path: str) -> TextIOWrapper:
+        path = self._expandhome(path, self)
         path = str(self._curdir.joinpath(path))
         try:
             return cast(TextIOWrapper, self.internal_fs.open(path, mode="r"))
@@ -79,8 +91,11 @@ class PyFilesystemBased(Filesystem):
         filesystem: Optional["Filesystem"] = None,
     ) -> None:
         self._raise_if_no_pyfilesystem(filesystem)
+        other_pyfs_based = cast(PyFilesystemBased, filesystem) or self
+        source = self._expandhome(source, self)
+        target = self._expandhome(target, other_pyfs_based)
         source_fs = self._open_fs(self, source)
-        target_fs = self._get_target_fs(filesystem, target)
+        target_fs = self._open_fs(other_pyfs_based, target)
 
         if _is_glob(source):
             self._copy_glob(source_fs, source, target_fs, target, overwrite)
@@ -88,13 +103,9 @@ class PyFilesystemBased(Filesystem):
 
         self._copy_single_file(source_fs, source, target_fs, target, overwrite)
 
-    def _get_target_fs(self, fs: Optional[Filesystem], target: str) -> fs.base.FS:
-        filesystem = cast(PyFilesystemBased, fs) or self
-        return self._open_fs(filesystem, target)
-
     def _open_fs(self, fs: "PyFilesystemBased", path: str) -> fs.base.FS:
         if os.path.isabs(path):
-            return self.internal_fs
+            return fs.internal_fs
 
         return fs.internal_fs.opendir(str(fs.current_dir))
 
@@ -159,7 +170,7 @@ class PyFilesystemBased(Filesystem):
     def _create_missing_target_dirs(self, target: str, target_fs: fs.base.FS) -> None:
         target_parent_dir = os.path.dirname(target)
         if not target_fs.exists(target_parent_dir):
-            target_fs.makedirs(target_parent_dir)
+            target_fs.makedirs(target_parent_dir, recreate=True)
 
     def delete(self, path: str) -> None:
         fs = self.internal_fs.opendir(str(self.current_dir))
@@ -185,8 +196,9 @@ class PyFilesystemBased(Filesystem):
         fs.remove(path)
 
     def exists(self, path: str) -> bool:
-        whole_path = str(self.current_dir.joinpath(path))
-        return self.internal_fs.exists(whole_path)
+        path = self._expandhome(path, self)
+        path = str(self.current_dir.joinpath(path))
+        return self.internal_fs.exists(path)
 
     def _try_copy_to_filesystem(
         self, source_fs: fs.base.FS, source: str, target_fs: fs.base.FS, target: str

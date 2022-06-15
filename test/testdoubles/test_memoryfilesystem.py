@@ -7,9 +7,8 @@ from test.testdoubles.filesystem import MemoryFilesystemFake
 
 
 class TestMemoryFilesystem(FilesystemTest, unittest.TestCase):
-
     def create_filesystem(self, dir: str = "/") -> Filesystem:
-        return MemoryFilesystemFake(dir=dir)
+        return MemoryFilesystemFake(dir=dir, home=self.home_dir_abs())
 
     def create_file(self, filesystem: Filesystem, path: str, content: str = "") -> None:
         fs = cast(MemoryFilesystemFake, filesystem)

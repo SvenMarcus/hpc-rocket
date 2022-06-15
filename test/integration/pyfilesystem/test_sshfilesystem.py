@@ -56,3 +56,6 @@ class TestSSHFilesystem(PyFilesystemBasedTest, unittest.TestCase):  # type: igno
 
     def working_dir_abs(self) -> str:
         return "/testdir"
+
+    def home_dir_abs(self) -> str:
+        return "/testdir"

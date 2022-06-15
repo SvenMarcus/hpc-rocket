@@ -30,6 +30,9 @@ class FilesystemTest(ABC):
     def working_dir_abs(self) -> str:
         return "/"
 
+    def home_dir_abs(self) -> str:
+        return "/home/myuser"
+
     def assert_file_content_equals(
         self, filesystem: Filesystem, path: str, content: str
     ) -> None:
@@ -408,3 +411,58 @@ class FilesystemTest(ABC):
 
         assert sut.exists("otherdir/file.txt")
         assert sut.exists(f"{subdir}/otherdir/anotherfile.txt")
+
+    def test__filesystem__path_with_tilde_for_file_in_home__exists(self) -> None:
+        sut = self.create_filesystem()
+        self.create_file(sut, self.home_dir_abs() + "/file.txt")
+
+        assert sut.exists("~/file.txt")
+
+    def test__filesystem__globbing_with_tilde__returns_matching_files_in_homedir(
+        self,
+    ) -> None:
+        sut = self.create_filesystem()
+        self.create_file(sut, self.home_dir_abs() + "/match.txt")
+        self.create_file(sut, self.home_dir_abs() + "/nomatch.gif")
+
+        actual = sut.glob("~/*.txt")
+
+        assert actual == [self.home_dir_abs() + "/match.txt"]
+
+    def test__filesystem__copying_from_path_with_tilde__copies_file_to_target(
+        self,
+    ) -> None:
+        sut = self.create_filesystem()
+        self.create_file(sut, self.home_dir_abs() + "/file.txt")
+
+        sut.copy("~/file.txt", self.TARGET)
+
+        assert sut.exists(self.TARGET)
+
+    def test__filesystem__copying_to_path_with_tilde__copies_file_to_target(
+        self,
+    ) -> None:
+        sut = self.create_filesystem()
+        self.create_file(sut, self.SOURCE)
+
+        sut.copy(self.SOURCE, "~/copy.txt")
+
+        assert sut.exists(self.home_dir_abs() + "/copy.txt")
+
+    def test__filesystem__copying_to_path_with_tilde_on_other_filesystem__copies_file_to_home_on_other_filesystem(
+        self,
+    ) -> None:
+        sut = self.create_filesystem()
+        other = self.create_filesystem()
+        self.create_file(sut, self.SOURCE)
+
+        sut.copy(self.SOURCE, "~/copy.txt", filesystem=other)
+
+        assert other.exists(self.home_dir_abs() + "/copy.txt")
+
+    def test__filesystem__reading_path_with_tilde__returns_file_object(self) -> None:
+        sut = self.create_filesystem()
+        self.create_file(sut, self.home_dir_abs() + "/file.txt", "hello world")
+
+        with sut.openread("~/file.txt") as actual:
+            assert actual.read() == "hello world"

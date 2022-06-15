@@ -35,6 +35,6 @@ def sshfilesystem(
         )
 
         dir = dir or fs.homedir()
-        return PyFilesystemBased(fs, dir)
+        return PyFilesystemBased(fs, dir, fs.homedir())
     except CreateFailed as err:
         raise SSHError(f"Could not connect to {connection_data.hostname}") from err
