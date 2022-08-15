@@ -1,9 +1,17 @@
 import os.path
 from abc import ABC, abstractmethod
+from typing import Collection
 
 import pytest
 
 from hpcrocket.core.filesystem import Filesystem
+
+
+def assert_content_matches(actual: Collection[str], expected: Collection[str]) -> None:
+    assert len(actual) == len(expected), (
+        "Expected:\n" + "\n".join(expected) + "\n\nActual:\n" + "\n".join(actual)
+    )
+    assert set(actual) == set(expected)
 
 
 class FilesystemTest(ABC):
@@ -321,12 +329,15 @@ class FilesystemTest(ABC):
 
         actual = sut.glob("**/*.txt")
 
-        assert actual == [
-            "hello.txt",
-            "world.txt",
-            "sub/match.txt",
-            "sub/dir/match.txt",
-        ]
+        assert_content_matches(
+            actual,
+            [
+                "hello.txt",
+                "world.txt",
+                "sub/match.txt",
+                "sub/dir/match.txt",
+            ],
+        )
 
     def test__when_reading_file__returns_text_io_wrapper(self) -> None:
         file_content = "the content"
