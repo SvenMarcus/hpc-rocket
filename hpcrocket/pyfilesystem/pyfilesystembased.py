@@ -68,7 +68,7 @@ class PyFilesystemBased(Filesystem):
     def glob(self, pattern: str) -> List[str]:
         pattern = self._expandhome(pattern, self)
         sub_fs = self._open_fs(self, pattern)
-        return list(self._glob_raw_pyfs(sub_fs, pattern))
+        return list(self._glob_with_pyfs(sub_fs, pattern))
 
     def _expandhome(self, path: str, filesystem: "PyFilesystemBased") -> str:
         return path.replace("~", str(filesystem.home))
@@ -120,7 +120,7 @@ class PyFilesystemBased(Filesystem):
         first_wildcard = self._first_wildcard(pattern)
         return pattern[:first_wildcard], pattern[first_wildcard:]
 
-    def _glob_raw_pyfs(
+    def _glob_with_pyfs(
         self, fs: fs.base.FS, pattern: str
     ) -> Generator[str, None, None]:
         dir, pattern = self._split_at_first_wildcard(pattern)
@@ -143,7 +143,7 @@ class PyFilesystemBased(Filesystem):
         target: str,
         overwrite: bool,
     ) -> None:
-        glob = self._glob_raw_pyfs(source_fs, source)
+        glob = self._glob_with_pyfs(source_fs, source)
         dir, _ = self._split_at_first_wildcard(source)
         for match in glob:
             if source_fs.isdir(match):

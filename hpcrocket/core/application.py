@@ -4,17 +4,18 @@ from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import Options
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.workflow import Workflow
-from hpcrocket.core.workflowfactory import WorkflowFactory
+from hpcrocket.core.workflowfactory import make_workflow
 from hpcrocket.ui import UI
 
 
 class Application:
-
-    def __init__(self, executor: CommandExecutor, filesystem_factory: FilesystemFactory, ui: UI) -> None:
+    def __init__(
+        self, executor: CommandExecutor, filesystem_factory: FilesystemFactory, ui: UI
+    ) -> None:
         self._executor = executor
-        self._workflow_factory = WorkflowFactory(filesystem_factory)
+        self.fs_factory = filesystem_factory
         self._ui = ui
-        self._workflow: Workflow
+        self._workflow = Workflow([])
 
     def run(self, options: Options) -> int:
         try:
@@ -31,7 +32,7 @@ class Application:
 
     def _get_workflow(self, executor: CommandExecutor, options: Options) -> Workflow:
         controller = SlurmController(executor)
-        return self._workflow_factory(controller, options)
+        return make_workflow(self.fs_factory, controller, options)
 
     def cancel(self) -> int:
         self._workflow.cancel(self._ui)

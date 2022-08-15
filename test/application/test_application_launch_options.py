@@ -4,6 +4,7 @@ import unittest
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.ui import UI
+from test.application import make_application
 from test.application.executor_filesystem_callorder import (
     CallOrderVerification,
     VerifierReturningFilesystemFactory,
@@ -86,18 +87,6 @@ def memory_fs_factory_with_default_local_file() -> MemoryFilesystemFactoryStub:
     return MemoryFilesystemFactoryStub(local_fs, remote_fs)
 
 
-def make_sut(
-    executor: Optional[CommandExecutor] = None,
-    filesystem_factory: Optional[FilesystemFactory] = None,
-    ui: Optional[UI] = None,
-) -> Application:
-    return Application(
-        executor or SlurmJobExecutorSpy(),
-        filesystem_factory or DummyFilesystemFactory(),
-        ui or Mock(),
-    )
-
-
 def make_sut_with_call_order_verification(
     expected_calls: List[str],
 ) -> Tuple[Application, CallOrderVerification]:
@@ -131,7 +120,7 @@ class Application_With_Launch_Options(unittest.TestCase):
     def setUp(self) -> None:
         self.executor = SlurmJobExecutorSpy()
         self.ui_spy = Mock()
-        self.sut = make_sut(self.executor, ui=self.ui_spy)
+        self.sut = make_application(self.executor, ui=self.ui_spy)
 
     def test__when_running__it_runs_sbatch_with_executor(self) -> None:
         self.sut.run(launch_options())
@@ -161,7 +150,7 @@ class Application_With_Launch_Options(unittest.TestCase):
         self,
     ) -> None:
         executor = ConnectionFailingCommandExecutor()
-        self.sut = make_sut(executor, ui=self.ui_spy)
+        self.sut = make_application(executor, ui=self.ui_spy)
 
         actual = self.sut.run(launch_options(watch=True))
 
@@ -179,7 +168,7 @@ class Application_With_Launch_Options(unittest.TestCase):
 class Application_With_Options_To_Copy(unittest.TestCase):
     def setUp(self) -> None:
         self.fs_factory = MemoryFilesystemFactoryStub()
-        self.sut = make_sut(filesystem_factory=self.fs_factory)
+        self.sut = make_application(filesystem_factory=self.fs_factory)
 
     def test__when_running__copies_files_to_remote(self) -> None:
         self.fs_factory.create_local_files(LOCAL_FILE)
@@ -241,7 +230,7 @@ class Application_With_Options_To_Copy(unittest.TestCase):
 class Application_With_Options_To_Collect(unittest.TestCase):
     def setUp(self) -> None:
         self.fs_factory = MemoryFilesystemFactoryStub()
-        self.sut = make_sut(filesystem_factory=self.fs_factory)
+        self.sut = make_application(filesystem_factory=self.fs_factory)
 
     def test__when_running__it_collects_files_from_remote(self) -> None:
         options = launch_options_with_collect()
@@ -279,7 +268,7 @@ class Application_With_Options_To_Clean(unittest.TestCase):
     def setUp(self) -> None:
         self.fs_factory = MemoryFilesystemFactoryStub()
         self.fs_factory.create_remote_files(REMOTE_FILE)
-        self.sut = make_sut(filesystem_factory=self.fs_factory)
+        self.sut = make_application(filesystem_factory=self.fs_factory)
         self.options = launch_options_with_clean()
 
     def test__when_running__it_cleans_files(self) -> None:
@@ -302,7 +291,7 @@ class Application_With_Options_To_Copy_Collect_Clean(unittest.TestCase):
     def setUp(self) -> None:
         self.options = launch_options_copy_collect_clean()
         self.fs_factory = memory_fs_factory_with_default_local_file()
-        self.sut = make_sut(filesystem_factory=self.fs_factory)
+        self.sut = make_application(filesystem_factory=self.fs_factory)
 
     def test__when_running__copies_then_collects_then_cleans_files(self) -> None:
         self.sut.run(self.options)
@@ -350,7 +339,9 @@ class Application_With_Options_To_Copy_Collect_Clean(unittest.TestCase):
     def test__whe_job_fails__but_allowed_to_fail__collects_and_cleans(self) -> None:
         self.options.continue_if_job_fails = True
         executor = SlurmJobExecutorSpy(sacct_cmd=failed_slurm_job_command_stub())
-        self.sut = make_sut(executor=executor, filesystem_factory=self.fs_factory)
+        self.sut = make_application(
+            executor=executor, filesystem_factory=self.fs_factory
+        )
 
         self.sut.run(self.options)
 

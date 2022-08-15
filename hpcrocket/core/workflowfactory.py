@@ -31,14 +31,14 @@ _SimpleWorkflows: _SimpleWorkFlowRegistry = {
 }
 
 
-class WorkflowFactory:
-    def __init__(self, filesystem_factory: FilesystemFactory) -> None:
-        self._fs_factory = filesystem_factory
+def make_workflow(
+    filesystem_factory: FilesystemFactory,
+    controller: SlurmController,
+    options: Options,
+) -> Workflow:
+    if isinstance(options, LaunchOptions):
+        return workflows.launchworkflow(filesystem_factory, controller, options)
 
-    def __call__(self, controller: SlurmController, options: Options) -> Workflow:
-        if isinstance(options, LaunchOptions):
-            return workflows.launchworkflow(self._fs_factory, controller, options)
-
-        option_type = type(options)
-        monitoring_workflow_builder = _SimpleWorkflows[option_type]
-        return monitoring_workflow_builder(controller, options)
+    option_type = type(options)
+    monitoring_workflow_builder = _SimpleWorkflows[option_type]
+    return monitoring_workflow_builder(controller, options)
