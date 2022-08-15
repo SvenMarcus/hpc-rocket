@@ -79,6 +79,7 @@ class WatchStage:
             Returns:
                 SlurmBatchJob
             """
+            ...
 
         def cancel(self, ui: UI) -> None:
             """
@@ -87,6 +88,7 @@ class WatchStage:
             Args:
                 ui (UI): The UI instance WatchStage was called with
             """
+            ...
 
     def __init__(
         self,
@@ -157,8 +159,8 @@ class PrepareStage:
         pass
 
     def _try_copy_files(self) -> Tuple[List[str], List[Exception]]:
-        copied_files = []
-        errors = []
+        copied_files: List[str] = []
+        errors: List[Exception] = []
         for cr in progressive_copy(self._local_fs, self._remote_fs, self._files):
             copied_files.extend(cr.copied_files)
             if cr.errors:

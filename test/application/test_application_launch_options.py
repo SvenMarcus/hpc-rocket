@@ -1,9 +1,7 @@
 import os
-from typing import List, Optional, Tuple
+from typing import List, Tuple, cast
 import unittest
-from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import LaunchOptions
-from hpcrocket.ui import UI
 from test.application import make_application
 from test.application.executor_filesystem_callorder import (
     CallOrderVerification,
@@ -18,7 +16,6 @@ from test.testdoubles.executor import (
     successful_slurm_job_command_stub,
 )
 from test.testdoubles.filesystem import (
-    DummyFilesystemFactory,
     MemoryFilesystemFactoryStub,
     MemoryFilesystemFake,
 )
@@ -26,7 +23,7 @@ from unittest.mock import Mock
 
 from hpcrocket.core.application import Application
 from hpcrocket.core.progressive_file_operations import CopyInstruction
-from hpcrocket.core.executor import CommandExecutor, RunningCommand
+from hpcrocket.core.executor import RunningCommand
 from hpcrocket.ssh.errors import SSHError
 
 LOCAL_FILE = "myfile.txt"
@@ -46,10 +43,10 @@ class ConnectionFailingCommandExecutor(LoggingCommandExecutorSpy):
         raise SSHError(main_connection().hostname)
 
     def close(self) -> None:
-        pass
+        ...
 
     def exec_command(self, cmd: str) -> RunningCommand:
-        pass
+        ...
 
 
 def launch_options_with_copy() -> LaunchOptions:

@@ -62,8 +62,8 @@ class SSHExecutor(CommandExecutor):
         self._client.close()
         self._is_connected = False
 
-    def exec_command(self, command: str) -> RunningCommand:
-        stdin, stdout, stderr = self._client.exec_command(command)
+    def exec_command(self, cmd: str) -> RunningCommand:
+        stdin, stdout, stderr = self._client.exec_command(cmd)
         return RemoteCommand(stdin, stdout, stderr)
 
     @property

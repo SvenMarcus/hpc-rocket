@@ -12,16 +12,17 @@ if TYPE_CHECKING:
 
 
 class WatcherThread(Protocol):
-
     def start(self) -> None:
         """
         Start watching a job
         """
+        ...
 
     def stop(self) -> None:
         """
         Stop watching a job
         """
+        ...
 
     def is_done(self) -> bool:
         """
@@ -30,6 +31,7 @@ class WatcherThread(Protocol):
         Returns:
             bool
         """
+        ...
 
     def join(self, timeout: Optional[float] = None) -> None:
         """
@@ -41,10 +43,12 @@ class WatcherThread(Protocol):
 
 
 class WatcherThreadImpl(threading.Thread):
-
-    def __init__(self, runner: 'SlurmBatchJob',
-                 callback: Callable[['SlurmJobStatus'], None],
-                 interval: float):
+    def __init__(
+        self,
+        runner: "SlurmBatchJob",
+        callback: Callable[["SlurmJobStatus"], None],
+        interval: float,
+    ):
         super().__init__(target=self.poll)
         self.runner = runner
         self.callback = callback

@@ -13,21 +13,18 @@ if TYPE_CHECKING:
     from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 
 
-SlurmJobStatusCallback = Callable[['SlurmJobStatus'], None]
+SlurmJobStatusCallback = Callable[["SlurmJobStatus"], None]
 WatcherThreadFactory = Callable[
-    ['SlurmBatchJob', SlurmJobStatusCallback, int],
-    WatcherThread
+    ["SlurmBatchJob", SlurmJobStatusCallback, int], WatcherThread
 ]
 
 
 class NotWatchingError(RuntimeError):
-
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 
 
 class JobWatcher(Protocol):
-
     def watch(self, callback: SlurmJobStatusCallback, poll_interval: int) -> None:
         """
         Starts watching the job in the background.
@@ -48,12 +45,15 @@ class JobWatcher(Protocol):
         """
 
 
-JobWatcherFactory = Callable[['SlurmBatchJob'], JobWatcher]
+JobWatcherFactory = Callable[["SlurmBatchJob"], JobWatcher]
 
 
 class JobWatcherImpl:
-
-    def __init__(self, runner: 'SlurmBatchJob', thread_factory: WatcherThreadFactory = WatcherThreadImpl) -> None:
+    def __init__(
+        self,
+        runner: "SlurmBatchJob",
+        thread_factory: WatcherThreadFactory = WatcherThreadImpl,
+    ) -> None:
         self.runner = runner
         self.factory = thread_factory
         self.watching_thread: Optional[WatcherThread] = None

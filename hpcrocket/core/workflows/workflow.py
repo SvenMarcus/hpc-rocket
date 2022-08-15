@@ -18,7 +18,7 @@ class Stage(Protocol):
         """
         Returns whether this stage is allowed to fail
         """
-        pass
+        ...
 
     def __call__(self, ui: UI) -> bool:
         """
@@ -30,6 +30,7 @@ class Stage(Protocol):
         Returns:
             bool
         """
+        ...
 
     def cancel(self, ui: UI) -> None:
         """
@@ -38,6 +39,7 @@ class Stage(Protocol):
         Args:
             ui (UI): The ui to send output to.
         """
+        ...
 
 
 class Workflow:
