@@ -1,8 +1,14 @@
-from test.slurm_assertions import (assert_job_canceled, assert_job_polled,
-                                   assert_job_submitted)
+from test.slurm_assertions import (
+    assert_job_canceled,
+    assert_job_polled,
+    assert_job_submitted,
+)
 from test.slurmoutput import completed_slurm_job
-from test.testdoubles.executor import (CommandExecutorStub, RunningCommandStub,
-                                       SlurmJobExecutorSpy)
+from test.testdoubles.executor import (
+    CommandExecutorStub,
+    RunningCommandStub,
+    SlurmJobExecutorSpy,
+)
 from unittest.mock import Mock
 
 import pytest
@@ -12,7 +18,9 @@ from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.watcher.jobwatcher import JobWatcher, JobWatcherFactory
 
 
-def make_sut(executor: CommandExecutor, factory: JobWatcherFactory = None) -> SlurmController:
+def make_sut(
+    executor: CommandExecutor, factory: JobWatcherFactory = None
+) -> SlurmController:
     return SlurmController(executor, factory)
 
 
@@ -100,6 +108,7 @@ def test__given_watcher_factory__when_submitting_job__should_pass_factory_to_slu
     executor = SlurmJobExecutorSpy()
 
     watcher_dummy = Mock(spec=JobWatcher)
+
     def factory(job):
         return watcher_dummy
 
@@ -109,7 +118,6 @@ def test__given_watcher_factory__when_submitting_job__should_pass_factory_to_slu
     actual = job.get_watcher()
 
     assert actual is watcher_dummy
-
 
 
 def test__when_canceling_job_fails__should_raise_slurmerror():

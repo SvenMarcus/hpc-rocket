@@ -6,7 +6,6 @@ from hpcrocket.pyfilesystem.sshfilesystem import sshfilesystem
 
 
 class PyFilesystemFactory(FilesystemFactory):
-
     def __init__(self, options: Options) -> None:
         self._options = options
 

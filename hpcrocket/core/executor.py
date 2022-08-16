@@ -3,7 +3,6 @@ from typing import List, Type
 
 
 class RunningCommand(ABC):
-
     @abstractmethod
     def wait_until_exit(self) -> int:
         pass
@@ -23,12 +22,13 @@ class RunningCommand(ABC):
 
 
 class CommandExecutor(ABC):
-
-    def __enter__(self) -> 'CommandExecutor':
+    def __enter__(self) -> "CommandExecutor":
         self.connect()
         return self
 
-    def __exit__(self, exc_type: Type[Exception], exc_val: Exception, exc_tb: str) -> None:
+    def __exit__(
+        self, exc_type: Type[Exception], exc_val: Exception, exc_tb: str
+    ) -> None:
         self.close()
 
     @abstractmethod

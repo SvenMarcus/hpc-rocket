@@ -1,6 +1,5 @@
 import os
-from test.testdoubles.pyfilesystem import (ArbitraryArgsMemoryFS,
-                                           OnlySubFSMemoryFS)
+from test.testdoubles.pyfilesystem import ArbitraryArgsMemoryFS, OnlySubFSMemoryFS
 from unittest.mock import Mock, patch
 
 import pytest
@@ -12,7 +11,7 @@ INPUT_AND_EXPECTED_KEYFILE_PATHS = [
     ("my_private_keyfile", "my_private_keyfile"),
     ("~/.ssh/private_keyfile", f"{HOME_DIR}/.ssh/private_keyfile"),
     ("~/~folder~/private_keyfile", f"{HOME_DIR}/~folder~/private_keyfile"),
-    ("~folder~/private_keyfile", f"~folder~/private_keyfile")
+    ("~folder~/private_keyfile", f"~folder~/private_keyfile"),
 ]
 
 
@@ -30,8 +29,7 @@ def sshclient_type_mock():
 def osfs_type_mock():
     patcher = patch("fs.osfs.OSFS")
     osfs_type_mock = patcher.start()
-    osfs_type_mock.return_value = Mock(
-        spec=MemoryFS, wraps=ArbitraryArgsMemoryFS())
+    osfs_type_mock.return_value = Mock(spec=MemoryFS, wraps=ArbitraryArgsMemoryFS())
     yield osfs_type_mock
 
     patcher.stop()
@@ -39,8 +37,7 @@ def osfs_type_mock():
 
 @pytest.fixture(autouse=True)
 def sshfs_type_mock():
-    patcher = patch(
-        "hpcrocket.ssh.chmodsshfs.PermissionChangingSSHFSDecorator")
+    patcher = patch("hpcrocket.ssh.chmodsshfs.PermissionChangingSSHFSDecorator")
 
     sshfs_type_mock = patcher.start()
     mem_fs = OnlySubFSMemoryFS()

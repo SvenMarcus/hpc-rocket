@@ -6,13 +6,12 @@ from hpcrocket.ui import UI
 
 
 class PrintLoggingUI(UI):
-
     def __init__(self) -> None:
-        self._file: TextIO = None # type: ignore[assignment]
+        self._file: TextIO = None  # type: ignore[assignment]
         self._stdout_backup = sys.stdout
 
-    def __enter__(self) -> 'PrintLoggingUI':
-        self._file = open('test/test_output.txt', 'w+')
+    def __enter__(self) -> "PrintLoggingUI":
+        self._file = open("test/test_output.txt", "w+")
         sys.stdout = self._file
         return self
 

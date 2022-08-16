@@ -325,6 +325,7 @@ class MemoryFilesystemFake(Filesystem):
 
     def _find_matching_item(self, path: str) -> Optional[FilesystemItem]:
         path = self._expandhome(path, self)
+
         def matches_path(f: Optional[FilesystemItem]) -> bool:
             return PurePath(f.path).match(path) if f else False
 

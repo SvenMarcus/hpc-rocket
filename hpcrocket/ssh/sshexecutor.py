@@ -9,10 +9,12 @@ from hpcrocket.ssh.errors import SSHError
 
 
 class RemoteCommand(RunningCommand):
-    def __init__(self,
-                 stdin: channel.ChannelStdinFile,
-                 stdout: channel.ChannelFile,
-                 stderr: channel.ChannelStderrFile) -> None:
+    def __init__(
+        self,
+        stdin: channel.ChannelStdinFile,
+        stdout: channel.ChannelFile,
+        stderr: channel.ChannelStderrFile,
+    ) -> None:
         self._stdin = stdin
         self._stdout = stdout
         self._stderr = stderr
@@ -40,8 +42,11 @@ class RemoteCommand(RunningCommand):
 
 
 class SSHExecutor(CommandExecutor):
-
-    def __init__(self, connection: ConnectionData, proxyjumps: Optional[List[ConnectionData]] = None) -> None:
+    def __init__(
+        self,
+        connection: ConnectionData,
+        proxyjumps: Optional[List[ConnectionData]] = None,
+    ) -> None:
         self._is_connected = False
         self._client = _make_sshclient()
         self._connection = connection
@@ -75,7 +80,9 @@ class SSHExecutor(CommandExecutor):
         return self._client
 
 
-def build_channel_with_proxyjumps(connection: ConnectionData, proxyjumps: List[ConnectionData]) -> Optional[pm.Channel]:
+def build_channel_with_proxyjumps(
+    connection: ConnectionData, proxyjumps: List[ConnectionData]
+) -> Optional[pm.Channel]:
     channel = None
     for index, proxyjump in enumerate(proxyjumps):
         next_host = _next_host(connection, proxyjumps, index)
@@ -85,22 +92,29 @@ def build_channel_with_proxyjumps(connection: ConnectionData, proxyjumps: List[C
     return channel
 
 
-def _next_host(connection: ConnectionData, proxyjumps: List[ConnectionData], index: int) -> ConnectionData:
+def _next_host(
+    connection: ConnectionData, proxyjumps: List[ConnectionData], index: int
+) -> ConnectionData:
     if index < len(proxyjumps) - 1:
         return proxyjumps[index + 1]
 
     return connection
 
 
-def _open_channel_to_next_host(next_connection: ConnectionData, proxy: pm.SSHClient) -> pm.Channel:
+def _open_channel_to_next_host(
+    next_connection: ConnectionData, proxy: pm.SSHClient
+) -> pm.Channel:
     transport = proxy.get_transport()
     channel = transport.open_channel(  # type: ignore
-        "direct-tcpip", (next_connection.hostname, next_connection.port), ('', 0))
+        "direct-tcpip", (next_connection.hostname, next_connection.port), ("", 0)
+    )
 
     return channel
 
 
-def _make_sshclient_and_connect(connection: ConnectionData, channel: Optional[pm.Channel] = None) -> pm.SSHClient:
+def _make_sshclient_and_connect(
+    connection: ConnectionData, channel: Optional[pm.Channel] = None
+) -> pm.SSHClient:
     sshclient = _make_sshclient()
     _connect_client(sshclient, connection, channel)
     return sshclient
@@ -112,7 +126,9 @@ def _make_sshclient() -> pm.SSHClient:
     return sshclient
 
 
-def _connect_client(sshclient: pm.SSHClient, connection: ConnectionData, channel: Optional[pm.Channel]) -> None:
+def _connect_client(
+    sshclient: pm.SSHClient, connection: ConnectionData, channel: Optional[pm.Channel]
+) -> None:
     sshclient.connect(
         hostname=connection.hostname,
         username=connection.username,
@@ -120,5 +136,5 @@ def _connect_client(sshclient: pm.SSHClient, connection: ConnectionData, channel
         key_filename=connection.keyfile,
         password=connection.password,
         pkey=connection.key,  # type: ignore[arg-type]
-        sock=cast(socket, channel)
+        sock=cast(socket, channel),
     )

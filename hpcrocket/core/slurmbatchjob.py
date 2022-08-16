@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 
 
 class SlurmError(RuntimeError):
-
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 
@@ -22,25 +21,19 @@ class SlurmTaskStatus:
 
 @dataclass
 class SlurmJobStatus:
-
     @classmethod
-    def empty(cls) -> 'SlurmJobStatus':
+    def empty(cls) -> "SlurmJobStatus":
         return SlurmJobStatus("", "", "", [])
 
     @classmethod
-    def from_output(cls, output: List[str]) -> 'SlurmJobStatus':
-        tasks = [
-            SlurmTaskStatus(*line.split()[:3])
-            for line in output if line
-        ]
+    def from_output(cls, output: List[str]) -> "SlurmJobStatus":
+        tasks = [SlurmTaskStatus(*line.split()[:3]) for line in output if line]
 
-        main_task = (tasks[0] if tasks
-                     else SlurmTaskStatus("", "", ""))
+        main_task = tasks[0] if tasks else SlurmTaskStatus("", "", "")
 
-        return SlurmJobStatus(id=main_task.id,
-                              name=main_task.name,
-                              state=main_task.state,
-                              tasks=tasks)
+        return SlurmJobStatus(
+            id=main_task.id, name=main_task.name, state=main_task.state, tasks=tasks
+        )
 
     id: str
     name: str
@@ -61,15 +54,18 @@ class SlurmJobStatus:
 
     @property
     def success(self) -> bool:
-        return (self.state == "COMPLETED" and
-                all(task.state == "COMPLETED"
-                    for task in self.tasks))
+        return self.state == "COMPLETED" and all(
+            task.state == "COMPLETED" for task in self.tasks
+        )
 
 
 class SlurmBatchJob:
-
     def __init__(
-            self, controller: 'SlurmController', jobid: str = "", watcher_factory: Optional[JobWatcherFactory] = None):
+        self,
+        controller: "SlurmController",
+        jobid: str = "",
+        watcher_factory: Optional[JobWatcherFactory] = None,
+    ):
         self._controller = controller
         self._watcher_factory = watcher_factory or JobWatcherImpl
         self.jobid = jobid

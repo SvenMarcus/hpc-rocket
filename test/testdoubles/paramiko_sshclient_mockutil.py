@@ -29,11 +29,11 @@ def make_close(pm_ssh_client_fake: Mock):
     Args:
         pm_ssh_client_fake (Mock): The SSHClient Mock
     """
+
     def close():
         pm_ssh_client_fake.configure_mock(
-            get_transport=make_get_transport(
-                pm_ssh_client_fake,
-                active=False))
+            get_transport=make_get_transport(pm_ssh_client_fake, active=False)
+        )
 
     return close
 

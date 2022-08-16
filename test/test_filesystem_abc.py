@@ -1,15 +1,14 @@
 import os.path
 from abc import ABC, abstractmethod
-from typing import Collection, Iterable
+from typing import Collection
 
 import pytest
-
 from hpcrocket.core.filesystem import Filesystem
 
 
 def assert_contains_all(actual: Collection[str], expected: Collection[str]) -> None:
     assert len(actual) == len(expected), (
-        "Expected:\n" + str( expected ) + "\n\nActual:\n" + str(actual)
+        "Expected:\n" + str(expected) + "\n\nActual:\n" + str(actual)
     )
 
     for expected_entry in set(expected):

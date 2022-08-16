@@ -14,7 +14,8 @@ def connection_data():
         username="user",
         port=22,
         keyfile="~/.ssh/file",
-        password="1234")
+        password="1234",
+    )
 
 
 def proxy_connection_data(proxy_index=1):
@@ -23,12 +24,14 @@ def proxy_connection_data(proxy_index=1):
         username=f"proxy-user-{proxy_index}",
         password=f"proxy-pass-{proxy_index}",
         keyfile=f"proxy-keyfile-{proxy_index}",
-        port=proxy_index
+        port=proxy_index,
     )
 
 
 @patch("paramiko.SSHClient")
-def test__given_connection_data__when_connecting__should_connect_client(sshclient_class):
+def test__given_connection_data__when_connecting__should_connect_client(
+    sshclient_class,
+):
     sshclient_instance = sshclient_class.return_value
 
     sut = SSHExecutor(connection_data())
@@ -77,7 +80,9 @@ def test__when_connection_fails__is_connected__should_be_false(sshclient_class):
 
 
 @patch("paramiko.SSHClient")
-def test__given_connected_client__when_disconnecting__should_disconnect(sshclient_class):
+def test__given_connected_client__when_disconnecting__should_disconnect(
+    sshclient_class,
+):
     sshclient_instance = sshclient_class.return_value
 
     sut = SSHExecutor(connection_data())
@@ -90,7 +95,9 @@ def test__given_connected_client__when_disconnecting__should_disconnect(sshclien
 
 
 @patch("paramiko.SSHClient")
-def test__given_connected_client__when_executing_command__should_execute_command(sshclient_class):
+def test__given_connected_client__when_executing_command__should_execute_command(
+    sshclient_class,
+):
     sshclient_instance = sshclient_class.return_value
     sshclient_instance.exec_command.return_value = (Mock(), Mock(), Mock())
 
@@ -103,7 +110,9 @@ def test__given_connected_client__when_executing_command__should_execute_command
 
 
 @patch("paramiko.SSHClient")
-def test__given_connected_client__when_executing_command__should_return_remote_command(sshclient_class):
+def test__given_connected_client__when_executing_command__should_return_remote_command(
+    sshclient_class,
+):
     sshclient_instance = sshclient_class.return_value
     sshclient_instance.exec_command.return_value = (Mock(), Mock(), Mock())
 
@@ -116,7 +125,9 @@ def test__given_connected_client__when_executing_command__should_return_remote_c
 
 
 @patch("paramiko.SSHClient")
-def test__given_proxyjump__when_connecting__should_connect_to_destination_through_proxy(sshclient_class):
+def test__given_proxyjump__when_connecting__should_connect_to_destination_through_proxy(
+    sshclient_class,
+):
     mock = ProxyJumpVerifyingSSHClient(connection_data(), [proxy_connection_data()])
     sshclient_class.return_value = mock
 
@@ -127,7 +138,9 @@ def test__given_proxyjump__when_connecting__should_connect_to_destination_throug
 
 
 @patch("paramiko.SSHClient")
-def test__given_two_proxyjumps__when_connecting__should_connect_to_proxies_then_destination(sshclient_class):
+def test__given_two_proxyjumps__when_connecting__should_connect_to_proxies_then_destination(
+    sshclient_class,
+):
     jumps = [proxy_connection_data(1), proxy_connection_data(2)]
     mock = ProxyJumpVerifyingSSHClient(connection_data(), jumps)
     sshclient_class.return_value = mock
@@ -139,7 +152,9 @@ def test__given_two_proxyjumps__when_connecting__should_connect_to_proxies_then_
 
 
 @patch("paramiko.SSHClient")
-def test__given_proxyjump__when_connection_to_proxy_fails__should_raise_ssherror(sshclient_class):
+def test__given_proxyjump__when_connection_to_proxy_fails__should_raise_ssherror(
+    sshclient_class,
+):
     proxy_mock, _ = proxy_mock_with_transport()
     proxy_mock.connect.side_effect = paramiko.AuthenticationException
 
@@ -163,7 +178,9 @@ def proxy_mock_with_transport(proxy_index=1):
     return proxy_mock, channel_mock
 
 
-def assert_connected_with_data(sshclient_mock: Mock, connection: ConnectionData, channel: Mock = None):
+def assert_connected_with_data(
+    sshclient_mock: Mock, connection: ConnectionData, channel: Mock = None
+):
     sshclient_mock.connect.assert_called_with(
         hostname=connection.hostname,
         username=connection.username,
@@ -171,5 +188,5 @@ def assert_connected_with_data(sshclient_mock: Mock, connection: ConnectionData,
         password=connection.password,
         key_filename=connection.keyfile,
         pkey=connection.key,
-        sock=channel
+        sock=channel,
     )

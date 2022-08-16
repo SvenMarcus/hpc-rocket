@@ -1,7 +1,6 @@
 from test.slurm_assertions import assert_job_canceled, assert_job_polled
 from test.slurmoutput import DEFAULT_JOB_ID, completed_slurm_job
-from test.testdoubles.executor import (LoggingCommandExecutorSpy,
-                                       SlurmJobExecutorSpy)
+from test.testdoubles.executor import LoggingCommandExecutorSpy, SlurmJobExecutorSpy
 from typing import cast
 from unittest.mock import Mock
 
@@ -19,12 +18,16 @@ def executor_spy():
     return SlurmJobExecutorSpy(jobid=JOB_ID)
 
 
-def make_sut(executor_spy: CommandExecutor, jobid: str, factory: JobWatcherFactory = None) -> SlurmBatchJob:
+def make_sut(
+    executor_spy: CommandExecutor, jobid: str, factory: JobWatcherFactory = None
+) -> SlurmBatchJob:
     slurm = SlurmController(executor_spy, factory)
     return SlurmBatchJob(slurm, jobid, cast(JobWatcherFactory, factory))
 
 
-def test__when_canceling_job__should_execute_scancel_with_executor(executor_spy: LoggingCommandExecutorSpy):
+def test__when_canceling_job__should_execute_scancel_with_executor(
+    executor_spy: LoggingCommandExecutorSpy,
+):
     sut = make_sut(executor_spy, JOB_ID)
 
     sut.cancel()
@@ -33,7 +36,8 @@ def test__when_canceling_job__should_execute_scancel_with_executor(executor_spy:
 
 
 def test__given_submitted_job_when_polling_status__should_execute_sacct_with_id(
-        executor_spy: LoggingCommandExecutorSpy):
+    executor_spy: LoggingCommandExecutorSpy,
+):
     sut = make_sut(executor_spy, JOB_ID)
 
     sut.poll_status()
@@ -41,7 +45,9 @@ def test__given_submitted_job_when_polling_status__should_execute_sacct_with_id(
     assert_job_polled(executor_spy, JOB_ID)
 
 
-def test__when_polling_status__should_return_job_status(executor_spy: LoggingCommandExecutorSpy):
+def test__when_polling_status__should_return_job_status(
+    executor_spy: LoggingCommandExecutorSpy,
+):
     sut = make_sut(executor_spy, JOB_ID)
 
     actual = sut.poll_status()
@@ -50,7 +56,8 @@ def test__when_polling_status__should_return_job_status(executor_spy: LoggingCom
 
 
 def test__given_submitted_job_with_watcher_factory__get_watcher__should_return_watcher_from_factory(
-        executor_spy: LoggingCommandExecutorSpy):
+    executor_spy: LoggingCommandExecutorSpy,
+):
     watcher_dummy = Mock()
 
     def factory(job):

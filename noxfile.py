@@ -32,4 +32,5 @@ def test_integration(session: nox.Session) -> None:
 
     session.run("pytest", "-vv", "-m", "integration", "test")
 
+
 nox.options.sessions = ["lint", "test", "mypy"]

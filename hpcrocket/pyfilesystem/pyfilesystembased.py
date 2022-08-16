@@ -29,8 +29,8 @@ def _removeprefix(string: str, prefix: str) -> str:
         if string.startswith(prefix):
             len_prefix = len(prefix)
             return string[len_prefix:]
-        else:
-            return string
+
+        return string
 
     removeprefix: Callable[[str], str] = getattr(string, "removeprefix", __removeprefix)
     return removeprefix(prefix)

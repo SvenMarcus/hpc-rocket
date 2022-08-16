@@ -1,8 +1,10 @@
 from test.application.launchoptions import main_connection
 from test.slurmoutput import DEFAULT_JOB_ID, running_slurm_job
 from test.testdoubles.paramiko_sshclient_mockutil import (
-    get_blocking_channel_exit_status_ready_func, make_close,
-    make_get_transport)
+    get_blocking_channel_exit_status_ready_func,
+    make_close,
+    make_get_transport,
+)
 from unittest.mock import Mock, patch
 
 import pytest
@@ -37,7 +39,7 @@ def configure_sshclient_fake(patched, cmd_output_file: str):
     patched.return_value.configure_mock(
         get_transport=make_get_transport(patched.return_value, active=True),
         close=make_close(patched.return_value),
-        exec_command=make_exec_command(cmd_output_file)
+        exec_command=make_exec_command(cmd_output_file),
     )
 
 
@@ -51,7 +53,9 @@ def test__when_calling_sbatch__should_return_job_id(sbatch_sshclient_fake):
     assert actual.jobid == DEFAULT_JOB_ID
 
 
-def test__when_polling_job__should_return_slurm_job_with_matching_data(sshclient_poll_running_job_fake):
+def test__when_polling_job__should_return_slurm_job_with_matching_data(
+    sshclient_poll_running_job_fake,
+):
     executor = SSHExecutor(main_connection())
     executor.connect()
     sut = SlurmController(executor)
@@ -67,7 +71,7 @@ def make_exec_command(file: str):
         return [
             Mock("paramiko.channel.ChannelStdinFile"),
             stdout_with_channel_from_file(file),
-            stderr()
+            stderr(),
         ]
 
     return exec_command
@@ -82,16 +86,13 @@ def stdout_with_channel_from_file(file: str):
     stdout.configure_mock(
         channel=Mock(
             exit_status=-99,
-            exit_status_ready=get_blocking_channel_exit_status_ready_func(
-                stdout)
+            exit_status_ready=get_blocking_channel_exit_status_ready_func(stdout),
         ),
-        readlines=readlines
+        readlines=readlines,
     )
 
     return stdout
 
 
 def stderr():
-    return Mock(
-        channel=Mock(readlines=["error1", "error2"])
-    )
+    return Mock(channel=Mock(readlines=["error1", "error2"]))

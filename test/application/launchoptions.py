@@ -3,8 +3,7 @@ from test.slurmoutput import DEFAULT_JOB_ID
 from typing import List, Optional
 
 from hpcrocket.core.progressive_file_operations import CopyInstruction
-from hpcrocket.core.launchoptions import (LaunchOptions, SimpleJobOptions,
-                                          WatchOptions)
+from hpcrocket.core.launchoptions import LaunchOptions, SimpleJobOptions, WatchOptions
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
@@ -14,7 +13,7 @@ def launch_options(
     clean: Optional[List[str]] = None,
     connection: Optional[ConnectionData] = None,
     proxyjumps: Optional[List[ConnectionData]] = None,
-    watch: bool = False
+    watch: bool = False,
 ) -> LaunchOptions:
     return LaunchOptions(
         connection=connection or main_connection(),
@@ -24,7 +23,7 @@ def launch_options(
         poll_interval=0,
         copy_files=copy or [],
         collect_files=collect or [],
-        clean_files=clean or []
+        clean_files=clean or [],
     )
 
 
@@ -35,7 +34,7 @@ def launch_options_with_proxy() -> LaunchOptions:
 def launch_options_with_proxy_only_password() -> LaunchOptions:
     return launch_options(
         connection=main_connection_only_password(),
-        proxyjumps=[proxy_connection_only_password()]
+        proxyjumps=[proxy_connection_only_password()],
     )
 
 
@@ -50,10 +49,7 @@ def main_connection() -> ConnectionData:
 
 
 def main_connection_only_password() -> ConnectionData:
-    return dataclasses.replace(
-        main_connection(),
-        key=None,
-        keyfile=None)
+    return dataclasses.replace(main_connection(), key=None, keyfile=None)
 
 
 def proxy_connection() -> ConnectionData:
@@ -61,15 +57,12 @@ def proxy_connection() -> ConnectionData:
         hostname="proxy1-host",
         username="proxy1-user",
         password="proxy1-pass",
-        keyfile="~/proxy1-keyfile"
+        keyfile="~/proxy1-keyfile",
     )
 
 
 def proxy_connection_only_password() -> ConnectionData:
-    return dataclasses.replace(
-        proxy_connection(),
-        key=None,
-        keyfile=None)
+    return dataclasses.replace(proxy_connection(), key=None, keyfile=None)
 
 
 def watch_options_with_proxy() -> WatchOptions:
@@ -77,7 +70,7 @@ def watch_options_with_proxy() -> WatchOptions:
         jobid=DEFAULT_JOB_ID,
         connection=main_connection(),
         proxyjumps=[proxy_connection()],
-        poll_interval=0
+        poll_interval=0,
     )
 
 

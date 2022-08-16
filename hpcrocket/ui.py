@@ -15,7 +15,6 @@ except ImportError:  # pragma: no cover
 
 
 class UI(Protocol):  # pragma: no cover
-
     def update(self, job: SlurmJobStatus) -> None:
         """
         Displays the current state of Slurm job
@@ -86,10 +85,8 @@ class RichUI(UI):
     def __init__(self) -> None:
         self._rich_live: Live
 
-    def __enter__(self) -> 'RichUI':
-        self._rich_live = Live(
-            Spinner("bouncingBar", ""),
-            refresh_per_second=16)
+    def __enter__(self) -> "RichUI":
+        self._rich_live = Live(Spinner("bouncingBar", ""), refresh_per_second=16)
 
         self._rich_live.start()
         return self
@@ -102,18 +99,23 @@ class RichUI(UI):
 
     def error(self, text: str) -> None:
         self._rich_live.console.print(
-            ":cross_mark:", text, style="bold red", emoji=True)
+            ":cross_mark:", text, style="bold red", emoji=True
+        )
 
     def info(self, text: str) -> None:
         self._rich_live.console.print(
-            ":information_source:", text, style="bold blue", emoji=True)
+            ":information_source:", text, style="bold blue", emoji=True
+        )
 
     def success(self, text: str) -> None:
         self._rich_live.console.print(
-            ":heavy_check_mark: ", text, style="bold green", emoji=True)
+            ":heavy_check_mark: ", text, style="bold green", emoji=True
+        )
 
     def launch(self, text: str) -> None:
-        self._rich_live.console.print(":rocket: ", text, style="bold yellow", emoji=True)
+        self._rich_live.console.print(
+            ":rocket: ", text, style="bold yellow", emoji=True
+        )
 
     def _make_table(self, job: SlurmJobStatus) -> Table:
         table = Table(style="bold", box=box.MINIMAL)
