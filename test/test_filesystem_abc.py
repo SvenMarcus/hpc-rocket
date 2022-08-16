@@ -1,17 +1,19 @@
 import os.path
 from abc import ABC, abstractmethod
-from typing import Collection
+from typing import Collection, Iterable
 
 import pytest
 
 from hpcrocket.core.filesystem import Filesystem
 
 
-def assert_content_matches(actual: Collection[str], expected: Collection[str]) -> None:
+def assert_contains_all(actual: Collection[str], expected: Collection[str]) -> None:
     assert len(actual) == len(expected), (
-        "Expected:\n" + "\n".join(expected) + "\n\nActual:\n" + "\n".join(actual)
+        "Expected:\n" + str( expected ) + "\n\nActual:\n" + str(actual)
     )
-    assert set(actual) == set(expected)
+
+    for expected_entry in set(expected):
+        assert expected_entry in actual, f"Expected {expected_entry} to be in {actual}"
 
 
 class FilesystemTest(ABC):
@@ -329,7 +331,7 @@ class FilesystemTest(ABC):
 
         actual = sut.glob("**/*.txt")
 
-        assert_content_matches(
+        assert_contains_all(
             actual,
             [
                 "hello.txt",
