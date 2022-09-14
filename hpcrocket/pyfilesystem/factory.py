@@ -10,7 +10,6 @@ class PyFilesystemFactory(FilesystemFactory):
         self._options = options
 
     def create_local_filesystem(self) -> Filesystem:
-        print(os.getcwd())
         return localfilesystem(os.getcwd())
 
     def create_ssh_filesystem(self) -> Filesystem:

@@ -65,7 +65,6 @@ class PyFilesystemBasedTest(FilesystemTest, unittest.TestCase):
     def create_dir(self, filesystem: Filesystem, directory: str) -> None:
         pyfs = cast(PyFilesystemBased, filesystem)
         directory = str(pyfs.current_dir.joinpath(directory))
-        print(directory)
         mem_fs = cast(PyFilesystemBased, filesystem).internal_fs
         mem_fs.makedirs(directory)
 
