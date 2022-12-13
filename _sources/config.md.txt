@@ -25,8 +25,6 @@ proxyjumps:
 Add all file you want to copy to the remote machine to the `copy` section. `from` refers to the location of a file on the local machine, `to` specifies the location on the remote machine the file will be copied to. If a file is already present on the remote machine the application will abort unless `overwrite: true` is set for a file.
 This section must include the Slurm batch script to be run if it is not already present on the remote machine. HPC Rocket does support simple glob style notation (e.g. `folder/*.txt`).
 
-**NOTE**: all paths in this section must be relative. On the local machine they will be evaluated from the current working directory, on the remote machine from the user's home directory. Moreover it is not allowed to break out of these directories. A path like `../myfile.txt` is not valid. 
-
 ```yaml
 copy:
   - from: slurm_script.sh
@@ -45,7 +43,7 @@ copy:
 
 ## Collecting files from the remote machine back to the local machine
 
-Add all files you want to copy from the remote machine back to the local machine to the `collect` section. The same rules as in the `copy` sections apply, only that `from` now refers to the remote location and `to` specifies the local location of files. The `collect` step will be executed after the Slurm job was completed. Currently it will only run if the Slurm job completed successfully. This is subject to change in the future.
+Add all files you want to copy from the remote machine back to the local machine to the `collect` section. The same rules as in the `copy` sections apply, only that `from` now refers to the remote location and `to` specifies the local location of files. The `collect` step will be executed after the Slurm job was completed. Files will only be collected if the slurm job succeeds, unless `continue_if_job_fails` is set to `true` ([see `Specifying the Slurm Batch script`](#specifying-the-slurm-batch-script)).
 
 ```yaml
 collect:
@@ -57,7 +55,7 @@ collect:
 
 ## Cleaning up the remote machine
 
-Add all files you want to delete from the remote machine to the `clean` section. The `clean` step will be executed after the `collect` step, but only if the Slurm job exited successfully.
+Add all files you want to delete from the remote machine to the `clean` section. The `clean` step will be executed after the `collect` step. Files will only be cleaned if the slurm job succeeds, unless `continue_if_job_fails` is set to `true` ([see `Specifying the Slurm Batch script`](#specifying-the-slurm-batch-script)).
 
 ```yaml
 clean:
@@ -71,8 +69,11 @@ clean:
 ## Specifying the Slurm Batch script
 
 Specify the name of the Slurm batch script with the `sbatch` entry.
+Optionally `continue_if_job_fails` can be set to `true` to enable collecting and cleaning even if the Slurm job does not complete successfully.
+
 ```yaml
 sbatch: slurm_script.sh
+continue_if_job_fails: true
 ```
 
 
