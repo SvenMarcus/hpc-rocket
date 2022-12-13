@@ -20,7 +20,7 @@ python3 -m pip install hpc-rocket
 
 ### Authentication
 
-HPC Rocket does support authentication via password and private key. Password authentication currently requires adding it to the config file. Therefore, authentication via private key is recommended. Interactive password input is planned for a future version.
+HPC Rocket does support authentication via password and private key. Both can be set via environment variables.
 
 ### Slurm configuration
 
@@ -31,7 +31,7 @@ HPC Rocket does not offer any other way of configuring your batch jobs.
 
 HPC Rocket uses a configuration file in YAML format containing credentials to connect to the remote machine. Additionally it allows copying files to the remote machine, copying results back to the local machine (collecting) and eventually cleaning up copied or produced files.
 Note that all paths in the configuration file must be relative paths.
-On the local machine paths are evaluated from the current working directory, on the remote machine from the user's home directory.
+On the local machine paths are evaluated from the current working directory, on the remote machine from the user's home directory, unless absolute paths are specified.
 If you want to overwrite existing files on the remote machine, make sure to specify the `overwrite` instruction for each file you would like to overwrite.
 HPC Rocket will evaluate environment variables on the **LOCAL** machine in the form of `${VAR}` and `$VAR` when parsing the config file.
 
@@ -72,7 +72,7 @@ sbatch: slurm.job
 Use the `launch` command to launch a job on the remote machine. You must provide a configuration file. The optional `--watch` flag makes `hpc-rocket` wait until your job is finished (defaults to `false`). The collection and cleaning steps in the configuration file are only executed if `--watch` is set.
 
 ```bash
-python3 -m hpc-rocket launch --watch config.yml
+hpc-rocket launch --watch config.yml
 ```
 
 #### Checking a job's status
@@ -81,7 +81,7 @@ If a job was launched without `--watch` you can still check its status using the
 You will need to provide a configuration file with connection data and a job ID to check.
 
 ```bash
-python3 -m hpc-rocket status config.yml 12345
+hpc-rocket status config.yml 12345
 ```
 
 #### Monitoring a job until it finishes
@@ -89,7 +89,7 @@ python3 -m hpc-rocket status config.yml 12345
 Similar to the `status` command, `hpc-rocket` also provides the `watch` command to monitor a job's status continuously by entering a config file and a job id.
 
 ```bash
-python3 -m hpc-rocket watch config.yml 12345
+hpc-rocket watch config.yml 12345
 ```
 
 #### Canceling a running job
