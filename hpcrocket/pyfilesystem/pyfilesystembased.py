@@ -181,19 +181,28 @@ class PyFilesystemBased(Filesystem):
         self._delete_path(path, fs)
 
     def _delete_glob(self, path: str, fs: fs.base.FS) -> None:
-        glob = fs.glob(path)
+        glob = self._glob_with_pyfs(fs, path)
         for match in glob:
-            self._delete_path(match.path, fs)
+            self._delete_path(match, fs)
 
-    def _delete_path(self, path: str, fs: fs.base.FS) -> None:
-        if not fs.exists(path):
+    def _delete_path(self, path: str, _fs: fs.base.FS) -> None:
+        if not _fs.exists(path):
             raise FileNotFoundError(path)
 
-        if fs.isdir(path):
-            fs.removetree(path)
+        if _fs.isdir(path):
+            self._delete_dir(path, _fs)
             return
 
-        fs.remove(path)
+        _fs.remove(path)
+
+    def _delete_dir(self, path: str, _fs: fs.base.FS) -> None:
+        # NOTE:
+        # _fs.removetree raises a ResourceNotFoundError for nested directories
+        # Therefore, we open the parent directory first and then delete the lower directory
+        # from there
+        _fs = _fs.opendir(os.path.dirname(path))
+        path = os.path.basename(path)
+        _fs.removetree(path)
 
     def exists(self, path: str) -> bool:
         path = self._expandhome(path, self)

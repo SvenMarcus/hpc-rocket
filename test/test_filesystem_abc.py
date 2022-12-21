@@ -319,6 +319,17 @@ class FilesystemTest(ABC):
         assert not sut.exists("world.txt")
         assert sut.exists("nope.gif")
 
+    def test__when_deleteting_with_glob_in_dir__it_deletes_matching_files_but_not_dir(self) -> None:
+        sut = self.create_filesystem()
+        self.create_file(sut, "directory/hello.txt")
+        self.create_file(sut, "directory/subdir/file.txt")
+
+        sut.delete("directory/*")
+
+        assert sut.exists("directory")
+        assert sut.exists("directory/hello.txt") is False
+        assert sut.exists("directory/subdir/file.txt") is False
+
     def test__when_globbing__it_returns_matching_paths(self) -> None:
         sut = self.create_filesystem()
         self.create_file(sut, "hello.txt")

@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 import pytest
 from test.test_filesystem_abc import FilesystemTest
 
-import fs.base
 from fs.memoryfs import MemoryFS
 
 from hpcrocket.core.filesystem import Filesystem
@@ -37,19 +36,19 @@ class NonPyFilesystemBasedFilesystem(Filesystem):
         pass
 
     def delete(self, path: str) -> None:
-        pass
+        ...
 
     def exists(self, path: str) -> bool:
-        pass
+        ...
 
     def openread(self, path: str) -> TextIOWrapper:
-        pass
+        ...
 
 
 class PyFilesystemBasedTest(FilesystemTest, unittest.TestCase):
     def create_filesystem(self, dir: str = "/") -> Filesystem:
         mem_fs = MemoryFS()
-        fs = mem_fs.makedirs(dir, recreate=True)
+        _ = mem_fs.makedirs(dir, recreate=True)
         return _TestFilesystemImpl(mem_fs, dir, self.home_dir_abs())
 
     def create_file(self, filesystem: Filesystem, path: str, content: str = "") -> None:
@@ -93,7 +92,8 @@ class PyFilesystemBasedTest(FilesystemTest, unittest.TestCase):
             filesystem=_TestFilesystemImpl(target_fs_wrapping_mock),
         )
 
-        target_fs_wrapping_mock.makedirs.assert_not_called()
+        makedirs = cast(MagicMock, target_fs_wrapping_mock.makedirs)
+        makedirs.assert_not_called()
 
     def test__when_copying_to_non_pyfilesystem__should_raise_runtime_error(
         self,

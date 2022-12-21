@@ -188,8 +188,21 @@ class MemoryFilesystemFake(Filesystem):
         if not items:
             raise FileNotFoundError(path)
 
+        children = self._find_all_children_recursively(items)
+        items.extend(children)
+
         for item in items:
             self._filesystem.remove(item)
+
+    def _find_all_children_recursively(
+        self, items: List[FilesystemItem]
+    ) -> List[FilesystemItem]:
+        children = [self._find_children(item.path) for item in items if item.is_dir()]
+        all_children: List[FilesystemItem] = []
+        for _children in children:
+            all_children.extend(_children)
+
+        return all_children
 
     def openread(self, path: str) -> TextIOWrapper:
         file = self._find_matching_item(path)
