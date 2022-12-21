@@ -2,12 +2,13 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using these metadata."
 abstract: "A commandline tool to run Slurm sbatch commands over SSH"
 type: software
+license: MIT
 authors:
   - family-names: Marcus
     given-names: Sven
     orcid: https://orcid.org/0000-0003-3689-2162
 title: hpc-rocket
-version: 0.3.0
+version: 0.3.1
 url: https://github.com/SvenMarcus/hpc-rocket
 repository-code: https://github.com/SvenMarcus/hpc-rocket
 references:
@@ -65,7 +66,7 @@ references:
       - family-names: Vandenberg
         given-names: John
     type: software
-    license: LGPL
+    license: LGPL-2.1
     url: https://github.com/althonos/fs.sshfs
 
   - title: Paramiko
@@ -76,7 +77,7 @@ references:
       - family-names: Forcier
         given-names: Jeff
     type: software
-    license: LGPL
+    license: LGPL-2.1
     url: https://github.com/paramiko/paramiko
 
   - title: PyYAML
