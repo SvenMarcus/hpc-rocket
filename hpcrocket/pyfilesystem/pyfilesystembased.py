@@ -1,7 +1,7 @@
 import os
 from io import TextIOWrapper
 from pathlib import PurePath
-from typing import Generator, List, Optional, Tuple, cast
+from typing import Generator, List, Optional, cast
 
 import fs.base
 import fs.copy as fscp
@@ -9,7 +9,11 @@ import fs.errors
 import fs.glob
 
 from hpcrocket.core.filesystem import Filesystem
-from hpcrocket.core.filesystem.glob import is_glob, path_after_wildcard, removeprefix, split_at_first_wildcard
+from hpcrocket.core.filesystem.glob import (
+    is_glob,
+    path_after_wildcard,
+    split_at_first_wildcard,
+)
 
 
 class PyFilesystemBased(Filesystem):
