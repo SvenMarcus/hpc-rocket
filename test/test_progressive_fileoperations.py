@@ -1,7 +1,7 @@
 from test.testdoubles.filesystem import MemoryFilesystemFake
 from typing import List, Optional, Generator, Tuple, Type
 
-from hpcrocket.core.progressive_file_operations import (
+from hpcrocket.core.filesystem.progressive import (
     CopyInstruction,
     CopyResult,
     progressive_clean,

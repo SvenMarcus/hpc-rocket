@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple, cast
 
-from hpcrocket.core.progressive_file_operations import (
+from hpcrocket.core.filesystem.progressive import (
     CopyInstruction,
     progressive_copy,
     progressive_clean,

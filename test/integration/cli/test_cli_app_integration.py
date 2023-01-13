@@ -63,9 +63,10 @@ def prepare_local_filesystem(
     local_fs.create("/home/myuser/.ssh/id_ed25519")
     local_fs.create("/home/myuser/.ssh/proxy_key")
 
-    local_fs.makedirs("/home/myuser/dir")
+    local_fs.makedirs("/home/myuser/dir/subdir")
     local_fs.writetext("/home/myuser/dir/test.txt", "testfile")
     local_fs.writetext("/home/myuser/dir/hello.txt", "hellofile")
+    local_fs.writetext("/home/myuser/dir/subdir/next.txt", "hello next")
     local_fs.create("local_slurm.job")
 
     with open(config_file, "r") as file:
@@ -73,18 +74,17 @@ def prepare_local_filesystem(
 
 
 def prepare_environment_variables() -> Dict[str, str]:
-    environ = {}
-    environ["ABS_DIR"] = "/home/myuser"
-    environ["HOME"] = "/home/myuser"
-    environ["TARGET_USER"] = "target_user"
-    environ["TARGET_HOST"] = "target_host.example.com"
-    environ["TARGET_KEY"] = "~/.ssh/id_ed25519"
-    environ["PROXY_USER"] = "proxy_user"
-    environ["PROXY_HOST"] = "proxy_host.server.com"
-    environ["PROXY_KEY"] = "~/.ssh/proxy_key"
-    environ["REMOTE_SLURM_SCRIPT"] = "my_slurm_job.job"
-
-    return environ
+    return {
+        "ABS_DIR": "/home/myuser",
+        "HOME": "/home/myuser",
+        "TARGET_USER": "target_user",
+        "TARGET_HOST": "target_host.example.com",
+        "TARGET_KEY": "~/.ssh/id_ed25519",
+        "PROXY_USER": "proxy_user",
+        "PROXY_HOST": "proxy_host.server.com",
+        "PROXY_KEY": "~/.ssh/proxy_key",
+        "REMOTE_SLURM_SCRIPT": "my_slurm_job.job",
+    }
 
 
 @pytest.mark.integration
@@ -121,8 +121,13 @@ def test__when_running_launch_with_watching_and_fail_allowed__it_copies_runs_job
     args = ["hpc-rocket", "launch", "--watch", "config.yml"]
     run_with_args(registry, args)
 
+    print("\n")
+    fs_factory.remote.internal_fs.tree()
     assert fs_factory.local.exists("test.txt")
     assert fs_factory.local.exists("hello.txt")
+    assert fs_factory.remote.exists("target/hello.txt")
+    assert fs_factory.remote.exists("target/test.txt")
+    assert fs_factory.remote.exists("target/subdir/next.txt")
     assert not fs_factory.remote.exists("my_slurm_job.job")
 
 

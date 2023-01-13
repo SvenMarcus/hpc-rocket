@@ -14,7 +14,7 @@ from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 from hpcrocket.core.application import Application
-from hpcrocket.core.progressive_file_operations import CopyInstruction
+from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.core.launchoptions import LaunchOptions
 from hpcrocket.pyfilesystem.factory import PyFilesystemFactory
 from hpcrocket.ssh.connectiondata import ConnectionData

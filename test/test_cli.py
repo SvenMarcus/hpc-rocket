@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from hpcrocket.cli import parse_cli_args
-from hpcrocket.core.progressive_file_operations import CopyInstruction
+from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.core.launchoptions import (
     LaunchOptions,
     Options,

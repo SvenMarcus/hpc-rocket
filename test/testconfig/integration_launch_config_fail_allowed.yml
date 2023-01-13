@@ -17,6 +17,10 @@ copy:
     to: dir/
     overwrite: true
 
+  - from: $ABS_DIR/dir/*
+    to: target
+    overwrite: true
+
 collect:
   - from: ./dir/*.txt
     to: .

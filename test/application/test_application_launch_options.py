@@ -22,7 +22,7 @@ from test.testdoubles.filesystem import (
 from unittest.mock import Mock
 
 from hpcrocket.core.application import Application
-from hpcrocket.core.progressive_file_operations import CopyInstruction
+from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.core.executor import RunningCommand
 from hpcrocket.ssh.errors import SSHError
 
@@ -223,6 +223,16 @@ class Application_With_Options_To_Copy(unittest.TestCase):
 
         assert_does_not_exist_on_remote(self.fs_factory, LOCAL_FILE)
 
+    def test__with_trailing_glob__when_running__copies_entire_subtree(
+        self,
+    ) -> None:
+        self.fs_factory.create_local_files("dir/first.txt", "dir/subdir/second.txt")
+        options = launch_options(copy=[CopyInstruction("dir/*", "target")])
+
+        self.sut.run(options)
+
+        assert_exists_on_remote(self.fs_factory, "target/first.txt")
+        assert_exists_on_remote(self.fs_factory, "target/subdir/second.txt")
 
 class Application_With_Options_To_Collect(unittest.TestCase):
     def setUp(self) -> None:

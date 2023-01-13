@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import List, Union
 
-from hpcrocket.core.progressive_file_operations import CopyInstruction
+from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 

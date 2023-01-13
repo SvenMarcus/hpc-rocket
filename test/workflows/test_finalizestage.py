@@ -7,7 +7,7 @@ from test.testdoubles.filesystem import (
 )
 from unittest.mock import Mock
 
-from hpcrocket.core.progressive_file_operations import CopyInstruction
+from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.core.workflows.stages import FinalizeStage
 
 

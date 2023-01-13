@@ -4,10 +4,7 @@ from dataclasses import dataclass, field
 from typing import Generator, List, NamedTuple, Optional
 
 from hpcrocket.core.filesystem import Filesystem
-
-
-def _join_dest_and_src(src: str, dest: str) -> str:
-    return os.path.join(dest, os.path.basename(src))
+from hpcrocket.core.filesystem.glob import is_glob, path_after_wildcard
 
 
 class CopyInstruction(NamedTuple):
@@ -20,16 +17,16 @@ class CopyInstruction(NamedTuple):
     overwrite: bool = False
 
     def unglob(self, filesystem: Filesystem) -> List["CopyInstruction"]:
-        if "*" in self.source:
+        if is_glob(self.source):
             files = filesystem.glob(self.source)
             return [self._unglobbed_sub_instruction(file) for file in files]
 
         return [self]
 
     def _unglobbed_sub_instruction(self, file: str) -> "CopyInstruction":
-        return CopyInstruction(
-            file, _join_dest_and_src(file, self.destination), self.overwrite
-        )
+        filename = path_after_wildcard(self.source, file)
+        final_dest = os.path.join(self.destination, filename)
+        return CopyInstruction(file, final_dest, self.overwrite)
 
 
 @dataclass

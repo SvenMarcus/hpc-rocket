@@ -1,39 +1,15 @@
 import os
 from io import TextIOWrapper
 from pathlib import PurePath
-from typing import Callable, Generator, List, Optional, Tuple, cast
+from typing import Generator, List, Optional, Tuple, cast
 
 import fs.base
 import fs.copy as fscp
 import fs.errors
 import fs.glob
+
 from hpcrocket.core.filesystem import Filesystem
-
-
-def _is_glob(path: str) -> bool:
-    """
-    Checks if a wildcard operator is used in the path
-
-    Args:
-        path (str): The filepath
-
-    Returns:
-        bool
-    """
-
-    return "*" in path
-
-
-def _removeprefix(string: str, prefix: str) -> str:
-    def __removeprefix(prefix: str) -> str:
-        if string.startswith(prefix):
-            len_prefix = len(prefix)
-            return string[len_prefix:]
-
-        return string
-
-    removeprefix: Callable[[str], str] = getattr(string, "removeprefix", __removeprefix)
-    return removeprefix(prefix)
+from hpcrocket.core.filesystem.glob import is_glob, path_after_wildcard, removeprefix, split_at_first_wildcard
 
 
 class PyFilesystemBased(Filesystem):
@@ -97,7 +73,7 @@ class PyFilesystemBased(Filesystem):
         source_fs = self._open_fs(self, source)
         target_fs = self._open_fs(other_pyfs_based, target)
 
-        if _is_glob(source):
+        if is_glob(source):
             self._copy_glob(source_fs, source, target_fs, target, overwrite)
             return
 
@@ -109,21 +85,10 @@ class PyFilesystemBased(Filesystem):
 
         return fs.internal_fs.opendir(str(fs.current_dir))
 
-    def _first_wildcard(self, pattern: str) -> int:
-        first_star = pattern.find("*")
-        if first_star == -1:
-            first_star = 0
-
-        return first_star
-
-    def _split_at_first_wildcard(self, pattern: str) -> Tuple[str, str]:
-        first_wildcard = self._first_wildcard(pattern)
-        return pattern[:first_wildcard], pattern[first_wildcard:]
-
     def _glob_with_pyfs(
         self, fs: fs.base.FS, pattern: str
     ) -> Generator[str, None, None]:
-        dir, pattern = self._split_at_first_wildcard(pattern)
+        dir, pattern = split_at_first_wildcard(pattern)
 
         if pattern.endswith("*"):
             pattern += "*"
@@ -144,13 +109,11 @@ class PyFilesystemBased(Filesystem):
         overwrite: bool,
     ) -> None:
         glob = self._glob_with_pyfs(source_fs, source)
-        dir, _ = self._split_at_first_wildcard(source)
         for match in glob:
             if source_fs.isdir(match):
                 continue
 
-            filename = _removeprefix(match, dir)
-            filename = _removeprefix(filename, os.path.sep)
+            filename = path_after_wildcard(source, match)
             target_path = os.path.join(target, filename)
             self._copy_single_file(source_fs, match, target_fs, target_path, overwrite)
 
@@ -174,7 +137,7 @@ class PyFilesystemBased(Filesystem):
 
     def delete(self, path: str) -> None:
         fs = self.internal_fs.opendir(str(self.current_dir))
-        if _is_glob(path):
+        if is_glob(path):
             self._delete_glob(path, fs)
             return
 
