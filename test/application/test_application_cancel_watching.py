@@ -1,4 +1,4 @@
-from test.application.launchoptions import launch_options, watch_options_with_proxy
+from test.application.optionbuilders import launch_options, watch_options_with_proxy
 from test.testdoubles.executor import (
     InfiniteSlurmJobExecutor,
     LoggingCommandExecutorSpy,

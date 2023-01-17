@@ -1,5 +1,5 @@
 from test.application import make_application
-from test.application.launchoptions import watch_options_with_proxy
+from test.application.optionbuilders import watch_options_with_proxy
 from test.slurm_assertions import assert_job_polled
 from test.slurmoutput import completed_slurm_job, running_slurm_job
 from test.testdoubles.executor import (

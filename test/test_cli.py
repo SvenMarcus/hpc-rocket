@@ -6,9 +6,10 @@ import pytest
 from hpcrocket.cli import parse_cli_args
 from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.core.launchoptions import (
+    FinalizeOptions,
     LaunchOptions,
     Options,
-    SimpleJobOptions,
+    ImmediateCommandOptions,
     WatchOptions,
 )
 from hpcrocket.pyfilesystem.localfilesystem import localfilesystem
@@ -66,6 +67,10 @@ PROXYJUMPS = [
 ]
 
 
+CLEAN_INSTRUCTIONS = ["mycopy.txt", REMOTE_SLURM_SCRIPT_PATH]
+COLLECT_INSTRUCTIONS = [CopyInstruction(REMOTE_RESULT_FILEPATH, "result.txt", True)]
+
+
 @pytest.fixture(autouse=True)
 def setup_env() -> Generator[Dict[str, str], None, None]:
     with patch.dict(os.environ, ENV) as env:
@@ -93,8 +98,8 @@ def test__given_valid_launch_args__should_return_matching_config() -> None:
             CopyInstruction("myfile.txt", "mycopy.txt"),
             CopyInstruction(LOCAL_SLURM_SCRIPT_PATH, REMOTE_SLURM_SCRIPT_PATH, True),
         ],
-        clean_files=["mycopy.txt", REMOTE_SLURM_SCRIPT_PATH],
-        collect_files=[CopyInstruction(REMOTE_RESULT_FILEPATH, "result.txt", True)],
+        clean_files=CLEAN_INSTRUCTIONS,
+        collect_files=COLLECT_INSTRUCTIONS,
         continue_if_job_fails=True,
         watch=True,
     )
@@ -109,9 +114,9 @@ def test__given_status_args__when_parsing__should_return_matching_config() -> No
         ]
     )
 
-    assert config == SimpleJobOptions(
+    assert config == ImmediateCommandOptions(
         jobid="1234",
-        action=SimpleJobOptions.Action.status,
+        action=ImmediateCommandOptions.Action.status,
         connection=CONNECTION_DATA,
         proxyjumps=PROXYJUMPS,
     )
@@ -142,9 +147,25 @@ def test__given_cancel_args__when_parsing__should_return_matching_config() -> No
         ]
     )
 
-    assert config == SimpleJobOptions(
+    assert config == ImmediateCommandOptions(
         jobid="1234",
-        action=SimpleJobOptions.Action.cancel,
+        action=ImmediateCommandOptions.Action.cancel,
         connection=CONNECTION_DATA,
         proxyjumps=PROXYJUMPS,
+    )
+
+
+def test__given_finalize_args__when_parsing__returns_matching_config() -> None:
+    config = run_parser(
+        [
+            "finalize",
+            "test/testconfig/config.yml",
+        ]
+    )
+
+    assert config == FinalizeOptions(
+        connection=CONNECTION_DATA,
+        proxyjumps=PROXYJUMPS,
+        clean_files=CLEAN_INSTRUCTIONS,
+        collect_files=COLLECT_INSTRUCTIONS,
     )

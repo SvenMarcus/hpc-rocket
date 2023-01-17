@@ -50,7 +50,9 @@ class CallOrderVerification(SlurmJobExecutorSpy, Filesystem):
         return False
 
     def __call__(self) -> None:
-        assert self.log == self.expected
+        assert (
+            self.log == self.expected
+        ), f"Expected: {self.expected}\n\n Got {self.log}"
 
 
 class VerifierReturningFilesystemFactory(FilesystemFactory):

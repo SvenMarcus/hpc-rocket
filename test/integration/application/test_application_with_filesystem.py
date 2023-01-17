@@ -1,7 +1,7 @@
 import os
 from dataclasses import replace
 from test.integration.application.fixtures import *
-from test.application.launchoptions import *
+from test.application.optionbuilders import *
 from test.integration.pyfilesystem.sshfilesystem_assertions import (
     assert_sshfs_connected_with_connection_data,
     assert_sshfs_connected_with_keyfile_from_connection_data,

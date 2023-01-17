@@ -3,30 +3,35 @@ from typing import Any, Callable, Dict, Type
 import hpcrocket.core.workflows as workflows
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import (
+    FinalizeOptions,
     JobBasedOptions,
     LaunchOptions,
     Options,
-    SimpleJobOptions,
+    ImmediateCommandOptions,
     WatchOptions,
 )
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.workflow import Workflow
 
 
-def _simple_option_workflow_builder(
-    controller: SlurmController, simple_options: SimpleJobOptions
+def _immediate_cmd_workflow(
+    controller: SlurmController,
+    immediate_cmd_options: ImmediateCommandOptions,
 ) -> Workflow:
-    if simple_options.action == SimpleJobOptions.Action.status:
-        return workflows.statusworkflow(controller, simple_options)
+    immediate_workflows = {
+        ImmediateCommandOptions.Action.status: workflows.statusworkflow,
+        ImmediateCommandOptions.Action.cancel: workflows.cancelworkflow,
+    }
 
-    return workflows.cancelworkflow(controller, simple_options)
+    workflow = immediate_workflows[immediate_cmd_options.action]
+    return workflow(controller, immediate_cmd_options)
 
 
 _SimpleWorkflowBuilder = Callable[[SlurmController, Any], Workflow]
 _SimpleWorkFlowRegistry = Dict[Type[JobBasedOptions], _SimpleWorkflowBuilder]
 
 _SimpleWorkflows: _SimpleWorkFlowRegistry = {
-    SimpleJobOptions: _simple_option_workflow_builder,
+    ImmediateCommandOptions: _immediate_cmd_workflow,
     WatchOptions: workflows.watchworkflow,
 }
 
@@ -38,6 +43,8 @@ def make_workflow(
 ) -> Workflow:
     if isinstance(options, LaunchOptions):
         return workflows.launchworkflow(filesystem_factory, controller, options)
+    elif isinstance(options, FinalizeOptions):
+        return workflows.finalizeworkflow(filesystem_factory, options)
 
     option_type = type(options)
     monitoring_workflow_builder = _SimpleWorkflows[option_type]

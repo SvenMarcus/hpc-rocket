@@ -1,4 +1,4 @@
-from test.application.launchoptions import launch_options
+from test.application.optionbuilders import launch_options
 from test.slurm_assertions import assert_job_canceled, assert_job_submitted
 from test.slurmoutput import DEFAULT_JOB_ID
 from test.testdoubles.executor import CommandExecutorStub, SlurmJobExecutorSpy

@@ -1,6 +1,6 @@
 from dataclasses import replace
 from test.integration.application.fixtures import *
-from test.application.launchoptions import *
+from test.application.optionbuilders import *
 from test.slurmoutput import get_success_lines
 from test.testdoubles.filesystem import DummyFilesystemFactory
 from test.testdoubles.sshclient import (

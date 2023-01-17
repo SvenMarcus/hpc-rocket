@@ -7,9 +7,10 @@ import yaml
 from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.core.filesystem import Filesystem
 from hpcrocket.core.launchoptions import (
+    FinalizeOptions,
     LaunchOptions,
     Options,
-    SimpleJobOptions,
+    ImmediateCommandOptions,
     WatchOptions,
 )
 from hpcrocket.ssh.connectiondata import ConnectionData
@@ -23,7 +24,11 @@ def parse_cli_args(args: List[str], filesystem: Filesystem) -> Options:
 
 def _create_options(config: argparse.Namespace, filesystem: Filesystem) -> Options:
     yaml_config = _parse_yaml(config.configfile, filesystem)
-    option_builders = {"launch": _build_launch_options, "watch": _build_watch_options}
+    option_builders = {
+        "launch": _build_launch_options,
+        "finalize": _build_finalize_options,
+        "watch": _build_watch_options,
+    }
 
     builder = option_builders.get(config.command, _build_simple_job_options)
 
@@ -43,6 +48,16 @@ def _build_launch_options(
         clean_files=_clean_instructions(yaml_config.get("clean", [])),
         collect_files=_collect_copy_instructions(yaml_config.get("collect", [])),
         continue_if_job_fails=yaml_config.get("continue_if_job_fails", False),
+        **_connection_dict(yaml_config)  # type: ignore
+    )
+
+
+def _build_finalize_options(
+    config: argparse.Namespace, yaml_config: Dict[str, Any]
+) -> Options:
+    return FinalizeOptions(
+        clean_files=_clean_instructions(yaml_config.get("clean", [])),
+        collect_files=_collect_copy_instructions(yaml_config.get("collect", [])),
         **_connection_dict(yaml_config)  # type: ignore
     )
 
@@ -70,9 +85,9 @@ def _build_simple_job_options(
     jobid = cast(str, config.jobid)
     command = cast(str, config.command)
 
-    return SimpleJobOptions(
+    return ImmediateCommandOptions(
         jobid=jobid,
-        action=SimpleJobOptions.Action[command],
+        action=ImmediateCommandOptions.Action[command],
         **_connection_dict(yaml_config)  # type: ignore
     )
 
@@ -89,6 +104,7 @@ def _setup_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command")
 
     _setup_launch_parser(subparsers)
+    _setup_finalize_parser(subparsers)
     _setup_status_parser(subparsers)
     _setup_watch_parser(subparsers)
     _setup_cancel_parser(subparsers)
@@ -102,6 +118,17 @@ def _setup_launch_parser(
     parser = subparsers.add_parser("launch", help="Launch a remote job")
     parser.add_argument("configfile", type=str)
     parser.add_argument("--watch", default=False, dest="watch", action="store_true")
+
+
+def _setup_finalize_parser(
+    subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]",
+) -> None:
+    parser = subparsers.add_parser(
+        "finalize", help="Run collect and clean instructions"
+    )
+    parser.add_argument(
+        "configfile", type=str, help="A config file containing the connection data"
+    )
 
 
 def _setup_status_parser(
