@@ -1,4 +1,4 @@
-from test.application.launchoptions import main_connection
+from test.application.optionbuilders import main_connection
 from test.slurmoutput import DEFAULT_JOB_ID, running_slurm_job
 from test.testdoubles.paramiko_sshclient_mockutil import (
     get_blocking_channel_exit_status_ready_func,

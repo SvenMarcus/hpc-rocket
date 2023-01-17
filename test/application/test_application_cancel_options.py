@@ -1,5 +1,5 @@
 from test.application import make_application
-from test.application.launchoptions import cancel_options_with_proxy
+from test.application.optionbuilders import cancel_options_with_proxy
 from test.slurm_assertions import assert_job_canceled
 from test.slurmoutput import DEFAULT_JOB_ID
 from test.testdoubles.executor import SlurmJobExecutorSpy

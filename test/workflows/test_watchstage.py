@@ -1,5 +1,5 @@
 from hpcrocket.core.executor import CommandExecutor
-from test.application.launchoptions import launch_options
+from test.application.optionbuilders import launch_options
 from test.slurm_assertions import assert_job_polled, assert_job_polled_times
 from test.slurmoutput import DEFAULT_JOB_ID, completed_slurm_job, running_slurm_job
 from test.testdoubles.executor import (

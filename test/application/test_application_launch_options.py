@@ -1,13 +1,30 @@
 import os
-from typing import List, Tuple, cast
+from typing import List, Tuple
 import unittest
-from hpcrocket.core.launchoptions import LaunchOptions
 from test.application import make_application
+from test.application.assertions import (
+    assert_does_not_exist_locally,
+    assert_does_not_exist_on_remote,
+    assert_exists_locally,
+    assert_exists_on_remote,
+)
 from test.application.executor_filesystem_callorder import (
     CallOrderVerification,
     VerifierReturningFilesystemFactory,
 )
-from test.application.launchoptions import launch_options, main_connection
+from test.application.optionbuilders import (
+    COLLECTED_FILE,
+    GLOB_PATTERN,
+    LOCAL_DIR,
+    LOCAL_FILE,
+    NON_MATCHING_FILE,
+    REMOTE_DIR,
+    REMOTE_FILE,
+    launch_options,
+    launch_options_copy_collect_clean,
+    launch_options_with_copy,
+    main_connection,
+)
 from test.slurmoutput import completed_slurm_job
 from test.testdoubles.executor import (
     failed_slurm_job_command_stub,
@@ -26,17 +43,6 @@ from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.core.executor import RunningCommand
 from hpcrocket.ssh.errors import SSHError
 
-LOCAL_FILE = "myfile.txt"
-LOCAL_DIR = "localdir/"
-
-REMOTE_FILE = "mycopy.txt"
-REMOTE_DIR = "remotedir/"
-
-COLLECTED_FILE = "mycollect.txt"
-
-GLOB_PATTERN = "*.txt"
-NON_MATCHING_FILE = "NON_MATCHING_FILE.gif"
-
 
 class ConnectionFailingCommandExecutor(LoggingCommandExecutorSpy):
     def connect(self) -> None:
@@ -47,35 +53,6 @@ class ConnectionFailingCommandExecutor(LoggingCommandExecutorSpy):
 
     def exec_command(self, cmd: str) -> RunningCommand:
         ...
-
-
-def launch_options_with_copy() -> LaunchOptions:
-    return launch_options(copy=[CopyInstruction(LOCAL_FILE, REMOTE_FILE)])
-
-
-def launch_options_with_collect() -> LaunchOptions:
-    return launch_options(
-        collect=[CopyInstruction(REMOTE_FILE, COLLECTED_FILE)],
-        watch=True,
-    )
-
-
-def launch_options_with_clean() -> LaunchOptions:
-    return launch_options(clean=[REMOTE_FILE], watch=True)
-
-
-def launch_options_copy_collect() -> LaunchOptions:
-    return launch_options(
-        copy=[CopyInstruction(LOCAL_FILE, REMOTE_FILE)],
-        collect=[CopyInstruction(REMOTE_FILE, COLLECTED_FILE)],
-        watch=True,
-    )
-
-
-def launch_options_copy_collect_clean() -> LaunchOptions:
-    opts = launch_options_copy_collect()
-    opts.clean_files = [REMOTE_FILE]
-    return opts
 
 
 def memory_fs_factory_with_default_local_file() -> MemoryFilesystemFactoryStub:
@@ -91,26 +68,6 @@ def make_sut_with_call_order_verification(
     factory = VerifierReturningFilesystemFactory(verifier)
     sut = Application(verifier, factory, Mock())
     return sut, verifier
-
-
-def assert_exists_locally(fs_factory: MemoryFilesystemFactoryStub, file: str) -> None:
-    assert fs_factory.local_filesystem.exists(file)
-
-
-def assert_does_not_exist_locally(
-    fs_factory: MemoryFilesystemFactoryStub, file: str
-) -> None:
-    assert not fs_factory.local_filesystem.exists(file)
-
-
-def assert_exists_on_remote(fs_factory: MemoryFilesystemFactoryStub, file: str) -> None:
-    assert fs_factory.ssh_filesystem.exists(file)
-
-
-def assert_does_not_exist_on_remote(
-    fs_factory: MemoryFilesystemFactoryStub, file: str
-) -> None:
-    assert not fs_factory.ssh_filesystem.exists(file)
 
 
 class Application_With_Launch_Options(unittest.TestCase):
@@ -233,65 +190,6 @@ class Application_With_Options_To_Copy(unittest.TestCase):
 
         assert_exists_on_remote(self.fs_factory, "target/first.txt")
         assert_exists_on_remote(self.fs_factory, "target/subdir/second.txt")
-
-class Application_With_Options_To_Collect(unittest.TestCase):
-    def setUp(self) -> None:
-        self.fs_factory = MemoryFilesystemFactoryStub()
-        self.sut = make_application(filesystem_factory=self.fs_factory)
-
-    def test__when_running__it_collects_files_from_remote(self) -> None:
-        options = launch_options_with_collect()
-        self.fs_factory.create_remote_files(REMOTE_FILE)
-
-        self.sut.run(options)
-
-        assert_exists_locally(self.fs_factory, COLLECTED_FILE)
-
-    def test__with_globbing__when_running__collects_only_matching_files(self) -> None:
-        options = launch_options(watch=True)
-        options.collect_files = [CopyInstruction("*.txt", "store_dir")]
-        self.fs_factory.create_remote_files(REMOTE_FILE, NON_MATCHING_FILE)
-
-        self.sut.run(options)
-
-        assert_exists_locally(self.fs_factory, f"store_dir/{REMOTE_FILE}")
-        assert_does_not_exist_locally(self.fs_factory, f"store_dir/{NON_MATCHING_FILE}")
-
-    def test__with_globbing__but_file_exists_locally__when_running__still_collects_other_files(
-        self,
-    ) -> None:
-        options = launch_options(watch=True)
-        existing_file = "existing.txt"
-        options.collect_files = [CopyInstruction("*.txt", "store_dir")]
-        self.fs_factory.create_remote_files(existing_file, REMOTE_FILE)
-        self.fs_factory.create_local_files(f"store_dir/{existing_file}")
-
-        self.sut.run(options)
-
-        assert_exists_locally(self.fs_factory, f"store_dir/{REMOTE_FILE}")
-
-
-class Application_With_Options_To_Clean(unittest.TestCase):
-    def setUp(self) -> None:
-        self.fs_factory = MemoryFilesystemFactoryStub()
-        self.fs_factory.create_remote_files(REMOTE_FILE)
-        self.sut = make_application(filesystem_factory=self.fs_factory)
-        self.options = launch_options_with_clean()
-
-    def test__when_running__it_cleans_files(self) -> None:
-        self.sut.run(self.options)
-
-        assert_does_not_exist_on_remote(self.fs_factory, REMOTE_FILE)
-
-    def test__with_globbing__when_running__cleans_only_matching_files(self) -> None:
-        non_matching_file = "NON_MATCHING_FILE.gif"
-        self.fs_factory.create_remote_files(REMOTE_FILE, non_matching_file)
-        self.options.clean_files = ["*.txt"]
-
-        self.sut.run(self.options)
-
-        assert_does_not_exist_on_remote(self.fs_factory, REMOTE_FILE)
-        assert_exists_on_remote(self.fs_factory, non_matching_file)
 
 
 class Application_With_Options_To_Copy_Collect_Clean(unittest.TestCase):
