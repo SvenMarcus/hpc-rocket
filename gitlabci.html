@@ -213,13 +213,13 @@
 <section id="add-a-job-for-hpc-rocket-in-your-gitlab-ci-yml">
 <h2>Add a job for HPC Rocket in your .gitlab-ci.yml<a class="headerlink" href="#add-a-job-for-hpc-rocket-in-your-gitlab-ci-yml" title="Permalink to this heading">#</a></h2>
 <p>After adding the SSH keys to GitLab CI you can add a job to your <code class="docutils literal notranslate"><span class="pre">.gitlab-ci.yml</span></code> as shown below.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">run-slurm-job</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:latest</span><span class="w"></span>
-<span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deploy</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">run-slurm-job</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:latest</span>
+<span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deploy</span>
 
-<span class="nt">script</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip install hpc-rocket</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hpc-rocket launch --watch rocket.yml</span><span class="w"></span>
+<span class="nt">script</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip install hpc-rocket</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hpc-rocket launch --watch rocket.yml</span>
 </pre></div>
 </div>
 </section>

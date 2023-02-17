@@ -202,16 +202,16 @@
 <section id="connection-data">
 <h2>Connection data<a class="headerlink" href="#connection-data" title="Permalink to this heading">#</a></h2>
 <p>Enter the connection data as shown below into the configuration file. For use in CI pipelines it is recommended to use environment variables, however it is also possible to fill the information in directly in the configuration file. HPC Rocket allows the use of a private key file or a password for authentication. Private key files are recommended. It is also possible to specify proxyjumps if necessary.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_HOST</span><span class="w"></span>
-<span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_USER</span><span class="w"></span>
-<span class="c1"># Use private_keyfile OR password</span><span class="w"></span>
-<span class="nt">private_keyfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PRIVATE_KEY</span><span class="w"></span>
-<span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PASSWORD</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_HOST</span>
+<span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_USER</span>
+<span class="c1"># Use private_keyfile OR password</span>
+<span class="nt">private_keyfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PRIVATE_KEY</span>
+<span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PASSWORD</span>
 
-<span class="c1"># Skip this section if you don&#39;t need proxyjumps</span><span class="w"></span>
-<span class="nt">proxyjumps</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_HOST</span><span class="w"></span>
-<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_USER</span><span class="w"></span>
+<span class="c1"># Skip this section if you don&#39;t need proxyjumps</span>
+<span class="nt">proxyjumps</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_HOST</span>
+<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_USER</span>
 <span class="w">    </span><span class="nt">private_keyfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_KEY</span><span class="w"> </span>
 </pre></div>
 </div>
@@ -220,42 +220,42 @@
 <h2>Copying files to the remote machine<a class="headerlink" href="#copying-files-to-the-remote-machine" title="Permalink to this heading">#</a></h2>
 <p>Add all file you want to copy to the remote machine to the <code class="docutils literal notranslate"><span class="pre">copy</span></code> section. <code class="docutils literal notranslate"><span class="pre">from</span></code> refers to the location of a file on the local machine, <code class="docutils literal notranslate"><span class="pre">to</span></code> specifies the location on the remote machine the file will be copied to. If a file is already present on the remote machine the application will abort unless <code class="docutils literal notranslate"><span class="pre">overwrite:</span> <span class="pre">true</span></code> is set for a file.
 This section must include the Slurm batch script to be run if it is not already present on the remote machine. HPC Rocket does support simple glob style notation (e.g. <code class="docutils literal notranslate"><span class="pre">folder/*.txt</span></code>).</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">copy</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm_script.sh</span><span class="w"></span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm_script.sh</span><span class="w"></span>
-<span class="w">    </span><span class="nt">overwrite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">copy</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm_script.sh</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm_script.sh</span>
+<span class="w">    </span><span class="nt">overwrite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">important_file.txt</span><span class="w"></span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">important_file_remote.txt</span><span class="w"></span>
-<span class="w">    </span><span class="nt">overwrite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">important_file.txt</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">important_file_remote.txt</span>
+<span class="w">    </span><span class="nt">overwrite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myexecutable</span><span class="w"></span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myexecutable</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myexecutable</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myexecutable</span>
 
-<span class="c1"># ...</span><span class="w"></span>
+<span class="c1"># ...</span>
 </pre></div>
 </div>
 </section>
 <section id="collecting-files-from-the-remote-machine-back-to-the-local-machine">
 <h2>Collecting files from the remote machine back to the local machine<a class="headerlink" href="#collecting-files-from-the-remote-machine-back-to-the-local-machine" title="Permalink to this heading">#</a></h2>
 <p>Add all files you want to copy from the remote machine back to the local machine to the <code class="docutils literal notranslate"><span class="pre">collect</span></code> section. The same rules as in the <code class="docutils literal notranslate"><span class="pre">copy</span></code> sections apply, only that <code class="docutils literal notranslate"><span class="pre">from</span></code> now refers to the remote location and <code class="docutils literal notranslate"><span class="pre">to</span></code> specifies the local location of files. The <code class="docutils literal notranslate"><span class="pre">collect</span></code> step will be executed after the Slurm job was completed. Files will only be collected if the slurm job succeeds, unless <code class="docutils literal notranslate"><span class="pre">continue_if_job_fails</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> (<span class="xref myst">see <code class="docutils literal notranslate"><span class="pre">Specifying</span> <span class="pre">the</span> <span class="pre">Slurm</span> <span class="pre">Batch</span> <span class="pre">script</span></code></span>).</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">collect</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myresultfile.log</span><span class="w"></span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">result.log</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">collect</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myresultfile.log</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">result.log</span>
 
-<span class="w">    </span><span class="c1"># ...</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># ...</span>
 </pre></div>
 </div>
 </section>
 <section id="cleaning-up-the-remote-machine">
 <h2>Cleaning up the remote machine<a class="headerlink" href="#cleaning-up-the-remote-machine" title="Permalink to this heading">#</a></h2>
 <p>Add all files you want to delete from the remote machine to the <code class="docutils literal notranslate"><span class="pre">clean</span></code> section. The <code class="docutils literal notranslate"><span class="pre">clean</span></code> step will be executed after the <code class="docutils literal notranslate"><span class="pre">collect</span></code> step. Files will only be cleaned if the slurm job succeeds, unless <code class="docutils literal notranslate"><span class="pre">continue_if_job_fails</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> (<span class="xref myst">see <code class="docutils literal notranslate"><span class="pre">Specifying</span> <span class="pre">the</span> <span class="pre">Slurm</span> <span class="pre">Batch</span> <span class="pre">script</span></code></span>).</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">clean</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm_script.sh</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">important_file_remote.txt</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myexecutable</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myresultfile.log</span><span class="w"></span>
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain"># ...</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">clean</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm_script.sh</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">important_file_remote.txt</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myexecutable</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myresultfile.log</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain"># ...</span>
 </pre></div>
 </div>
 </section>
@@ -263,41 +263,41 @@ This section must include the Slurm batch script to be run if it is not already 
 <h2>Specifying the Slurm Batch script<a class="headerlink" href="#specifying-the-slurm-batch-script" title="Permalink to this heading">#</a></h2>
 <p>Specify the name of the Slurm batch script with the <code class="docutils literal notranslate"><span class="pre">sbatch</span></code> entry.
 Optionally <code class="docutils literal notranslate"><span class="pre">continue_if_job_fails</span></code> can be set to <code class="docutils literal notranslate"><span class="pre">true</span></code> to enable collecting and cleaning even if the Slurm job does not complete successfully.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">sbatch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm_script.sh</span><span class="w"></span>
-<span class="nt">continue_if_job_fails</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">sbatch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm_script.sh</span>
+<span class="nt">continue_if_job_fails</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
 </section>
 <section id="example-configuration-file">
 <h2>Example configuration file<a class="headerlink" href="#example-configuration-file" title="Permalink to this heading">#</a></h2>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_HOST</span><span class="w"></span>
-<span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_USER</span><span class="w"></span>
-<span class="nt">private_keyfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PRIVATE_KEY</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_HOST</span>
+<span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$REMOTE_USER</span>
+<span class="nt">private_keyfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PRIVATE_KEY</span>
 
-<span class="nt">proxyjumps</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_HOST</span><span class="w"></span>
-<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_USER</span><span class="w"></span>
-<span class="w">    </span><span class="nt">private_keyfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_KEY</span><span class="w"></span>
+<span class="nt">proxyjumps</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_HOST</span>
+<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_USER</span>
+<span class="w">    </span><span class="nt">private_keyfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PROXY_KEY</span>
 
-<span class="nt">copy</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jobs/slurm.job</span><span class="w"></span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm.job</span><span class="w"></span>
-<span class="w">    </span><span class="nt">overwrite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
+<span class="nt">copy</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jobs/slurm.job</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm.job</span>
+<span class="w">    </span><span class="nt">overwrite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bin/myexecutable</span><span class="w"></span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myexecutable</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bin/myexecutable</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myexecutable</span>
 
-<span class="nt">collect</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myresultfile.log</span><span class="w"></span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mylocalresult.log</span><span class="w"></span>
-<span class="w">    </span><span class="nt">overwrite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
+<span class="nt">collect</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myresultfile.log</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mylocalresult.log</span>
+<span class="w">    </span><span class="nt">overwrite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 
-<span class="nt">clean</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm.job</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myexecutable</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myresultfile.log</span><span class="w"></span>
+<span class="nt">clean</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm.job</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myexecutable</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myresultfile.log</span>
 
-<span class="nt">sbatch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm.job</span><span class="w"></span>
+<span class="nt">sbatch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slurm.job</span>
 </pre></div>
 </div>
 </section>

@@ -200,12 +200,12 @@
 <h1>Generating SSH keys to log into a remote machine<a class="headerlink" href="#generating-ssh-keys-to-log-into-a-remote-machine" title="Permalink to this heading">#</a></h1>
 <ol class="arabic">
 <li><p>Generate a new SSH key pair using <code class="docutils literal notranslate"><span class="pre">ssh-keygen</span></code>. When prompted, leave the pass phrase empty and just confirm with enter. <strong>The private SSH key serves as login information to the remote machine. Do not share it with anybody!</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh-keygen -t ed25519 -f my_ssh_key
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh-keygen<span class="w"> </span>-t<span class="w"> </span>ed25519<span class="w"> </span>-f<span class="w"> </span>my_ssh_key
 </pre></div>
 </div>
 </li>
 <li><p>Copy the generated SSH key to the cluster with <code class="docutils literal notranslate"><span class="pre">ssh-copy-id</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh-copy-id -i my_ssh_key myuser@cluster.example.com
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh-copy-id<span class="w"> </span>-i<span class="w"> </span>my_ssh_key<span class="w"> </span>myuser@cluster.example.com
 </pre></div>
 </div>
 </li>

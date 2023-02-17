@@ -203,7 +203,7 @@
 <p>Use the <code class="docutils literal notranslate"><span class="pre">launch</span></code> command to launch a job on the remote machine. You must provide a configuration file. The optional <code class="docutils literal notranslate"><span class="pre">--watch</span></code> flag makes <code class="docutils literal notranslate"><span class="pre">hpc-rocket</span></code> wait until your job is finished (defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>). The collection and cleaning steps in the configuration file are only executed if <code class="docutils literal notranslate"><span class="pre">--watch</span></code> is set.
 Note the all Slurm configuration must happen in the slurm job submitted with <code class="docutils literal notranslate"><span class="pre">sbatch</span></code> file.
 HPC Rocket does currently not offer any other way of configuring your batch jobs.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket launch --watch config.yml
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket<span class="w"> </span>launch<span class="w"> </span>--watch<span class="w"> </span>config.yml
 </pre></div>
 </div>
 </section>
@@ -211,21 +211,21 @@ HPC Rocket does currently not offer any other way of configuring your batch jobs
 <h2>Checking a job’s status<a class="headerlink" href="#checking-a-job-s-status" title="Permalink to this heading">#</a></h2>
 <p>If a job was launched without <code class="docutils literal notranslate"><span class="pre">--watch</span></code> you can still check its status using the <code class="docutils literal notranslate"><span class="pre">status</span></code> command.
 You will need to provide a configuration file with connection data and a job ID to check.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket status config.yml <span class="m">12345</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket<span class="w"> </span>status<span class="w"> </span>config.yml<span class="w"> </span><span class="m">12345</span>
 </pre></div>
 </div>
 </section>
 <section id="monitoring-a-job-until-it-finishes">
 <h2>Monitoring a job until it finishes<a class="headerlink" href="#monitoring-a-job-until-it-finishes" title="Permalink to this heading">#</a></h2>
 <p>Similar to the <code class="docutils literal notranslate"><span class="pre">status</span></code> command, <code class="docutils literal notranslate"><span class="pre">hpc-rocket</span></code> also provides the <code class="docutils literal notranslate"><span class="pre">watch</span></code> command to monitor a job’s status continuously by entering a config file and a job id.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket watch config.yml <span class="m">12345</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket<span class="w"> </span>watch<span class="w"> </span>config.yml<span class="w"> </span><span class="m">12345</span>
 </pre></div>
 </div>
 </section>
 <section id="canceling-a-running-job">
 <h2>Canceling a running job<a class="headerlink" href="#canceling-a-running-job" title="Permalink to this heading">#</a></h2>
 <p>Jobs may also be canceled using the <code class="docutils literal notranslate"><span class="pre">cancel</span></code> command. Like the previous commands it accepts a config file and the id of a running job.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket cancel config.yml <span class="m">12345</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hpc-rocket<span class="w"> </span>cancel<span class="w"> </span>config.yml<span class="w"> </span><span class="m">12345</span>
 </pre></div>
 </div>
 </section>
