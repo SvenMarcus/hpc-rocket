@@ -60,7 +60,7 @@ jobs:
     - name: Test with pytest
       run: |
         pdm run coverage run --source=hpcrocket -m pytest -m "not acceptance" test/
-        coverage xml
+        pdm run coverage xml
 
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
