@@ -21,29 +21,18 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Python ${{ matrix.python }}
-      uses: actions/setup-python@v2
+    - uses: pdm-project/setup-pdm@v3
       with:
         python-version: ${{ matrix.python }}
 
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 mypy
-        if [ -f testrequirements.txt ]; then pip install -r testrequirements.txt; fi
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      run: pdm install -d -G lint -G typecheck
 
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # The GitHub editor is 127 chars wide
-        flake8 hpcrocket --count --max-complexity=10 --max-line-length=127 --statistics
+    - name: Lint
+      run: pdm run lint
     
-    - name: Check type annotations with mypy --strict
-      run: |
-        mypy --install-types --non-interactive hpcrocket
-        mypy --strict hpcrocket
+    - name: Typecheck
+      run: pdm run typecheck
 
 
   unit_and_integration_tests:
@@ -61,19 +50,16 @@ jobs:
     
     - uses: actions/checkout@v2
 
-    - name: Build SSH Test container
-      run: |
-        sudo docker build --tag hpc-rocket/openssh-test-server -f docker/Dockerfile.openssh docker
+    - uses: pdm-project/setup-pdm@v3
+      with:
+        python-version: ${{ matrix.python }}
 
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f testrequirements.txt ]; then pip install -r testrequirements.txt; fi
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      run: pdm install -dG dev
 
     - name: Test with pytest
       run: |
-        coverage run --source=hpcrocket -m pytest -m "not acceptance" test/
+        pdm run coverage run --source=hpcrocket -m pytest -m "not acceptance" test/
         coverage xml
 
     - name: Archive code coverage results

@@ -3,6 +3,7 @@ test_config_files/
 # Python
 .venv/
 __pycache__/
+.pdm.toml
 
 # pytest
 .pytest_cache/

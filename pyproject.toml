@@ -1,9 +1,51 @@
+[project]
+name = "hpc-rocket"
+version = "0.4.0"
+description = "A tool to run Slurm sbatch commands over SSH"
+authors = [{ name = "Sven Marcus", email = "s.marcus@outlook.de" }]
+dependencies = [
+  "paramiko>=2.10.4",
+  "fs>=2.4.13",
+  "fs.sshfs>=1.0.0",
+  "rich>=10.1.0",
+  "PyYAML>=5.4.1",
+]
+requires-python = ">=3.8"
+readme = "README.md"
+license = { text = "MIT" }
+
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
 
 [tool.pytest.ini_options]
-markers = [
-    "integration",
-    "acceptance"
+markers = ["integration", "acceptance"]
+
+[tool.pdm.scripts]
+fmt = "black ."
+doc = "sphinx-build -b html docs/source docs/build/html"
+test = "pytest test -m 'not acceptance and not integration' -vv"
+test-integration = "pytest test -m 'integration' -vv"
+typecheck = "mypy --strict hpcrocket"
+lint = "ruff hpcrocket"
+
+[tool.pdm.dev-dependencies]
+dev = [
+  "pytest>=6.2.3",
+  "pytest-cov>=2.11.1",
+  "pytest-timeout>=1.4.2",
+  "nox>=2022.11.21",
+  "testcontainers>=3.7.1",
 ]
+format = ["black>=23.1.0"]
+typecheck = ["mypy>=1.0.0", "types-paramiko>=3.0.0.3", "types-PyYAML>=6.0.12.6"]
+doc = ["sphinx>=5.3.0", "myst-parser>=0.18.1", "furo>=2022.12.7"]
+lint = [
+    "ruff>=0.0.247",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.mccabe]
+max-complexity = 10

@@ -67,7 +67,8 @@ def create_application(
 
 class RuntimeContainer:
     """
-    A container to run and cancel the HPC Rocket application. Created to decouple running/canceling from sys.exit commands
+    A container to run and cancel the HPC Rocket application. 
+    Created to decouple running/canceling from sys.exit commands
     """
 
     def __init__(
