@@ -1,20 +1,20 @@
 import os
-from typing import Dict, Generator, List
+from typing import Dict, Generator, List, Union
 from unittest.mock import patch
 
 import pytest
-from hpcrocket.cli import parse_cli_args
+
+from hpcrocket.cli import ParseError, parse_cli_args
 from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.core.launchoptions import (
     FinalizeOptions,
+    ImmediateCommandOptions,
     LaunchOptions,
     Options,
-    ImmediateCommandOptions,
     WatchOptions,
 )
 from hpcrocket.pyfilesystem.localfilesystem import localfilesystem
 from hpcrocket.ssh.connectiondata import ConnectionData
-
 
 HOME = "/home/user"
 REMOTE_USER = "the_user"
@@ -77,7 +77,7 @@ def setup_env() -> Generator[Dict[str, str], None, None]:
         yield env
 
 
-def run_parser(args: List[str]) -> Options:
+def run_parser(args: List[str]) -> Union[Options, ParseError]:
     return parse_cli_args(args, localfilesystem(os.getcwd()))
 
 
@@ -169,3 +169,9 @@ def test__given_finalize_args__when_parsing__returns_matching_config() -> None:
         clean_files=CLEAN_INSTRUCTIONS,
         collect_files=COLLECT_INSTRUCTIONS,
     )
+
+
+def test__given_non_existing_config_file__returns_parse_error() -> None:
+    config = run_parser(["launch"])
+
+    assert isinstance(config, ParseError)

@@ -67,7 +67,7 @@ def create_application(
 
 class RuntimeContainer:
     """
-    A container to run and cancel the HPC Rocket application. 
+    A container to run and cancel the HPC Rocket application.
     Created to decouple running/canceling from sys.exit commands
     """
 
@@ -86,10 +86,12 @@ class RuntimeContainer:
 
 def main(args: List[str], service_registry: ServiceRegistry) -> None:
     with RichUI() as ui:
-        runtime = RuntimeContainer(args, service_registry, ui)
+        # runtime = RuntimeContainer(args, service_registry, ui)
+        options = parse_cli_args(args[1:], service_registry.local_filesystem())
+        app = create_application(options, service_registry, ui)
 
         def on_cancel(*args: Any, **kwargs: Any) -> None:
-            sys.exit(runtime.cancel())
+            sys.exit(app.cancel())
 
         signal.signal(signal.SIGINT, on_cancel)
-        sys.exit(runtime.run())
+        sys.exit(app.run(options))
