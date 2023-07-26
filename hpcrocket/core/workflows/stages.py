@@ -1,13 +1,13 @@
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, cast
+from typing import List, Optional, Tuple, cast
 
-from hpcrocket.core.filesystem.progressive import (
-    CopyInstruction,
-    progressive_copy,
-    progressive_clean,
-)
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.filesystem import FilesystemFactory
+from hpcrocket.core.filesystem.progressive import (
+    CopyInstruction,
+    progressive_clean,
+    progressive_copy,
+)
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.typesafety import get_or_raise
