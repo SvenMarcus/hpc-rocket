@@ -42,7 +42,7 @@ class BatchJobProviderSpy:
         self,
         controller: SlurmController,
         jobid: str,
-        factory: Optional[JobWatcherFactory],
+        factory: Optional[JobWatcherFactory] = None,
     ) -> None:
         self.controller = controller
         self.jobid = jobid

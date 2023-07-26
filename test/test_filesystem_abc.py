@@ -250,7 +250,9 @@ class FilesystemTest(ABC):
         assert sut.exists("newdir/world.txt")
         assert not sut.exists("newdir/nope.gif")
 
-    def test__when_copying_with_trailing_glob__it_copies_subtree_into_target(self) -> None:
+    def test__when_copying_with_trailing_glob__it_copies_subtree_into_target(
+        self,
+    ) -> None:
         sut = self.create_filesystem()
         self.create_file(sut, "dir/first.txt")
         self.create_file(sut, "dir/subdir/second.txt")
@@ -329,7 +331,9 @@ class FilesystemTest(ABC):
         assert not sut.exists("world.txt")
         assert sut.exists("nope.gif")
 
-    def test__when_deleteting_with_glob_in_dir__it_deletes_matching_files_but_not_dir(self) -> None:
+    def test__when_deleteting_with_glob_in_dir__it_deletes_matching_files_but_not_dir(
+        self,
+    ) -> None:
         sut = self.create_filesystem()
         self.create_file(sut, "directory/hello.txt")
         self.create_file(sut, "directory/subdir/file.txt")

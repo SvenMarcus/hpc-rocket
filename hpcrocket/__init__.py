@@ -2,7 +2,8 @@ import os
 import signal
 import sys
 from typing import Any, List
-from hpcrocket.cli import parse_cli_args
+
+from hpcrocket.cli import ParseError, parse_cli_args
 from hpcrocket.core.application import Application
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
@@ -65,31 +66,17 @@ def create_application(
     return Application(executor, filesystem_factory, ui)
 
 
-class RuntimeContainer:
-    """
-    A container to run and cancel the HPC Rocket application. 
-    Created to decouple running/canceling from sys.exit commands
-    """
-
-    def __init__(
-        self, args: List[str], service_registry: ServiceRegistry, ui: UI
-    ) -> None:
-        self.options = parse_cli_args(args[1:], service_registry.local_filesystem())
-        self.app = create_application(self.options, service_registry, ui)
-
-    def run(self) -> int:
-        return self.app.run(self.options)
-
-    def cancel(self) -> int:
-        return self.app.cancel()
-
-
-def main(args: List[str], service_registry: ServiceRegistry) -> None:
+def main(args: List[str], service_registry: ServiceRegistry) -> int:
     with RichUI() as ui:
-        runtime = RuntimeContainer(args, service_registry, ui)
+        options = parse_cli_args(args[1:], service_registry.local_filesystem())
+        if isinstance(options, ParseError):
+            ui.error(str(options))
+            sys.exit(1)
+
+        app = create_application(options, service_registry, ui)
 
         def on_cancel(*args: Any, **kwargs: Any) -> None:
-            sys.exit(runtime.cancel())
+            sys.exit(app.cancel())
 
         signal.signal(signal.SIGINT, on_cancel)
-        sys.exit(runtime.run())
+        return app.run(options)

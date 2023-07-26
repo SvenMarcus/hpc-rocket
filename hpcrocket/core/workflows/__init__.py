@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List
 
 from hpcrocket.core.filesystem import FilesystemFactory
@@ -13,6 +14,7 @@ from hpcrocket.core.workflows.workflow import Stage, Workflow
 from hpcrocket.core.workflows.stages import (
     CancelStage,
     FinalizeStage,
+    JobLoggingStage,
     PrepareStage,
     LaunchStage,
     StatusStage,
@@ -31,6 +33,9 @@ def launchworkflow(
         PrepareStage(filesystem_factory, options.copy_files),
         launch_stage,
     ]
+
+    if options.job_id_file:
+        stages.append(JobLoggingStage(launch_stage, Path(options.job_id_file)))
 
     if options.watch:
         stages.append(

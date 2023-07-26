@@ -1,6 +1,6 @@
 import os
-from typing import List, Tuple
 import unittest
+from pathlib import Path
 from test.application import make_application
 from test.application.assertions import (
     assert_does_not_exist_locally,
@@ -25,22 +25,23 @@ from test.application.optionbuilders import (
     launch_options_with_copy,
     main_connection,
 )
-from test.slurmoutput import completed_slurm_job
+from test.slurmoutput import DEFAULT_JOB_ID, completed_slurm_job
 from test.testdoubles.executor import (
-    failed_slurm_job_command_stub,
     LoggingCommandExecutorSpy,
     SlurmJobExecutorSpy,
+    failed_slurm_job_command_stub,
     successful_slurm_job_command_stub,
 )
 from test.testdoubles.filesystem import (
     MemoryFilesystemFactoryStub,
     MemoryFilesystemFake,
 )
+from typing import List, Tuple
 from unittest.mock import Mock
 
 from hpcrocket.core.application import Application
-from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.core.executor import RunningCommand
+from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.ssh.errors import SSHError
 
 
@@ -71,10 +72,16 @@ def make_sut_with_call_order_verification(
 
 
 class Application_With_Launch_Options(unittest.TestCase):
+
+    LOG_FILE = "test.log"
+
     def setUp(self) -> None:
         self.executor = SlurmJobExecutorSpy()
         self.ui_spy = Mock()
         self.sut = make_application(self.executor, ui=self.ui_spy)
+
+    def tearDown(self) -> None:
+        Path(self.LOG_FILE).unlink(missing_ok=True)
 
     def test__when_running__it_runs_sbatch_with_executor(self) -> None:
         self.sut.run(launch_options())
@@ -110,6 +117,14 @@ class Application_With_Launch_Options(unittest.TestCase):
 
         self.assert_error_logged(f"SSHError: {main_connection().hostname}")
         self.assert_exited_without_running_commands(actual)
+
+    def test__when_adding_log_job_id__stores_job_id_in_logfile(self) -> None:
+        options = launch_options()
+        options.job_id_file = self.LOG_FILE
+
+        self.sut.run(options)
+
+        Path(self.LOG_FILE).read_text() == DEFAULT_JOB_ID
 
     def assert_error_logged(self, expected_message: str) -> None:
         self.ui_spy.error.assert_called_once_with(expected_message)

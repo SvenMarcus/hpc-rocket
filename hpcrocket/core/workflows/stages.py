@@ -1,12 +1,13 @@
+from pathlib import Path
 from typing import List, Optional, Tuple, cast
 
-from hpcrocket.core.filesystem.progressive import (
-    CopyInstruction,
-    progressive_copy,
-    progressive_clean,
-)
 from hpcrocket.core.errors import get_error_message
 from hpcrocket.core.filesystem import FilesystemFactory
+from hpcrocket.core.filesystem.progressive import (
+    CopyInstruction,
+    progressive_clean,
+    progressive_copy,
+)
 from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
 from hpcrocket.core.slurmcontroller import SlurmController
 from hpcrocket.typesafety import get_or_raise
@@ -21,6 +22,26 @@ try:
     from typing import Protocol
 except ImportError:  # pragma: no cover
     from typing_extensions import Protocol  # type: ignore
+
+
+class BatchJobProvider(Protocol):
+    def get_batch_job(self) -> SlurmBatchJob:
+        """
+        Provides the watch stage with a batch job to watch
+
+        Returns:
+            SlurmBatchJob
+        """
+        ...
+
+    def cancel(self, ui: UI) -> None:
+        """
+        Informs the BatchJobProvider that the WatchStage was canceled
+
+        Args:
+            ui (UI): The UI instance WatchStage was called with
+        """
+        ...
 
 
 class NoJobLaunchedError(Exception):
@@ -66,29 +87,34 @@ class LaunchStage:
         return cast(SlurmBatchJob, self._batch_job)
 
 
+class JobLoggingStage:
+    """
+    Logs the Slurm Job ID into a file
+    """
+
+    def __init__(
+        self, batch_job_provider: BatchJobProvider, log_file_path: Path
+    ) -> None:
+        self._provider = batch_job_provider
+        self._log_file = log_file_path
+
+    def allowed_to_fail(self) -> bool:
+        return False
+
+    def __call__(self, ui: UI) -> bool:
+        jobid = self._provider.get_batch_job().jobid
+        self._log_file.write_text(jobid)
+        ui.success(f"Wrote job ID {jobid} to file {self._log_file}")
+        return True
+
+    def cancel(self, ui: UI) -> None:
+        pass
+
+
 class WatchStage:
     """
     Watches a batch job until it completes
     """
-
-    class BatchJobProvider(Protocol):
-        def get_batch_job(self) -> SlurmBatchJob:
-            """
-            Provides the watch stage with a batch job to watch
-
-            Returns:
-                SlurmBatchJob
-            """
-            ...
-
-        def cancel(self, ui: UI) -> None:
-            """
-            Informs the BatchJobProvider that the WatchStage was canceled
-
-            Args:
-                ui (UI): The UI instance WatchStage was called with
-            """
-            ...
 
     def __init__(
         self,
