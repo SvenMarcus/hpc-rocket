@@ -1,6 +1,4 @@
 import os
-from unittest.mock import patch
-
 from test.slurm_assertions import assert_job_submitted
 from test.testdoubles.executor import (
     LoggingCommandExecutorSpy,
@@ -9,11 +7,13 @@ from test.testdoubles.executor import (
     successful_slurm_job_command_stub,
 )
 from typing import Dict, List, Optional, cast
+from unittest.mock import patch
 
 import fs.base
 import pytest
 from fs.memoryfs import MemoryFS
-from hpcrocket import RuntimeContainer, ServiceRegistry
+
+from hpcrocket import ServiceRegistry, main
 from hpcrocket.core.executor import CommandExecutor, RunningCommand
 from hpcrocket.core.filesystem import Filesystem, FilesystemFactory
 from hpcrocket.core.launchoptions import Options
@@ -121,8 +121,6 @@ def test__when_running_launch_with_watching_and_fail_allowed__it_copies_runs_job
     args = ["hpc-rocket", "launch", "--watch", "config.yml"]
     run_with_args(registry, args)
 
-    print("\n")
-    fs_factory.remote.internal_fs.tree()
     assert fs_factory.local.exists("test.txt")
     assert fs_factory.local.exists("hello.txt")
     assert fs_factory.remote.exists("target/hello.txt")
@@ -139,7 +137,4 @@ def create_service_registry(
 
 
 def run_with_args(registry: ServiceRegistry, args: List[str]) -> int:
-    with RichUI() as ui:
-        sut = RuntimeContainer(args, registry, ui)
-        exit_code = sut.run()
-        return exit_code
+    return main(args, registry)

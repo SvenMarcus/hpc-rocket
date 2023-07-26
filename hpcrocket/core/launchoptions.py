@@ -6,7 +6,9 @@ from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.ssh.connectiondata import ConnectionData
 
 
-Options = Union["LaunchOptions", "ImmediateCommandOptions", "WatchOptions", "FinalizeOptions"]
+Options = Union[
+    "LaunchOptions", "ImmediateCommandOptions", "WatchOptions", "FinalizeOptions"
+]
 JobBasedOptions = Union["ImmediateCommandOptions", "WatchOptions"]
 
 
@@ -33,6 +35,7 @@ class LaunchOptions:
     poll_interval: int = 5
     watch: bool = False
     continue_if_job_fails: bool = False
+    job_id_file: str = ""
 
 
 @dataclass

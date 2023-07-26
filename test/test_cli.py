@@ -1,5 +1,6 @@
 import os
-from typing import Dict, Generator, List, Union
+from pathlib import Path
+from typing import Dict, Generator, Iterator, List, Union, cast
 from unittest.mock import patch
 
 import pytest
@@ -83,11 +84,7 @@ def run_parser(args: List[str]) -> Union[Options, ParseError]:
 
 def test__given_valid_launch_args__should_return_matching_config() -> None:
     config = run_parser(
-        [
-            "launch",
-            "--watch",
-            "test/testconfig/config.yml",
-        ]
+        ["launch", "--watch", "test/testconfig/config.yml", "--save-jobid", "test.log"]
     )
 
     assert config == LaunchOptions(
@@ -102,6 +99,7 @@ def test__given_valid_launch_args__should_return_matching_config() -> None:
         collect_files=COLLECT_INSTRUCTIONS,
         continue_if_job_fails=True,
         watch=True,
+        job_id_file="test.log",
     )
 
 
@@ -110,6 +108,7 @@ def test__given_status_args__when_parsing__should_return_matching_config() -> No
         [
             "status",
             "test/testconfig/config.yml",
+            "--jobid",
             "1234",
         ]
     )
@@ -127,6 +126,7 @@ def test__given_watch_args__when_parsing__should_return_matching_config() -> Non
         [
             "watch",
             "test/testconfig/config.yml",
+            "--jobid",
             "1234",
         ]
     )
@@ -143,6 +143,7 @@ def test__given_cancel_args__when_parsing__should_return_matching_config() -> No
         [
             "cancel",
             "test/testconfig/config.yml",
+            "--jobid",
             "1234",
         ]
     )
@@ -169,6 +170,27 @@ def test__given_finalize_args__when_parsing__returns_matching_config() -> None:
         clean_files=CLEAN_INSTRUCTIONS,
         collect_files=COLLECT_INSTRUCTIONS,
     )
+
+
+@pytest.fixture
+def log_file() -> Iterator[None]:
+    log_file = Path("test.log")
+    log_file.write_text("1234")
+    yield
+    log_file.unlink(missing_ok=True)
+
+
+@pytest.mark.usefixtures("log_file")
+@pytest.mark.parametrize("command", ("status", "watch", "cancel"))
+def test__specified_option_to_read_jobid_from_log__when_parsing__options_contain_jobid(
+    command: str,
+) -> None:
+    config = run_parser(
+        [command, "test/testconfig/config.yml", "--read-jobid-from", "test.log"]
+    )
+
+    config = cast(ImmediateCommandOptions, config)
+    assert config.jobid == "1234"
 
 
 def test__given_non_existing_config_file__returns_parse_error() -> None:
