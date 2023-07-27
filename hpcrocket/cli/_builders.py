@@ -1,7 +1,7 @@
 import argparse
 import functools
 import os
-from typing import Any, Dict, List, Optional, Protocol, Union, cast
+from typing import Any, Dict, List, Optional, Protocol, Tuple, Union, cast
 
 from hpcrocket.core.filesystem import Filesystem
 from hpcrocket.core.filesystem.progressive import CopyInstruction
@@ -68,7 +68,7 @@ def build_launch_options(
     )
 
 
-def parse_sbatch(yaml_config: Dict[str, Any]) -> tuple[str, Optional[CopyInstruction]]:
+def parse_sbatch(yaml_config: Dict[str, Any]) -> Tuple[str, Optional[CopyInstruction]]:
     sbatch: Union[str, Dict[str, str]] = yaml_config["sbatch"]
     if isinstance(sbatch, str):
         return sbatch, None
