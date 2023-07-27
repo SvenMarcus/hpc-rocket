@@ -197,3 +197,19 @@ def test__given_non_existing_config_file__returns_parse_error() -> None:
     config = run_parser(["launch"])
 
     assert isinstance(config, ParseError)
+
+
+def test__given_copy_information_in_sbatch__creates_options_with_copy_instructions() -> None:
+    config = parse_cli_args(
+        ["launch", "test/testconfig/sbatch_copy.yml"],
+        localfilesystem(os.getcwd()),
+    )
+
+    config = cast(LaunchOptions, config)
+    assert config.copy_files == [
+        CopyInstruction(
+            source="test/testconfig/local_slurm.job",
+            destination="the-job-script.sh",
+            overwrite=True,
+        )
+    ]

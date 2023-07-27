@@ -51,17 +51,32 @@ def build_launch_options(
 ) -> Options:
     watch = cast(bool, config.watch)
 
-    sbatch = cast(str, yaml_config["sbatch"])
+    sbatch, sbatch_copy_instruction = parse_sbatch(yaml_config)
+    files_to_copy = copy_instructions(yaml_config.get("copy", []))
+    if sbatch_copy_instruction:
+        files_to_copy.append(sbatch_copy_instruction)
+
     return LaunchOptions(
         sbatch=os.path.expandvars(sbatch),
         watch=watch,
-        copy_files=copy_instructions(yaml_config.get("copy", [])),
+        copy_files=files_to_copy,
         clean_files=clean_instructions(yaml_config.get("clean", [])),
         collect_files=copy_instructions(yaml_config.get("collect", [])),
         continue_if_job_fails=yaml_config.get("continue_if_job_fails", False),
         job_id_file=config.jobid_file,
         **connection_dict(yaml_config),  # type: ignore
     )
+
+
+def parse_sbatch(yaml_config: Dict[str, Any]) -> tuple[str, Optional[CopyInstruction]]:
+    sbatch: Union[str, Dict[str, str]] = yaml_config["sbatch"]
+    if isinstance(sbatch, str):
+        return sbatch, None
+
+    copy = copy_instruction_from_dict(sbatch, dest_keyname="script")
+    script = copy.destination
+
+    return script, copy
 
 
 def build_simple_job_options(
@@ -95,14 +110,17 @@ def build_finalize_options(
 
 
 def copy_instructions(copy_list: List[Dict[str, str]]) -> List[CopyInstruction]:
-    return [
-        CopyInstruction(
-            os.path.expandvars(cp["from"]),
-            os.path.expandvars(cp["to"]),
-            bool(cp.get("overwrite", False)),
-        )
-        for cp in copy_list
-    ]
+    return [copy_instruction_from_dict(cp) for cp in copy_list]
+
+
+def copy_instruction_from_dict(
+    cp: Dict[str, Any], dest_keyname: str = "to"
+) -> CopyInstruction:
+    return CopyInstruction(
+        os.path.expandvars(cp["from"]),
+        os.path.expandvars(cp[dest_keyname]),
+        bool(cp.get("overwrite", False)),
+    )
 
 
 def clean_instructions(clean_instructions: List[str]) -> List[str]:
