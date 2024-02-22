@@ -50,10 +50,10 @@ class ConnectionFailingCommandExecutor(LoggingCommandExecutorSpy):
         raise SSHError(main_connection().hostname)
 
     def close(self) -> None:
-        ...
+        raise NotImplementedError()
 
     def exec_command(self, cmd: str) -> RunningCommand:
-        ...
+        raise NotImplementedError()
 
 
 def memory_fs_factory_with_default_local_file() -> MemoryFilesystemFactoryStub:
@@ -267,3 +267,14 @@ class Application_With_Options_To_Copy_Collect_Clean(unittest.TestCase):
 
         assert_exists_locally(self.fs_factory, "mycollect.txt")
         assert_does_not_exist_on_remote(self.fs_factory, "mycopy.txt")
+
+    def test__job_fails_but_allowed_to_run_cleanup__exits_with_error_code(self) -> None:
+        self.options.continue_if_job_fails = True
+        executor = SlurmJobExecutorSpy(sacct_cmd=failed_slurm_job_command_stub())
+        self.sut = make_application(
+            executor=executor, filesystem_factory=self.fs_factory
+        )
+
+        actual = self.sut.run(self.options)
+
+        assert actual == 1

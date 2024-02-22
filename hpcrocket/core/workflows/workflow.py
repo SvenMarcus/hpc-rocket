@@ -62,6 +62,7 @@ class Workflow:
         Returns:
             bool
         """
+        results: List[bool] = []
         for stage in self._stages:
             self._active_stage = stage
 
@@ -69,10 +70,11 @@ class Workflow:
                 break
 
             result = stage(ui)
+            results.append(result)
             if self._workflow_failed(stage, result):
                 return False
 
-        return True
+        return all(results)
 
     def _workflow_failed(self, stage: Stage, result: bool) -> bool:
         return not (result or stage.allowed_to_fail())
