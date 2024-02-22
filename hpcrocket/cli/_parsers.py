@@ -1,10 +1,13 @@
 import argparse
 
+from importlib import metadata
+
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser("hpc-rocket")
-    subparsers = parser.add_subparsers(dest="command")
+    _add_version_flag(parser)
 
+    subparsers = parser.add_subparsers(dest="command")
     _setup_launch_parser(subparsers)
     _setup_finalize_parser(subparsers)
     _setup_status_parser(subparsers)
@@ -12,6 +15,15 @@ def get_parser() -> argparse.ArgumentParser:
     _setup_cancel_parser(subparsers)
 
     return parser
+
+
+def _add_version_flag(parser: argparse.ArgumentParser) -> None:
+    meta = metadata.metadata("hpc-rocket")
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"{meta['name']} {meta['version']}",
+    )
 
 
 def _setup_launch_parser(

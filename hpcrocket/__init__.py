@@ -67,8 +67,8 @@ def create_application(
 
 
 def main(args: List[str], service_registry: ServiceRegistry) -> int:
+    options = parse_cli_args(args[1:], service_registry.local_filesystem())
     with RichUI() as ui:
-        options = parse_cli_args(args[1:], service_registry.local_filesystem())
         if isinstance(options, ParseError):
             ui.error(str(options))
             sys.exit(1)
