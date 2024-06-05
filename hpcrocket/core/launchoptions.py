@@ -26,7 +26,7 @@ class ImmediateCommandOptions:
 
 @dataclass
 class LaunchOptions:
-    sbatch: str
+    job: str
     connection: ConnectionData
     proxyjumps: List[ConnectionData] = field(default_factory=lambda: [])
     copy_files: List[CopyInstruction] = field(default_factory=lambda: [])

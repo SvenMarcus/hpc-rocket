@@ -28,7 +28,7 @@ def launchworkflow(
     controller: SlurmController,
     options: LaunchOptions,
 ) -> Workflow:
-    launch_stage = LaunchStage(controller, options.sbatch)
+    launch_stage = LaunchStage(controller, options.job)
     stages: List[Stage] = [
         PrepareStage(filesystem_factory, options.copy_files),
         launch_stage,

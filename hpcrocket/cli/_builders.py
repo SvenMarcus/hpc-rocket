@@ -51,13 +51,13 @@ def build_launch_options(
 ) -> Options:
     watch = cast(bool, config.watch)
 
-    sbatch, sbatch_copy_instruction = parse_sbatch(yaml_config)
+    job, job_copy_instruction = parse_job(yaml_config)
     files_to_copy = copy_instructions(yaml_config.get("copy", []))
-    if sbatch_copy_instruction:
-        files_to_copy.append(sbatch_copy_instruction)
+    if job_copy_instruction:
+        files_to_copy.append(job_copy_instruction)
 
     return LaunchOptions(
-        sbatch=os.path.expandvars(sbatch),
+        job=os.path.expandvars(job),
         watch=watch,
         copy_files=files_to_copy,
         clean_files=clean_instructions(yaml_config.get("clean", [])),
@@ -68,12 +68,12 @@ def build_launch_options(
     )
 
 
-def parse_sbatch(yaml_config: Dict[str, Any]) -> Tuple[str, Optional[CopyInstruction]]:
-    sbatch: Union[str, Dict[str, str]] = yaml_config["sbatch"]
-    if isinstance(sbatch, str):
-        return sbatch, None
+def parse_job(yaml_config: Dict[str, Any]) -> Tuple[str, Optional[CopyInstruction]]:
+    job: Union[str, Dict[str, str]] = yaml_config["job"]
+    if isinstance(job, str):
+        return job, None
 
-    copy = copy_instruction_from_dict(sbatch, dest_keyname="script")
+    copy = copy_instruction_from_dict(job, dest_keyname="script")
     script = copy.destination
 
     return script, copy

@@ -62,7 +62,7 @@ clean:
   - slurm.job
   - myexecutable
 
-sbatch: slurm.job
+job: slurm.job
 ```
 
 ### Usage
