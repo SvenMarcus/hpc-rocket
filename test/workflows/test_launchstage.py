@@ -26,7 +26,7 @@ def create_launch_stage(
 ) -> LaunchStage:
     executor = executor or SlurmJobExecutorSpy()
     controller = SlurmController(executor, watcher_factory)
-    sut = LaunchStage(controller, options.sbatch)
+    sut = LaunchStage(controller, options.job)
     return sut
 
 
@@ -45,7 +45,7 @@ def test__given_simple_launchoptions__when_running__should_run_sbatch_with_execu
     opts = launch_options()
     run_launch_stage(opts, executor=executor_spy)
 
-    assert_job_submitted(executor_spy, opts.sbatch)
+    assert_job_submitted(executor_spy, opts.job)
 
 
 def test__given_launchoptions__when_running__should_return_true() -> None:

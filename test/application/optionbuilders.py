@@ -34,7 +34,7 @@ def launch_options(
     return LaunchOptions(
         connection=connection or main_connection(),
         proxyjumps=proxyjumps or [],
-        sbatch="test.job",
+        job="test.job",
         watch=watch,
         poll_interval=0,
         copy_files=copy or [],

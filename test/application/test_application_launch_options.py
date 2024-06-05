@@ -87,7 +87,7 @@ class Application_With_Launch_Options(unittest.TestCase):
         self.sut.run(launch_options())
 
         actual_sbatch = str(self.executor.command_log[0])
-        assert actual_sbatch == f"sbatch {launch_options().sbatch}"
+        assert actual_sbatch == f"sbatch {launch_options().job}"
 
     def test__when_sbatch_job_succeeds__should_return_exit_code_zero(self) -> None:
         self.executor.sacct_cmd = successful_slurm_job_command_stub()

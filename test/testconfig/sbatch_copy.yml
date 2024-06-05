@@ -2,7 +2,7 @@ host: example.com
 user: myuser
 password: abcd
 
-sbatch:
+job:
   script: the-job-script.sh
   from: test/testconfig/local_slurm.job
   overwrite: true

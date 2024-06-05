@@ -88,7 +88,7 @@ def test__given_valid_launch_args__should_return_matching_config() -> None:
     )
 
     assert config == LaunchOptions(
-        sbatch=REMOTE_SLURM_SCRIPT_PATH,
+        job=REMOTE_SLURM_SCRIPT_PATH,
         connection=CONNECTION_DATA,
         proxyjumps=PROXYJUMPS,
         copy_files=[

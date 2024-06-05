@@ -1,4 +1,3 @@
-
 host: $TARGET_HOST
 user: $TARGET_USER
 private_keyfile: $TARGET_KEY
@@ -29,5 +28,5 @@ clean:
   - $REMOTE_SLURM_SCRIPT
   - dir/*.txt
 
-sbatch: $REMOTE_SLURM_SCRIPT
+job: $REMOTE_SLURM_SCRIPT
 continue_if_job_fails: true
