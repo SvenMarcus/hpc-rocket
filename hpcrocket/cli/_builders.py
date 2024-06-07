@@ -52,12 +52,14 @@ def build_launch_options(
     watch = cast(bool, config.watch)
 
     job, job_copy_instruction = parse_job(yaml_config)
+    scheduler = parse_scheduler(yaml_config)
     files_to_copy = copy_instructions(yaml_config.get("copy", []))
     if job_copy_instruction:
         files_to_copy.append(job_copy_instruction)
 
     return LaunchOptions(
         job=os.path.expandvars(job),
+        scheduler=scheduler,
         watch=watch,
         copy_files=files_to_copy,
         clean_files=clean_instructions(yaml_config.get("clean", [])),
@@ -69,7 +71,7 @@ def build_launch_options(
 
 
 def parse_job(yaml_config: Dict[str, Any]) -> Tuple[str, Optional[CopyInstruction]]:
-    job: Union[str, Dict[str, str]] = yaml_config["job"]
+    job: Union[str, Dict[str, str]] = yaml_config["job"][0]["file"]
     if isinstance(job, str):
         return job, None
 
@@ -78,6 +80,8 @@ def parse_job(yaml_config: Dict[str, Any]) -> Tuple[str, Optional[CopyInstructio
 
     return script, copy
 
+def parse_scheduler(yaml_config: Dict[str, Any]) -> str:
+    return yaml_config["job"][0]["scheduler"]
 
 def build_simple_job_options(
     config: argparse.Namespace, yaml_config: Dict[str, Any], filesystem: Filesystem

@@ -126,10 +126,10 @@ class RichUI(UI):
         for task in job.tasks:
             last_column: RenderableType = task.state
             color = "grey42"
-            if task.state == "RUNNING":
+            if task.state in ("R", "E", "RUNNING"):
                 color = "blue"
                 last_column = Spinner("arc", task.state)
-            elif task.state == "COMPLETED":
+            elif task.state in ("F", "COMPLETED"):
                 color = "green"
                 last_column = f":heavy_check_mark: {task.state}"
             elif task.state == "FAILED":

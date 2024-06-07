@@ -3,6 +3,7 @@ from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import Options
 from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.pbscontroller import PbsController
 from hpcrocket.core.workflows.workflow import Workflow
 from hpcrocket.core.workflowfactory import make_workflow
 from hpcrocket.ui import UI
@@ -31,7 +32,10 @@ class Application:
             return 0 if success else 1
 
     def _get_workflow(self, executor: CommandExecutor, options: Options) -> Workflow:
-        controller = SlurmController(executor)
+        if options.scheduler == 'pbs':
+            controller = PbsController(executor)
+        else:
+            controller = SlurmController(executor)
         return make_workflow(self.fs_factory, controller, options)
 
     def cancel(self) -> int:

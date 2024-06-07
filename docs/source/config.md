@@ -72,7 +72,9 @@ Specify the name of the Slurm batch script with the `job` entry.
 Optionally `continue_if_job_fails` can be set to `true` to enable collecting and cleaning even if the Slurm job does not complete successfully.
 
 ```yaml
-job: slurm_script.sh
+job:
+  - file: slurm_script.sh
+    scheduler: slurm
 continue_if_job_fails: true
 ```
 
