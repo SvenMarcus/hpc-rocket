@@ -18,7 +18,6 @@ class ImmediateCommandOptions:
         cancel = auto()
 
     jobid: str
-    scheduler: str
     action: Action
     connection: ConnectionData
     proxyjumps: List[ConnectionData] = field(default_factory=lambda: [])
@@ -42,7 +41,6 @@ class LaunchOptions:
 @dataclass
 class WatchOptions:
     jobid: str
-    scheduler: str
     connection: ConnectionData
     proxyjumps: List[ConnectionData] = field(default_factory=lambda: [])
     poll_interval: int = 5
@@ -50,7 +48,6 @@ class WatchOptions:
 
 @dataclass
 class FinalizeOptions:
-    scheduler: str
     connection: ConnectionData
     proxyjumps: List[ConnectionData] = field(default_factory=lambda: [])
     collect_files: List[CopyInstruction] = field(default_factory=lambda: [])

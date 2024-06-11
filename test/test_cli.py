@@ -23,8 +23,9 @@ REMOTE_HOST = "cluster.example.com"
 PROXY1_KEYFILE = "/home/user/.ssh/proxy1_keyfile"
 PROXY3_PASSWORD = "PROXY3_PASS"
 
-LOCAL_SLURM_SCRIPT_PATH = "slurm.job"
-REMOTE_SLURM_SCRIPT_PATH = "remote_slurm.job"
+LOCAL_SCRIPT_PATH = "slurm.job"
+SCHEDULER = "slurm"
+REMOTE_SCRIPT_PATH = "remote_slurm.job"
 
 REMOTE_RESULT_FILEPATH = "remote_result.txt"
 
@@ -34,9 +35,10 @@ ENV = {
     "REMOTE_HOST": REMOTE_HOST,
     "PROXY1_KEYFILE": PROXY1_KEYFILE,
     "PROXY3_PASSWORD": PROXY3_PASSWORD,
-    "LOCAL_SLURM_SCRIPT_PATH": LOCAL_SLURM_SCRIPT_PATH,
-    "REMOTE_SLURM_SCRIPT_PATH": REMOTE_SLURM_SCRIPT_PATH,
+    "LOCAL_SCRIPT_PATH": LOCAL_SCRIPT_PATH,
+    "REMOTE_SCRIPT_PATH": REMOTE_SCRIPT_PATH,
     "REMOTE_RESULT_FILEPATH": REMOTE_RESULT_FILEPATH,
+    "SCHEDULER":SCHEDULER,
 }
 
 CONNECTION_DATA = ConnectionData(
@@ -68,7 +70,7 @@ PROXYJUMPS = [
 ]
 
 
-CLEAN_INSTRUCTIONS = ["mycopy.txt", REMOTE_SLURM_SCRIPT_PATH]
+CLEAN_INSTRUCTIONS = ["mycopy.txt", REMOTE_SCRIPT_PATH]
 COLLECT_INSTRUCTIONS = [CopyInstruction(REMOTE_RESULT_FILEPATH, "result.txt", True)]
 
 
@@ -88,12 +90,13 @@ def test__given_valid_launch_args__should_return_matching_config() -> None:
     )
 
     assert config == LaunchOptions(
-        job=REMOTE_SLURM_SCRIPT_PATH,
+        job=REMOTE_SCRIPT_PATH,
+        scheduler=SCHEDULER,
         connection=CONNECTION_DATA,
         proxyjumps=PROXYJUMPS,
         copy_files=[
             CopyInstruction("myfile.txt", "mycopy.txt"),
-            CopyInstruction(LOCAL_SLURM_SCRIPT_PATH, REMOTE_SLURM_SCRIPT_PATH, True),
+            CopyInstruction(LOCAL_SCRIPT_PATH, REMOTE_SCRIPT_PATH, True),
         ],
         clean_files=CLEAN_INSTRUCTIONS,
         collect_files=COLLECT_INSTRUCTIONS,

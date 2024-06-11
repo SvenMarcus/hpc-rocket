@@ -83,7 +83,7 @@ def prepare_environment_variables() -> Dict[str, str]:
         "PROXY_USER": "proxy_user",
         "PROXY_HOST": "proxy_host.server.com",
         "PROXY_KEY": "~/.ssh/proxy_key",
-        "REMOTE_SLURM_SCRIPT": "my_slurm_job.job",
+        "REMOTE_SCRIPT": "my_slurm_job.job",
     }
 
 

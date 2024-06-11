@@ -23,8 +23,8 @@ copy:
   - from: myfile.txt
     to: mycopy.txt
 
-  - from: $LOCAL_SLURM_SCRIPT_PATH
-    to: $REMOTE_SLURM_SCRIPT_PATH
+  - from: $LOCAL_SCRIPT_PATH
+    to: $REMOTE_SCRIPT_PATH
     overwrite: true
 
 collect:
@@ -34,7 +34,10 @@ collect:
 
 clean:
   - mycopy.txt
-  - $REMOTE_SLURM_SCRIPT_PATH
+  - $REMOTE_SCRIPT_PATH
 
-job: $REMOTE_SLURM_SCRIPT_PATH
+job:
+  - file: $REMOTE_SCRIPT_PATH
+    scheduler: slurm
+
 continue_if_job_fails: true

@@ -70,6 +70,7 @@ def test__given_config_with_only_private_keyfile__when_running__should_login_to_
             hostname="example.com", username="myuser", keyfile=input_keyfile
         ),
         job="test.job",
+        scheduler="slurm",
         poll_interval=0,
     )
 
@@ -93,6 +94,7 @@ def test__given_config_with_only_password__when_running__should_login_to_sshfs_w
             hostname="example.com", username="myuser", password="mypassword"
         ),
         job="test.job",
+        scheduler="slurm",
         poll_interval=0,
     )
 

@@ -35,6 +35,7 @@ def launch_options(
         connection=connection or main_connection(),
         proxyjumps=proxyjumps or [],
         job="test.job",
+        scheduler="slurm",
         watch=watch,
         poll_interval=0,
         copy_files=copy or [],
