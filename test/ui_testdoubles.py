@@ -1,7 +1,7 @@
 import sys
 from typing import TextIO
 
-from hpcrocket.core.slurmbatchjob import SlurmJobStatus
+from hpcrocket.core.schedulers.slurmstatus import SlurmJobStatus
 from hpcrocket.ui import UI
 
 

@@ -6,7 +6,7 @@ from hpcrocket.ui import NullUI
 from test.testdoubles.executor import SlurmJobExecutorSpy
 from test.workflows.test_watchstage import BatchJobProviderSpy
 
-from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.schedulers.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.stages import JobLoggingStage
 
 

@@ -3,7 +3,7 @@ from test.slurmoutput import DEFAULT_JOB_ID
 from test.testdoubles.executor import SlurmJobExecutorSpy
 from unittest.mock import Mock
 
-from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.schedulers.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.stages import CancelStage
 from hpcrocket.ui import UI
 

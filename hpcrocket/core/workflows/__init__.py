@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import List
 
+from hpcrocket.core import schedulers
+from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.filesystem import FilesystemFactory
 from hpcrocket.core.launchoptions import (
     FinalizeOptions,
@@ -8,26 +10,26 @@ from hpcrocket.core.launchoptions import (
     LaunchOptions,
     WatchOptions,
 )
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob
-from hpcrocket.core.slurmcontroller import SlurmController
-from hpcrocket.core.workflows.workflow import Stage, Workflow
+from hpcrocket.core.schedulers.base import BatchJob
 from hpcrocket.core.workflows.stages import (
     CancelStage,
     FinalizeStage,
     JobLoggingStage,
-    PrepareStage,
     LaunchStage,
+    PrepareStage,
     StatusStage,
     WatchStage,
 )
+from hpcrocket.core.workflows.workflow import Stage, Workflow
 from hpcrocket.ui import UI
 
 
 def launchworkflow(
     filesystem_factory: FilesystemFactory,
-    controller: SlurmController,
     options: LaunchOptions,
+    executor: CommandExecutor,
 ) -> Workflow:
+    controller = schedulers.get(options.scheduler, executor)
     launch_stage = LaunchStage(controller, options.job)
     stages: List[Stage] = [
         PrepareStage(filesystem_factory, options.copy_files),
@@ -53,21 +55,26 @@ def launchworkflow(
 
 
 def statusworkflow(
-    controller: SlurmController, options: ImmediateCommandOptions
+    options: ImmediateCommandOptions, executor: CommandExecutor
 ) -> Workflow:
+    controller = schedulers.get(options.scheduler, executor)
     return Workflow([StatusStage(controller, options.jobid)])
 
 
 def cancelworkflow(
-    controller: SlurmController, options: ImmediateCommandOptions
+    options: ImmediateCommandOptions, executor: CommandExecutor
 ) -> Workflow:
-    return Workflow([CancelStage(controller, options.jobid)])
+    stage = CancelStage(
+        schedulers.get(options.scheduler, executor), options.jobid
+    )
+
+    return Workflow([stage])
 
 
-def watchworkflow(controller: SlurmController, options: WatchOptions) -> Workflow:
+def watchworkflow(options: WatchOptions, executor: CommandExecutor) -> Workflow:
     class SimpleBatchJobProvider:
-        def get_batch_job(self) -> SlurmBatchJob:
-            return SlurmBatchJob(controller, options.jobid)
+        def get_batch_job(self) -> BatchJob:
+            return schedulers.job(options.scheduler, options.jobid, executor)
 
         def cancel(self, ui: UI) -> None:
             pass

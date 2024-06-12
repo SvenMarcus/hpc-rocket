@@ -37,7 +37,7 @@ clean:
   - $REMOTE_SCRIPT_PATH
 
 job:
-  - file: $REMOTE_SCRIPT_PATH
-    scheduler: slurm
+  script: $REMOTE_SCRIPT_PATH
+  scheduler: slurm
 
 continue_if_job_fails: true

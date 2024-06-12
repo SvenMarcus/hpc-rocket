@@ -29,7 +29,7 @@ clean:
   - dir/*.txt
 
 job:
-  - file: $REMOTE_SCRIPT
-    scheduler: slurm
+  script: $REMOTE_SCRIPT
+  scheduler: slurm
 
 continue_if_job_fails: true

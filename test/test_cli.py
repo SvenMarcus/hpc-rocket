@@ -117,6 +117,7 @@ def test__given_status_args__when_parsing__should_return_matching_config() -> No
     )
 
     assert config == ImmediateCommandOptions(
+        scheduler="slurm",
         jobid="1234",
         action=ImmediateCommandOptions.Action.status,
         connection=CONNECTION_DATA,
@@ -135,6 +136,7 @@ def test__given_watch_args__when_parsing__should_return_matching_config() -> Non
     )
 
     assert config == WatchOptions(
+        scheduler="slurm",
         jobid="1234",
         connection=CONNECTION_DATA,
         proxyjumps=PROXYJUMPS,
@@ -152,6 +154,7 @@ def test__given_cancel_args__when_parsing__should_return_matching_config() -> No
     )
 
     assert config == ImmediateCommandOptions(
+        scheduler="slurm",
         jobid="1234",
         action=ImmediateCommandOptions.Action.cancel,
         connection=CONNECTION_DATA,

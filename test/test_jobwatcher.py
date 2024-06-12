@@ -2,18 +2,18 @@ from typing import List
 from unittest.mock import Mock
 
 import pytest
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob
+from hpcrocket.core.schedulers.base import BatchJob
 from hpcrocket.watcher.jobwatcher import (
     JobWatcherImpl,
     NotWatchingError,
-    SlurmJobStatusCallback,
+    JobStatusCallback,
 )
 from hpcrocket.watcher.watcherthread import WatcherThreadImpl
 
 
 class WatcherThreadSpy:
     def __init__(
-        self, job: SlurmBatchJob, callback: SlurmJobStatusCallback, poll_interval: int
+        self, job: BatchJob, callback: JobStatusCallback, poll_interval: int
     ) -> None:
         self.job = job
         self.callback = callback
@@ -48,7 +48,7 @@ class WatcherFactoryStub:
         self.done_thread = done_thread
 
     def __call__(
-        self, job: SlurmBatchJob, callback: SlurmJobStatusCallback, interval: int
+        self, job: BatchJob, callback: JobStatusCallback, interval: int
     ) -> WatcherThreadImpl:
         self.thread_spy = WatcherThreadSpy(job, callback, interval)
         self.thread_spy.done = self.done_thread
@@ -62,7 +62,7 @@ def thread_factory_stub():
 
 @pytest.fixture
 def runner_dummy():
-    return Mock(SlurmBatchJob)
+    return Mock(BatchJob)
 
 
 def test__when_calling_watch__should_spawn_watcher_thread(

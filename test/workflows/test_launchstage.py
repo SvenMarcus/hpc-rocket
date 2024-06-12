@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 from hpcrocket.core.executor import CommandExecutor
 from hpcrocket.core.launchoptions import LaunchOptions
-from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.schedulers.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.stages import LaunchStage, NoJobLaunchedError
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import JobWatcherFactory

@@ -20,8 +20,7 @@ from ._yaml import ParseError, parse_yaml
 class OptionBuilder(Protocol):
     def __call__(
         self, config: argparse.Namespace, yaml_config: Dict[str, Any]
-    ) -> Options:
-        ...
+    ) -> Options: ...
 
 
 def create_options(
@@ -71,17 +70,26 @@ def build_launch_options(
 
 
 def parse_job(yaml_config: Dict[str, Any]) -> Tuple[str, Optional[CopyInstruction]]:
-    job: Union[str, Dict[str, str]] = yaml_config["job"][0]["file"]
+    job: Union[str, Dict[str, str]] = yaml_config["job"]
     if isinstance(job, str):
         return job, None
+
+    if "from" not in job:
+        return job["script"], None
 
     copy = copy_instruction_from_dict(job, dest_keyname="script")
     script = copy.destination
 
     return script, copy
 
+
 def parse_scheduler(yaml_config: Dict[str, Any]) -> str:
-    return yaml_config["job"][0]["scheduler"]
+    job = yaml_config["job"]
+    if isinstance(job, str):
+        return "slurm"
+
+    return str(job["scheduler"])
+
 
 def build_simple_job_options(
     config: argparse.Namespace, yaml_config: Dict[str, Any], filesystem: Filesystem
@@ -90,6 +98,7 @@ def build_simple_job_options(
     command = cast(str, config.command)
 
     return ImmediateCommandOptions(
+        scheduler=parse_scheduler(yaml_config),
         jobid=jobid,
         action=ImmediateCommandOptions.Action[command],
         **connection_dict(yaml_config),  # type: ignore
@@ -100,7 +109,11 @@ def build_watch_options(
     config: argparse.Namespace, yaml_config: Dict[str, Any], filesystem: Filesystem
 ) -> Options:
     jobid = cast(str, config.jobid) or read_jobid_from_file(config, filesystem)
-    return WatchOptions(jobid=jobid, **connection_dict(yaml_config))  # type: ignore
+    return WatchOptions(
+        jobid=jobid,
+        scheduler=parse_scheduler(yaml_config),
+        **connection_dict(yaml_config),  # type: ignore
+    )
 
 
 def build_finalize_options(

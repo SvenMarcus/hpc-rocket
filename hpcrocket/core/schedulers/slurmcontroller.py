@@ -1,6 +1,8 @@
 from typing import Optional
+
 from hpcrocket.core.executor import CommandExecutor, RunningCommand
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmError, SlurmJobStatus
+from hpcrocket.core.schedulers.base import BatchJob, JobStatus
+from hpcrocket.core.schedulers.slurmstatus import SlurmError, SlurmJobStatus
 from hpcrocket.watcher.jobwatcher import JobWatcherFactory, JobWatcherImpl
 
 
@@ -13,13 +15,13 @@ class SlurmController:
         self._executor = executor
         self._watcher_factory = watcher_factory or JobWatcherImpl
 
-    def submit(self, jobfile: str) -> SlurmBatchJob:
+    def submit(self, jobfile: str) -> BatchJob:
         cmd = self._execute_and_wait_or_raise_on_error(f"sbatch {jobfile}")
         jobid = _parse_jobid(cmd)
 
-        return SlurmBatchJob(self, jobid, self._watcher_factory)
+        return BatchJob(self, jobid, self._watcher_factory)
 
-    def poll_status(self, jobid: str) -> SlurmJobStatus:
+    def poll_status(self, jobid: str) -> JobStatus:
         cmd = self._execute_and_wait_or_raise_on_error(
             f"sacct -j {jobid} -o jobid,jobname%30,state --noheader"
         )

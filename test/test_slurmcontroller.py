@@ -1,3 +1,4 @@
+from hpcrocket.core.schedulers.base import BatchJob
 from test.slurm_assertions import (
     assert_job_canceled,
     assert_job_polled,
@@ -13,8 +14,8 @@ from unittest.mock import Mock
 
 import pytest
 from hpcrocket.core.executor import CommandExecutor
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmError
-from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.schedulers.slurmstatus import SlurmError
+from hpcrocket.core.schedulers.slurmcontroller import SlurmController
 from hpcrocket.watcher.jobwatcher import JobWatcher, JobWatcherFactory
 
 
@@ -41,7 +42,7 @@ def test__when_submitting_job__should_return_slurm_batch_job():
     jobfile = "jobfile.job"
     actual = sut.submit(jobfile)
 
-    assert isinstance(actual, SlurmBatchJob)
+    assert isinstance(actual, BatchJob)
 
 
 def test__when_submitting_job__job_should_have_jobid():

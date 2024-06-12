@@ -8,14 +8,13 @@ from hpcrocket.core.filesystem.progressive import (
     progressive_clean,
     progressive_copy,
 )
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
-from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.schedulers.base import BatchJob, JobStatus, Scheduler
 from hpcrocket.typesafety import get_or_raise
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import (
+    JobStatusCallback,
     JobWatcher,
     NotWatchingError,
-    SlurmJobStatusCallback,
 )
 
 try:
@@ -25,7 +24,7 @@ except ImportError:  # pragma: no cover
 
 
 class BatchJobProvider(Protocol):
-    def get_batch_job(self) -> SlurmBatchJob:
+    def get_batch_job(self) -> BatchJob:
         """
         Provides the watch stage with a batch job to watch
 
@@ -59,10 +58,10 @@ class LaunchStage:
     Implements the BatchJobProvider protocol to work with WatchStage.
     """
 
-    def __init__(self, controller: SlurmController, batch_script: str) -> None:
+    def __init__(self, controller: Scheduler, batch_script: str) -> None:
         self._controller = controller
         self._batch_script = batch_script
-        self._batch_job: Optional[SlurmBatchJob] = None
+        self._batch_job: Optional[BatchJob] = None
 
     def allowed_to_fail(self) -> bool:
         return False
@@ -83,8 +82,8 @@ class LaunchStage:
     def _no_job_launched(self) -> NoJobLaunchedError:
         return NoJobLaunchedError("Canceled before a job was started")
 
-    def get_batch_job(self) -> SlurmBatchJob:
-        return cast(SlurmBatchJob, self._batch_job)
+    def get_batch_job(self) -> BatchJob:
+        return cast(BatchJob, self._batch_job)
 
 
 class JobLoggingStage:
@@ -125,7 +124,7 @@ class WatchStage:
         self._poll_interval = poll_interval
         self._provider = batch_job_provider
         self._watcher: Optional[JobWatcher] = None
-        self._job_status: Optional[SlurmJobStatus] = None
+        self._job_status: Optional[JobStatus] = None
 
         self._allowed_to_fail = allowed_to_fail
 
@@ -140,8 +139,8 @@ class WatchStage:
 
         return self._job_status is not None and self._job_status.success
 
-    def _get_callback(self, ui: UI) -> SlurmJobStatusCallback:
-        def callback(new_status: SlurmJobStatus) -> None:
+    def _get_callback(self, ui: UI) -> JobStatusCallback:
+        def callback(new_status: JobStatus) -> None:
             self._job_status = new_status
             ui.update(new_status)
 
@@ -251,7 +250,7 @@ class StatusStage:
     Checks a job's status.
     """
 
-    def __init__(self, controller: SlurmController, jobid: str) -> None:
+    def __init__(self, controller: Scheduler, jobid: str) -> None:
         self._controller = controller
         self._jobid = jobid
 
@@ -271,7 +270,7 @@ class CancelStage:
     Cancels a running job
     """
 
-    def __init__(self, controller: SlurmController, jobid: str):
+    def __init__(self, controller: Scheduler, jobid: str):
         self._controller = controller
         self._jobid = jobid
 

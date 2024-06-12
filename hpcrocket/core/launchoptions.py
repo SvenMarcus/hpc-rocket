@@ -19,6 +19,7 @@ class ImmediateCommandOptions:
 
     jobid: str
     action: Action
+    scheduler: str
     connection: ConnectionData
     proxyjumps: List[ConnectionData] = field(default_factory=lambda: [])
 
@@ -41,6 +42,7 @@ class LaunchOptions:
 @dataclass
 class WatchOptions:
     jobid: str
+    scheduler: str
     connection: ConnectionData
     proxyjumps: List[ConnectionData] = field(default_factory=lambda: [])
     poll_interval: int = 5

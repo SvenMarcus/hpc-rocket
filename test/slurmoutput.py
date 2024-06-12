@@ -1,5 +1,7 @@
 from typing import List
-from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmTaskStatus
+
+from hpcrocket.core.schedulers.base import TaskStatus
+from hpcrocket.core.schedulers.slurmstatus import SlurmJobStatus
 
 # This Job ID is used in the test slurm output files
 DEFAULT_JOB_ID = "1603376"
@@ -29,11 +31,11 @@ def running_slurm_job() -> SlurmJobStatus:
         name="PyFluidsTest",
         state="RUNNING",
         tasks=[
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}", "PyFluidsTest", "RUNNING"),
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}.ext+", "extern", "RUNNING"),
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}.0", "singularity", "COMPLETED"),
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}.1", "singularity", "COMPLETED"),
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}.2", "singularity", "RUNNING"),
+            TaskStatus(f"{DEFAULT_JOB_ID}", "PyFluidsTest", "RUNNING"),
+            TaskStatus(f"{DEFAULT_JOB_ID}.ext+", "extern", "RUNNING"),
+            TaskStatus(f"{DEFAULT_JOB_ID}.0", "singularity", "COMPLETED"),
+            TaskStatus(f"{DEFAULT_JOB_ID}.1", "singularity", "COMPLETED"),
+            TaskStatus(f"{DEFAULT_JOB_ID}.2", "singularity", "RUNNING"),
         ],
     )
 
@@ -44,12 +46,12 @@ def completed_slurm_job() -> SlurmJobStatus:
         name="PyFluidsTest",
         state="COMPLETED",
         tasks=[
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}", "PyFluidsTest", "COMPLETED"),
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}.bat+", "batch", "COMPLETED"),
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}.ext+", "extern", "COMPLETED"),
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}.0", "singularity", "COMPLETED"),
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}.1", "singularity", "COMPLETED"),
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}.2", "singularity", "COMPLETED"),
-            SlurmTaskStatus(f"{DEFAULT_JOB_ID}.3", "singularity", "COMPLETED"),
+            TaskStatus(f"{DEFAULT_JOB_ID}", "PyFluidsTest", "COMPLETED"),
+            TaskStatus(f"{DEFAULT_JOB_ID}.bat+", "batch", "COMPLETED"),
+            TaskStatus(f"{DEFAULT_JOB_ID}.ext+", "extern", "COMPLETED"),
+            TaskStatus(f"{DEFAULT_JOB_ID}.0", "singularity", "COMPLETED"),
+            TaskStatus(f"{DEFAULT_JOB_ID}.1", "singularity", "COMPLETED"),
+            TaskStatus(f"{DEFAULT_JOB_ID}.2", "singularity", "COMPLETED"),
+            TaskStatus(f"{DEFAULT_JOB_ID}.3", "singularity", "COMPLETED"),
         ],
     )

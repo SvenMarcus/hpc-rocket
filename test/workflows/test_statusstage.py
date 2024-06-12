@@ -5,7 +5,7 @@ from test.testdoubles.executor import (
 )
 from unittest.mock import Mock
 
-from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.schedulers.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.stages import StatusStage
 from hpcrocket.ui import UI
 
