@@ -1,6 +1,6 @@
 from typing import Any, Dict, Union
 
-import yaml
+from envyaml import EnvYAML
 
 from hpcrocket.core.filesystem import Filesystem
 
@@ -16,7 +16,6 @@ class ParseError(RuntimeError):
 
 def parse_yaml(path: str, filesystem: Filesystem) -> Union[Dict[str, Any], ParseError]:
     try:
-        with filesystem.openread(path) as file:
-            return yaml.load(file, Loader=yaml.SafeLoader)  # type: ignore
+        return EnvYAML(path)
     except FileNotFoundError:
         return ParseError(f"File {path} does not exist!")
