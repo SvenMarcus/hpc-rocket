@@ -1,3 +1,45 @@
-Job id            Name             User              Time Use S Queue
-----------------  ---------------- ----------------  -------- - -----
-7.pbs_master      checkout         pbsuser           00:00:00 F workq           
+Job Id: 2.pbs_container
+    Job_Name = STDIN
+    Job_Owner = pbsuser@pbs_container
+    resources_used.cpupercent = 0
+    resources_used.cput = 00:00:00
+    resources_used.mem = 28236kb
+    resources_used.ncpus = 1
+    resources_used.vmem = 444708kb
+    resources_used.walltime = 00:00:30
+    job_state = F
+    queue = workq
+    server = pbs_container
+    Checkpoint = u
+    ctime = Wed Aug 28 04:08:02 2024
+    Error_Path = pbs_container://STDIN.e1
+    exec_host = pbs_container/0
+    exec_vnode = (pbs_container:ncpus=1)
+    Hold_Types = n
+    Join_Path = n
+    Keep_Files = n
+    Mail_Points = a
+    mtime = Wed Aug 28 04:08:33 2024
+    Output_Path = pbs_container://STDIN.o1
+    Priority = 0
+    qtime = Wed Aug 28 04:08:02 2024
+    Rerunable = True
+    Resource_List.ncpus = 1
+    Resource_List.nodect = 1
+    Resource_List.place = pack
+    Resource_List.select = 1:ncpus=1
+    stime = Wed Aug 28 04:08:02 2024
+    session_id = 1952
+    jobdir = /home/pbsuser
+    substate = 51
+    Variable_List = PBS_O_HOME=/home/pbsuser,
+	PBS_O_PATH=/opt/pbs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/
+	bin:/sbin:/bin:/opt/pbs/bin:/opt/pbs/bin,PBS_O_WORKDIR=/,
+	PBS_O_SYSTEM=Linux,PBS_O_QUEUE=workq,PBS_O_HOST=pbs_container
+    comment = Job run at Wed Aug 28 at 04:08 on (pbs_container:ncpus=1)
+    etime = Wed Aug 28 04:08:02 2024
+    run_count = 1
+    Exit_status = 0
+    project = _pbs_project_default
+    Submit_Host = pbs_container
+
