@@ -8,8 +8,7 @@ from test.testdoubles.paramiko_sshclient_mockutil import (
 from unittest.mock import Mock, patch
 
 import pytest
-from hpcrocket.core.slurmbatchjob import SlurmJobStatus, SlurmTaskStatus
-from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.schedulers.slurmcontroller import SlurmController
 from hpcrocket.ssh.sshexecutor import SSHExecutor
 
 patcher = patch("paramiko.SSHClient")

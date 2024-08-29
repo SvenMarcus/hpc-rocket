@@ -6,7 +6,7 @@ from rich.live import Live
 from rich.spinner import Spinner
 from rich.table import Table
 
-from hpcrocket.core.slurmbatchjob import SlurmJobStatus
+from hpcrocket.core.schedulers.base import JobStatus
 
 try:
     from typing import Protocol
@@ -15,7 +15,7 @@ except ImportError:  # pragma: no cover
 
 
 class UI(Protocol):  # pragma: no cover
-    def update(self, job: SlurmJobStatus) -> None:
+    def update(self, job: JobStatus) -> None:
         """
         Displays the current state of Slurm job
 
@@ -61,7 +61,7 @@ class NullUI(UI):  # pragma: no cover
     An empty UI that does nothing when receiving messages
     """
 
-    def update(self, job: SlurmJobStatus) -> None:  # pragma: no cover
+    def update(self, job: JobStatus) -> None:  # pragma: no cover
         pass
 
     def error(self, text: str) -> None:  # pragma: no cover
@@ -94,7 +94,7 @@ class RichUI(UI):
     def __exit__(self, *args: Any, **kwargs: Any) -> None:
         self._rich_live.stop()
 
-    def update(self, job: SlurmJobStatus) -> None:
+    def update(self, job: JobStatus) -> None:
         self._rich_live.update(self._make_table(job))
 
     def error(self, text: str) -> None:
@@ -117,7 +117,7 @@ class RichUI(UI):
             ":rocket: ", text, style="bold yellow", emoji=True
         )
 
-    def _make_table(self, job: SlurmJobStatus) -> Table:
+    def _make_table(self, job: JobStatus) -> Table:
         table = Table(style="bold", box=box.MINIMAL)
         table.add_column("ID")
         table.add_column("Name")
@@ -126,10 +126,10 @@ class RichUI(UI):
         for task in job.tasks:
             last_column: RenderableType = task.state
             color = "grey42"
-            if task.state == "RUNNING":
+            if task.state in ("R", "E", "RUNNING"):
                 color = "blue"
                 last_column = Spinner("arc", task.state)
-            elif task.state == "COMPLETED":
+            elif task.state in ("F", "COMPLETED"):
                 color = "green"
                 last_column = f":heavy_check_mark: {task.state}"
             elif task.state == "FAILED":

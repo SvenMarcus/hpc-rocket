@@ -34,7 +34,8 @@ def launch_options(
     return LaunchOptions(
         connection=connection or main_connection(),
         proxyjumps=proxyjumps or [],
-        sbatch="test.job",
+        job="test.job",
+        scheduler="slurm",
         watch=watch,
         poll_interval=0,
         copy_files=copy or [],
@@ -112,6 +113,7 @@ def proxy_connection_only_password() -> ConnectionData:
 
 def watch_options_with_proxy() -> WatchOptions:
     return WatchOptions(
+        scheduler="slurm",
         jobid=DEFAULT_JOB_ID,
         connection=main_connection(),
         proxyjumps=[proxy_connection()],
@@ -123,6 +125,7 @@ def simple_options_with_proxy(
     action: ImmediateCommandOptions.Action,
 ) -> ImmediateCommandOptions:
     return ImmediateCommandOptions(
+        scheduler="slurm",
         jobid=DEFAULT_JOB_ID,
         action=action,
         connection=main_connection(),

@@ -12,8 +12,8 @@ from typing import List, Optional
 from unittest.mock import Mock, call
 
 import pytest
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob
-from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.schedulers.base import BatchJob
+from hpcrocket.core.schedulers.slurmcontroller import SlurmController
 from hpcrocket.core.workflows.stages import WatchStage
 from hpcrocket.ui import UI
 from hpcrocket.watcher.jobwatcher import (
@@ -50,8 +50,8 @@ class BatchJobProviderSpy:
 
         self.was_canceled = False
 
-    def get_batch_job(self) -> SlurmBatchJob:
-        return SlurmBatchJob(self.controller, self.jobid, self.factory)
+    def get_batch_job(self) -> BatchJob:
+        return BatchJob(self.controller, self.jobid, self.factory)
 
     def cancel(self, ui: UI) -> None:
         self.was_canceled = True

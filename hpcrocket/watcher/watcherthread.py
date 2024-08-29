@@ -8,7 +8,7 @@ except ImportError:  # pragma: no cover
 
 
 if TYPE_CHECKING:
-    from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmJobStatus
+    from hpcrocket.core.schedulers.base import BatchJob, JobStatus
 
 
 class WatcherThread(Protocol):
@@ -45,8 +45,8 @@ class WatcherThread(Protocol):
 class WatcherThreadImpl(threading.Thread):
     def __init__(
         self,
-        runner: "SlurmBatchJob",
-        callback: Callable[["SlurmJobStatus"], None],
+        runner: "BatchJob",
+        callback: Callable[["JobStatus"], None],
         interval: float,
     ):
         super().__init__(target=self.poll)

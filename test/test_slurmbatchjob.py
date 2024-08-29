@@ -1,3 +1,4 @@
+from hpcrocket.core.schedulers.base import BatchJob
 from test.slurm_assertions import assert_job_canceled, assert_job_polled
 from test.slurmoutput import DEFAULT_JOB_ID, completed_slurm_job
 from test.testdoubles.executor import LoggingCommandExecutorSpy, SlurmJobExecutorSpy
@@ -6,8 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 from hpcrocket.core.executor import CommandExecutor
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob
-from hpcrocket.core.slurmcontroller import SlurmController
+from hpcrocket.core.schedulers.slurmcontroller import SlurmController
 from hpcrocket.watcher.jobwatcher import JobWatcherFactory
 
 JOB_ID = DEFAULT_JOB_ID
@@ -20,9 +20,9 @@ def executor_spy():
 
 def make_sut(
     executor_spy: CommandExecutor, jobid: str, factory: JobWatcherFactory = None
-) -> SlurmBatchJob:
+) -> BatchJob:
     slurm = SlurmController(executor_spy, factory)
-    return SlurmBatchJob(slurm, jobid, cast(JobWatcherFactory, factory))
+    return BatchJob(slurm, jobid, cast(JobWatcherFactory, factory))
 
 
 def test__when_canceling_job__should_execute_scancel_with_executor(

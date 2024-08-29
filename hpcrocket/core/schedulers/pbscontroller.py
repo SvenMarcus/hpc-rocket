@@ -1,10 +1,11 @@
 from typing import Optional
 from hpcrocket.core.executor import CommandExecutor, RunningCommand
-from hpcrocket.core.slurmbatchjob import SlurmBatchJob, SlurmError, SlurmJobStatus
+from hpcrocket.core.schedulers.pbsstatus import PbsError, PbsJobStatus
+from hpcrocket.core.schedulers.base import BatchJob, JobStatus
 from hpcrocket.watcher.jobwatcher import JobWatcherFactory, JobWatcherImpl
 
 
-class SlurmController:
+class PbsController:
     def __init__(
         self,
         executor: CommandExecutor,
@@ -13,26 +14,26 @@ class SlurmController:
         self._executor = executor
         self._watcher_factory = watcher_factory or JobWatcherImpl
 
-    def submit(self, jobfile: str) -> SlurmBatchJob:
-        cmd = self._execute_and_wait_or_raise_on_error(f"sbatch {jobfile}")
+    def submit(self, jobfile: str) -> BatchJob:
+        cmd = self._execute_and_wait_or_raise_on_error(f"qsub {jobfile}")
         jobid = _parse_jobid(cmd)
 
-        return SlurmBatchJob(self, jobid, self._watcher_factory)
+        return BatchJob(self, jobid, self._watcher_factory)
 
-    def poll_status(self, jobid: str) -> SlurmJobStatus:
+    def poll_status(self, jobid: str) -> JobStatus:
         cmd = self._execute_and_wait_or_raise_on_error(
-            f"sacct -j {jobid} -o jobid,jobname%30,state --noheader"
+            f"qstat -x {jobid} | grep {jobid} |  awk '{{printf \"%s %-.30s %s\", $1, $2, $5 }}'"
         )
-        return SlurmJobStatus.from_output(cmd.stdout())
+        return PbsJobStatus.from_output(cmd.stdout())
 
     def cancel(self, jobid: str) -> None:
-        self._execute_and_wait_or_raise_on_error(f"scancel {jobid}")
+        self._execute_and_wait_or_raise_on_error(f"qdel {jobid}")
 
     def _execute_and_wait_or_raise_on_error(self, command: str) -> RunningCommand:
         cmd = self._executor.exec_command(command)
         exit_code = cmd.wait_until_exit()
         if exit_code != 0:
-            raise SlurmError(command)
+            raise PbsError(command)
 
         return cmd
 

@@ -1,4 +1,3 @@
-
 host: $TARGET_HOST
 user: $TARGET_USER
 private_keyfile: $TARGET_KEY
@@ -10,7 +9,7 @@ proxyjumps:
 
 copy:
   - from: local_slurm.job
-    to: $REMOTE_SLURM_SCRIPT
+    to: $REMOTE_SCRIPT
     overwrite: true
 
   - from: $ABS_DIR/dir/*.txt
@@ -26,8 +25,11 @@ collect:
     to: .
 
 clean:
-  - $REMOTE_SLURM_SCRIPT
+  - $REMOTE_SCRIPT
   - dir/*.txt
 
-sbatch: $REMOTE_SLURM_SCRIPT
+job:
+  script: $REMOTE_SCRIPT
+  scheduler: slurm
+
 continue_if_job_fails: true

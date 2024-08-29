@@ -62,7 +62,9 @@ clean:
   - slurm.job
   - myexecutable
 
-sbatch: slurm.job
+job:
+  - file: slurm.job
+    scheduler: slurm
 ```
 
 ### Usage

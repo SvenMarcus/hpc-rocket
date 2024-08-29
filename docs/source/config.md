@@ -68,11 +68,13 @@ clean:
 
 ## Specifying the Slurm Batch script
 
-Specify the name of the Slurm batch script with the `sbatch` entry.
+Specify the name of the Slurm batch script with the `job` entry.
 Optionally `continue_if_job_fails` can be set to `true` to enable collecting and cleaning even if the Slurm job does not complete successfully.
 
 ```yaml
-sbatch: slurm_script.sh
+job:
+  - file: slurm_script.sh
+    scheduler: slurm
 continue_if_job_fails: true
 ```
 
@@ -107,5 +109,5 @@ clean:
   - myexecutable
   - myresultfile.log
 
-sbatch: slurm.job
+job: slurm.job
 ```

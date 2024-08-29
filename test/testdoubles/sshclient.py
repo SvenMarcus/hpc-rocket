@@ -149,9 +149,9 @@ class SSHClientMock(SuccessfulSlurmCmdSSHClient):
         self.connected = False
 
     def verify(self):
-        assert self.commands["sbatch"] == f"sbatch {self._options.sbatch}", (
+        assert self.commands["sbatch"] == f"sbatch {self._options.job}", (
             "Expected: "
-            + f"sbatch {self._options.sbatch}"
+            + f"sbatch {self._options.job}"
             + f"\nbut was: {self.commands['sbatch']}"
         )
 
