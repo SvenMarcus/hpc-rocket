@@ -10,6 +10,7 @@ dependencies = [
   "rich>=10.1.0",
   "PyYAML>=5.4.1",
   "cffi==1.17",
+  "typing-extensions==4.14",
 ]
 requires-python = ">=3.9"
 readme = "README.md"
@@ -67,6 +68,6 @@ dev = [
     "pytest-cov>=2.11.1",
     "pytest-timeout>=1.4.2",
     "nox>=2025.5.1",
-    "testcontainers>=3.7.1",
+    "testcontainers>=4.10.0",
     "ruff>=0.11.13",
 ]
