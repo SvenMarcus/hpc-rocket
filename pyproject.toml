@@ -1,6 +1,6 @@
 [project]
 name = "hpc-rocket"
-version = "0.6.1"
+version = "0.6.2"
 description = "A tool to run Slurm sbatch commands over SSH"
 authors = [{ name = "Sven Marcus", email = "s.marcus@outlook.de" }]
 dependencies = [
