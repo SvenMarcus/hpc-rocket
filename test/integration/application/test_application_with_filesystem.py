@@ -1,7 +1,29 @@
 import os
 from dataclasses import replace
-from test.integration.application.fixtures import *
-from test.application.optionbuilders import *
+from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
+
+import pytest
+
+from hpcrocket.core.application import Application
+from hpcrocket.core.filesystem.progressive import CopyInstruction
+from hpcrocket.core.launchoptions import LaunchOptions
+from hpcrocket.pyfilesystem.factory import PyFilesystemFactory
+from hpcrocket.ssh.connectiondata import ConnectionData
+from hpcrocket.ssh.errors import SSHError
+from test.application.optionbuilders import (
+    launch_options,
+    launch_options_with_proxy_only_password,
+    main_connection,
+    main_connection_only_password,
+    proxy_connection_only_password,
+)
+from test.integration.application.fixtures import (
+    HOME_DIR,
+    INPUT_AND_EXPECTED_KEYFILE_PATHS,
+    sshclient_type_mock,  # noqa: F401
+    osfs_type_mock,  # noqa: F401
+    sshfs_type_mock,  # noqa: F401
+)
 from test.integration.pyfilesystem.sshfilesystem_assertions import (
     assert_sshfs_connected_with_connection_data,
     assert_sshfs_connected_with_keyfile_from_connection_data,
@@ -10,32 +32,23 @@ from test.integration.pyfilesystem.sshfilesystem_assertions import (
 from test.testdoubles.executor import SlurmJobExecutorSpy
 from test.testdoubles.filesystem import sshfs_with_connection_fake
 from test.testdoubles.sshclient import ProxyJumpVerifyingSSHClient
-from unittest.mock import ANY, MagicMock, Mock, call, patch
-
-import pytest
-from hpcrocket.core.application import Application
-from hpcrocket.core.filesystem.progressive import CopyInstruction
-from hpcrocket.core.launchoptions import LaunchOptions
-from hpcrocket.pyfilesystem.factory import PyFilesystemFactory
-from hpcrocket.ssh.connectiondata import ConnectionData
-from hpcrocket.ssh.errors import SSHError
 
 
 @pytest.fixture(autouse=True)
 def patch_cwd():
-    getcwd = lambda: "/"
+    def getcwd() -> str:
+        return "/"
+
     with patch("os.getcwd", getcwd) as patched:
         yield patched
 
 
 def make_sut(options, ui=None):
-    return Application(
-        SlurmJobExecutorSpy(), PyFilesystemFactory(options), ui or Mock()
-    )
+    return Application(SlurmJobExecutorSpy(), PyFilesystemFactory(options), ui or Mock())
 
 
 def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_credentials(
-    sshfs_type_mock,
+    sshfs_type_mock: MagicMock | AsyncMock,
 ):
     sut = make_sut(launch_options())
 
@@ -45,7 +58,7 @@ def test__given_valid_config__when_running__should_login_to_sshfs_with_correct_c
 
 
 def test__given_ssh_connection_not_available_for_sshfs__when_running__should_log_error_and_exit(
-    sshfs_type_mock,
+    sshfs_type_mock: MagicMock | AsyncMock,
 ):
     sshfs_type_mock.side_effect = SSHError(main_connection().hostname)
 
@@ -57,18 +70,13 @@ def test__given_ssh_connection_not_available_for_sshfs__when_running__should_log
     ui_spy.error.assert_called_once_with(f"SSHError: {main_connection().hostname}")
 
 
-@pytest.mark.parametrize(
-    ["input_keyfile", "expected_keyfile"], INPUT_AND_EXPECTED_KEYFILE_PATHS
-)
+@pytest.mark.parametrize(["input_keyfile", "expected_keyfile"], INPUT_AND_EXPECTED_KEYFILE_PATHS)
 def test__given_config_with_only_private_keyfile__when_running__should_login_to_sshfs_with_correct_credentials(
-    sshfs_type_mock, input_keyfile, expected_keyfile
+    sshfs_type_mock: MagicMock | AsyncMock, input_keyfile, expected_keyfile
 ):
-
     os.environ["HOME"] = HOME_DIR
     valid_options = LaunchOptions(
-        connection=ConnectionData(
-            hostname="example.com", username="myuser", keyfile=input_keyfile
-        ),
+        connection=ConnectionData(hostname="example.com", username="myuser", keyfile=input_keyfile),
         sbatch="test.job",
         poll_interval=0,
     )
@@ -77,21 +85,15 @@ def test__given_config_with_only_private_keyfile__when_running__should_login_to_
 
     sut.run(valid_options)
 
-    connection_with_resolved_keyfile = replace(
-        valid_options.connection, keyfile=expected_keyfile
-    )
-    assert_sshfs_connected_with_keyfile_from_connection_data(
-        sshfs_type_mock, connection_with_resolved_keyfile
-    )
+    connection_with_resolved_keyfile = replace(valid_options.connection, keyfile=expected_keyfile)
+    assert_sshfs_connected_with_keyfile_from_connection_data(sshfs_type_mock, connection_with_resolved_keyfile)
 
 
 def test__given_config_with_only_password__when_running__should_login_to_sshfs_with_correct_credentials(
-    sshfs_type_mock,
+    sshfs_type_mock: MagicMock | AsyncMock,
 ):
     valid_options = LaunchOptions(
-        connection=ConnectionData(
-            hostname="example.com", username="myuser", password="mypassword"
-        ),
+        connection=ConnectionData(hostname="example.com", username="myuser", password="mypassword"),
         sbatch="test.job",
         poll_interval=0,
     )
@@ -100,20 +102,16 @@ def test__given_config_with_only_password__when_running__should_login_to_sshfs_w
 
     sut.run(valid_options)
 
-    assert_sshfs_connected_with_password_from_connection_data(
-        sshfs_type_mock, valid_options.connection
-    )
+    assert_sshfs_connected_with_password_from_connection_data(sshfs_type_mock, valid_options.connection)
 
 
 def test__given_config_with_proxy__when_running__should_login_to_sshfs_over_proxy(
-    sshclient_type_mock,
+    sshclient_type_mock: MagicMock | AsyncMock,
 ):
     # NOTE: We're using only password authentication here, because SSHFS combines key and keyfile into a single option
     #       so we cannot compare against connection data with keyfile AND key as SSHFS will only be called with one of them.
 
-    mock = ProxyJumpVerifyingSSHClient(
-        main_connection_only_password(), [proxy_connection_only_password()]
-    )
+    mock = Mock(wraps=ProxyJumpVerifyingSSHClient(main_connection_only_password(), [proxy_connection_only_password()]))
     sshclient_type_mock.return_value = mock
 
     with sshfs_with_connection_fake(sshclient_type_mock.return_value):
@@ -125,7 +123,7 @@ def test__given_config_with_proxy__when_running__should_login_to_sshfs_over_prox
 
 
 def test__given_config_with_files_to_copy__when_running__should_copy_files_to_remote_filesystem(
-    osfs_type_mock, sshfs_type_mock
+    osfs_type_mock: MagicMock | AsyncMock, sshfs_type_mock: MagicMock | AsyncMock
 ):
     opts = launch_options(
         copy=[
@@ -146,7 +144,7 @@ def test__given_config_with_files_to_copy__when_running__should_copy_files_to_re
 
 
 def test__given_config_with_files_to_clean__when_running__should_remove_files_from_remote_filesystem(
-    osfs_type_mock, sshfs_type_mock
+    osfs_type_mock: MagicMock | AsyncMock, sshfs_type_mock: MagicMock | AsyncMock
 ):
     opts = launch_options(
         watch=True,
@@ -164,7 +162,7 @@ def test__given_config_with_files_to_clean__when_running__should_remove_files_fr
 
 
 def test__given_config_with_files_to_collect__when_running__should_collect_files_from_remote_filesystem_after_completing_job_and_before_cleaning(
-    osfs_type_mock, sshfs_type_mock
+    osfs_type_mock: MagicMock | AsyncMock, sshfs_type_mock: MagicMock | AsyncMock
 ):
     opts = launch_options(
         watch=True,
@@ -187,7 +185,7 @@ def test__given_config_with_files_to_collect__when_running__should_collect_files
 
 @pytest.mark.usefixtures("sshclient_type_mock")
 def test__given_config_with_non_existing_file_to_copy__when_running__should_perform_rollback_and_exit(
-    osfs_type_mock, sshfs_type_mock
+    osfs_type_mock: MagicMock | AsyncMock, sshfs_type_mock: MagicMock | AsyncMock
 ):
     opts = launch_options(
         watch=True,
@@ -210,9 +208,8 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_perf
 
 @pytest.mark.usefixtures("sshclient_type_mock", "sshfs_type_mock")
 def test__given_config_with_non_existing_file_to_copy__when_running__should_print_to_ui(
-    osfs_type_mock,
+    osfs_type_mock: MagicMock | AsyncMock,
 ):
-
     opts = launch_options(
         copy=[
             CopyInstruction("myfile.txt", "mycopy.txt"),
@@ -232,7 +229,7 @@ def test__given_config_with_non_existing_file_to_copy__when_running__should_prin
 
 @pytest.mark.usefixtures("sshclient_type_mock")
 def test__given_config_with_already_existing_file_to_copy__when_running__should_perform_rollback_and_exit(
-    osfs_type_mock, sshfs_type_mock
+    osfs_type_mock: MagicMock | AsyncMock, sshfs_type_mock: MagicMock | AsyncMock
 ):
     opts = launch_options(
         copy=[

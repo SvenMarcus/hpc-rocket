@@ -5,8 +5,7 @@ from typing import Generator, List, Optional, cast
 
 import fs.base
 import fs.copy as fscp
-import fs.errors
-import fs.glob
+import fs.errors as fserr
 
 from hpcrocket.core.filesystem import Filesystem
 from hpcrocket.core.filesystem.glob import (
@@ -21,9 +20,7 @@ class PyFilesystemBased(Filesystem):
     A Filesystem based on PyFilesystem2
     """
 
-    def __init__(
-        self, internal_fs: fs.base.FS, dir: str = "/", home: str = "/"
-    ) -> None:
+    def __init__(self, internal_fs: fs.base.FS, dir: str = "/", home: str = "/") -> None:
         self._internal_fs = internal_fs
         self._curdir = PurePath(dir)
         self._homedir = PurePath(home)
@@ -54,13 +51,12 @@ class PyFilesystemBased(Filesystem):
         return path.replace("~", str(filesystem.home))
 
     def openread(self, path: str) -> TextIOWrapper:
-        path = self._expandhome(path, self)
-        path = str(self._curdir.joinpath(path))
+        fs, norm_path = self._resolve_fs_and_path(path)
         try:
-            return cast(TextIOWrapper, self.internal_fs.open(path, mode="r"))
-        except fs.errors.ResourceNotFound:
+            return cast(TextIOWrapper, fs.open(norm_path, mode="r"))
+        except fserr.ResourceNotFound:
             raise FileNotFoundError(path)
-        except fs.errors.FileExpected:
+        except fserr.FileExpected:
             raise FileNotFoundError(path)
 
     def copy(
@@ -89,9 +85,7 @@ class PyFilesystemBased(Filesystem):
 
         return fs.internal_fs.opendir(str(fs.current_dir))
 
-    def _glob_with_pyfs(
-        self, fs: fs.base.FS, pattern: str
-    ) -> Generator[str, None, None]:
+    def _glob_with_pyfs(self, fs: fs.base.FS, pattern: str) -> Generator[str, None, None]:
         dir, pattern = split_at_first_wildcard(pattern)
 
         if pattern.endswith("*"):
@@ -140,12 +134,11 @@ class PyFilesystemBased(Filesystem):
             target_fs.makedirs(target_parent_dir, recreate=True)
 
     def delete(self, path: str) -> None:
-        fs = self.internal_fs.opendir(str(self.current_dir))
+        fs, norm_path = self._resolve_fs_and_path(path)
         if is_glob(path):
-            self._delete_glob(path, fs)
+            self._delete_glob(norm_path, fs)
             return
-
-        self._delete_path(path, fs)
+        self._delete_path(norm_path, fs)
 
     def _delete_glob(self, path: str, fs: fs.base.FS) -> None:
         glob = self._glob_with_pyfs(fs, path)
@@ -172,13 +165,26 @@ class PyFilesystemBased(Filesystem):
         _fs.removetree(path)
 
     def exists(self, path: str) -> bool:
-        path = self._expandhome(path, self)
-        path = str(self.current_dir.joinpath(path))
-        return self.internal_fs.exists(path)
+        fs, norm_path = self._resolve_fs_and_path(path)
+        return fs.exists(norm_path)
 
-    def _try_copy_to_filesystem(
-        self, source_fs: fs.base.FS, source: str, target_fs: fs.base.FS, target: str
-    ) -> None:
+    def _resolve_fs_and_path(self, path: str) -> tuple[fs.base.FS, str]:
+        """
+        Returns the correct fs and normalized path for a given path.
+        If the path is absolute, uses self.internal_fs and strips leading '/'.
+        If the path is relative, uses self.internal_fs.opendir(current_dir).
+        """
+        path = self._expandhome(path, self)
+        if os.path.isabs(path):
+            fs = self.internal_fs
+            norm_path = path.lstrip(os.path.sep)
+        else:
+            fs = self.internal_fs.opendir(str(self.current_dir))
+            norm_path = path
+
+        return fs, norm_path
+
+    def _try_copy_to_filesystem(self, source_fs: fs.base.FS, source: str, target_fs: fs.base.FS, target: str) -> None:
         if source_fs.isdir(source):
             fscp.copy_dir(source_fs, source, target_fs, target)
             return
@@ -186,9 +192,7 @@ class PyFilesystemBased(Filesystem):
         target = self._append_filename_if_target_is_dir(target_fs, source, target)
         fscp.copy_file(source_fs, source, target_fs, target)
 
-    def _append_filename_if_target_is_dir(
-        self, fs: fs.base.FS, source: str, target: str
-    ) -> str:
+    def _append_filename_if_target_is_dir(self, fs: fs.base.FS, source: str, target: str) -> str:
         if fs.isdir(target):
             target = os.path.join(target, os.path.basename(source))
 
@@ -198,9 +202,7 @@ class PyFilesystemBased(Filesystem):
         if not source_fs.exists(source):
             raise FileNotFoundError(source)
 
-    def _raise_if_target_exists(
-        self, target: str, overwrite: bool, target_fs: fs.base.FS
-    ) -> None:
+    def _raise_if_target_exists(self, target: str, overwrite: bool, target_fs: fs.base.FS) -> None:
         if overwrite:
             return
 
@@ -209,6 +211,4 @@ class PyFilesystemBased(Filesystem):
 
     def _raise_if_no_pyfilesystem(self, filesystem: Optional[Filesystem]) -> None:
         if filesystem and not isinstance(filesystem, PyFilesystemBased):
-            raise RuntimeError(
-                f"{str(type(self))} currently only works with PyFilesystem2 based Filesystems"
-            )
+            raise RuntimeError(f"{str(type(self))} currently only works with PyFilesystem2 based Filesystems")

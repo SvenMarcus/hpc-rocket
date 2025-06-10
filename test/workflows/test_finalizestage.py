@@ -11,9 +11,7 @@ from hpcrocket.core.filesystem.progressive import CopyInstruction
 from hpcrocket.core.workflows.stages import FinalizeStage
 
 
-def run_finalize_stage(
-    factory: FilesystemFactory, collect: List[CopyInstruction], clean: List[str]
-) -> bool:
+def run_finalize_stage(factory: FilesystemFactory, collect: List[CopyInstruction], clean: List[str]) -> bool:
     sut = FinalizeStage(factory, collect, clean)
 
     return sut(Mock())
@@ -36,12 +34,15 @@ def test__given_collect_instruction__when_running__should_copy_collect_item_to_l
 
 
 def test__given_clean_instruction__when_running__should_clean_file_from_remote_filesystem() -> None:
-    ssh_fs = MemoryFilesystemFake(files=["myfile.txt"])
+    ssh_fs = MemoryFilesystemFake(files=["myfile.txt", "/absolute/file.txt"])
+
     factory = MemoryFilesystemFactoryStub(ssh_fs=ssh_fs)
 
-    run_finalize_stage(factory, [], ["myfile.txt"])
+    run_finalize_stage(factory, [], ["myfile.txt", "/absolute/file.txt"])
 
     assert ssh_fs.exists("myfile.txt") is False
+    assert ssh_fs.exists("absolute/file.txt") is False
+    assert ssh_fs.exists("/absolute/file.txt") is False
 
 
 def test__given_collect_instructions__when_file_not_found__should_still_collect_remaining_files() -> None:

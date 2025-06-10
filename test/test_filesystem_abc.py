@@ -7,16 +7,13 @@ from hpcrocket.core.filesystem import Filesystem
 
 
 def assert_contains_all(actual: Collection[str], expected: Collection[str]) -> None:
-    assert len(actual) == len(expected), (
-        "Expected:\n" + str(expected) + "\n\nActual:\n" + str(actual)
-    )
+    assert len(actual) == len(expected), "Expected:\n" + str(expected) + "\n\nActual:\n" + str(actual)
 
     for expected_entry in set(expected):
         assert expected_entry in actual, f"Expected {expected_entry} to be in {actual}"
 
 
 class FilesystemTest(ABC):
-
     SOURCE = "file.txt"
     TARGET = "copy.txt"
 
@@ -42,9 +39,7 @@ class FilesystemTest(ABC):
     def home_dir_abs(self) -> str:
         return "/home/myuser"
 
-    def assert_file_content_equals(
-        self, filesystem: Filesystem, path: str, content: str
-    ) -> None:
+    def assert_file_content_equals(self, filesystem: Filesystem, path: str, content: str) -> None:
         assert self.get_file_content(filesystem, path) == content
 
     def test__when_copying_file__should_copy_to_target_path(self) -> None:
@@ -398,7 +393,7 @@ class FilesystemTest(ABC):
         sut = self.create_filesystem(dir="/" + subdir)
         self.create_file(sut, "file.txt")
 
-        assert sut.exists(f"file.txt")
+        assert sut.exists("file.txt")
 
     def test__filesystem_opened_in_subdir__globbing_with_abs_path_returns_matching_files(
         self,
@@ -503,3 +498,15 @@ class FilesystemTest(ABC):
 
         with sut.openread("~/file.txt") as actual:
             assert actual.read() == "hello world"
+
+    def test__filesystem__deleting_with_abs_path__deletes_file(self) -> None:
+        rel_file_path = os.path.join("dir", self.SOURCE)
+        abs_path_to_delete = os.path.join(self.working_dir_abs(), "dir", self.SOURCE)
+
+        sut = self.create_filesystem()
+        self.create_file(sut, rel_file_path)
+
+        sut.delete(abs_path_to_delete)
+
+        assert not sut.exists(rel_file_path)
+        assert not sut.exists(abs_path_to_delete)

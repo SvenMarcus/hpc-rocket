@@ -1,12 +1,13 @@
 import time
 import unittest
-from test.integration.pyfilesystem.test_pyfilesystembased import PyFilesystemBasedTest
 
 import pytest
 from testcontainers.core.container import DockerContainer
+
 from hpcrocket.core.filesystem import Filesystem
 from hpcrocket.pyfilesystem.sshfilesystem import sshfilesystem
 from hpcrocket.ssh.connectiondata import ConnectionData
+from test.integration.pyfilesystem.test_pyfilesystembased import PyFilesystemBasedTest
 
 
 def configure_container() -> DockerContainer:
@@ -36,17 +37,13 @@ class TestSSHFilesystem(PyFilesystemBasedTest, unittest.TestCase):
     def setUp(self) -> None:
         TestSSHFilesystem.CONTAINER.exec("mkdir /testdir")
         TestSSHFilesystem.CONTAINER.exec("usermod -d /testdir testcontainer")
-        TestSSHFilesystem.CONTAINER.exec(
-            "chown 'testcontainer':'testcontainer' /testdir"
-        )
+        TestSSHFilesystem.CONTAINER.exec("chown 'testcontainer':'testcontainer' /testdir")
 
     def tearDown(self) -> None:
         TestSSHFilesystem.CONTAINER.exec("rm -rf /testdir")
 
     def create_filesystem(self, dir: str = "/testdir") -> Filesystem:
-        conn = ConnectionData(
-            hostname="localhost", username="testcontainer", password="1234", port=2222
-        )
+        conn = ConnectionData(hostname="localhost", username="testcontainer", password="1234", port=2222)
         return sshfilesystem(conn, dir=dir)
 
     def working_dir_abs(self) -> str:
