@@ -5,7 +5,7 @@
 groups = ["default", "dev", "doc", "format", "lint", "typecheck"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:52f5fd8c0641fb952bfac11ce93323b03d4b82961cf5d77b6e0a90f713a28539"
+content_hash = "sha256:47ee4667d8d53dd8e58bfe849506f49f84f945f1e6e317428ac6223dfbfba456"
 
 [[metadata.targets]]
 requires_python = ">=3.9"
@@ -40,6 +40,16 @@ dependencies = [
 files = [
     {file = "argcomplete-3.1.1-py3-none-any.whl", hash = "sha256:35fa893a88deea85ea7b20d241100e64516d6af6d7b0ae2bed1d263d26f70948"},
     {file = "argcomplete-3.1.1.tar.gz", hash = "sha256:6c4c563f14f01440aaffa3eae13441c5db2357b5eec639abe7c0b15334627dff"},
+]
+
+[[package]]
+name = "attrs"
+version = "25.3.0"
+requires_python = ">=3.8"
+summary = "Classes Without Boilerplate"
+files = [
+    {file = "attrs-25.3.0-py3-none-any.whl", hash = "sha256:427318ce031701fea540783410126f03899a97ffc6f61596ad581ac2e40e3bc3"},
+    {file = "attrs-25.3.0.tar.gz", hash = "sha256:75d7cefc7fb576747b2c81b4442d4d4a1ce0900973527c011d1030fd3bf4af1b"},
 ]
 
 [[package]]
@@ -520,6 +530,20 @@ files = [
 ]
 
 [[package]]
+name = "dependency-groups"
+version = "1.3.1"
+requires_python = ">=3.8"
+summary = "A tool for resolving PEP 735 Dependency Group data"
+dependencies = [
+    "packaging",
+    "tomli; python_version < \"3.11\"",
+]
+files = [
+    {file = "dependency_groups-1.3.1-py3-none-any.whl", hash = "sha256:51aeaa0dfad72430fcfb7bcdbefbd75f3792e5919563077f30bc0d73f4493030"},
+    {file = "dependency_groups-1.3.1.tar.gz", hash = "sha256:78078301090517fd938c19f64a53ce98c32834dfe0dee6b88004a569a6adfefd"},
+]
+
+[[package]]
 name = "distlib"
 version = "0.3.7"
 summary = "Distribution utilities"
@@ -594,20 +618,20 @@ files = [
 
 [[package]]
 name = "fs-sshfs"
-version = "1.0.1"
+version = "1.0.2"
 requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
 summary = "Pyfilesystem2 over SSH using paramiko"
 dependencies = [
     "configparser~=3.2; python_version < \"3\"",
     "fs~=2.2",
-    "paramiko~=2.0",
+    "paramiko<4.0,>=2.0",
     "property-cached~=1.6",
     "setuptools>=38.3.0",
     "six~=1.10",
 ]
 files = [
-    {file = "fs.sshfs-1.0.1-py2.py3-none-any.whl", hash = "sha256:f9f30a027b6c93bada0527d0a8d8440c2222cf5f3ba2a481138a99c8e572636b"},
-    {file = "fs.sshfs-1.0.1.tar.gz", hash = "sha256:05cb3dac1a932d5c4f44d1c2a43963ae5ff13450af1d6fb9ee6ce0139754ed1a"},
+    {file = "fs.sshfs-1.0.2-py2.py3-none-any.whl", hash = "sha256:ff7d7aeef546017f5c430e33c7deea50a1728ebeea738d5c5754bd56f8601109"},
+    {file = "fs.sshfs-1.0.2.tar.gz", hash = "sha256:9a6a8567abf8925cd41d06a13c4af6097b48d0d0776fc7785a482a0428b0fc19"},
 ]
 
 [[package]]
@@ -847,20 +871,21 @@ files = [
 
 [[package]]
 name = "nox"
-version = "2023.4.22"
-requires_python = ">=3.7"
+version = "2025.5.1"
+requires_python = ">=3.8"
 summary = "Flexible test automation."
 dependencies = [
-    "argcomplete<4.0,>=1.9.4",
-    "colorlog<7.0.0,>=2.6.1",
-    "importlib-metadata; python_version < \"3.8\"",
+    "argcomplete<4,>=1.9.4",
+    "attrs>=23.1",
+    "colorlog<7,>=2.6.1",
+    "dependency-groups>=1.1",
     "packaging>=20.9",
-    "typing-extensions>=3.7.4; python_version < \"3.8\"",
-    "virtualenv>=14",
+    "tomli>=1; python_version < \"3.11\"",
+    "virtualenv>=20.14.1",
 ]
 files = [
-    {file = "nox-2023.4.22-py3-none-any.whl", hash = "sha256:0b1adc619c58ab4fa57d6ab2e7823fe47a32e70202f287d78474adcc7bda1891"},
-    {file = "nox-2023.4.22.tar.gz", hash = "sha256:46c0560b0dc609d7d967dc99e22cb463d3c4caf54a5fda735d6c11b5177e3a9f"},
+    {file = "nox-2025.5.1-py3-none-any.whl", hash = "sha256:56abd55cf37ff523c254fcec4d152ed51e5fe80e2ab8317221d8b828ac970a31"},
+    {file = "nox-2025.5.1.tar.gz", hash = "sha256:2a571dfa7a58acc726521ac3cd8184455ebcdcbf26401c7b737b5bc6701427b2"},
 ]
 
 [[package]]

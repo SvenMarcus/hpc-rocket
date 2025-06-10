@@ -43,7 +43,7 @@ doc = "sphinx-build -b html docs/source docs/build/html"
 test = "pytest test -m 'not acceptance and not integration' -vv"
 test-integration = "pytest test -m 'integration' -vv"
 typecheck = "mypy --strict hpcrocket"
-lint = "ruff hpcrocket"
+lint = "ruff check hpcrocket"
 
 [tool.pdm.dev-dependencies]
 format = ["black>=23.1.0"]
@@ -63,10 +63,10 @@ max-complexity = 10
 
 [dependency-groups]
 dev = [
-  "pytest>=6.2.3",
-  "pytest-cov>=2.11.1",
-  "pytest-timeout>=1.4.2",
-  "nox>=2022.11.21",
-  "testcontainers>=3.7.1",
-  "ruff>=0.11.13",
+    "pytest>=6.2.3",
+    "pytest-cov>=2.11.1",
+    "pytest-timeout>=1.4.2",
+    "nox>=2025.5.1",
+    "testcontainers>=3.7.1",
+    "ruff>=0.11.13",
 ]
