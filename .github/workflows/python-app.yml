@@ -64,7 +64,7 @@ jobs:
       - name: Archive code coverage results
         uses: actions/upload-artifact@v4
         with:
-          name: code-coverage-report
+          name: code-coverage-report-${{ matrix.python }}
           path: coverage.xml
 
   # acceptance_test:
@@ -111,6 +111,10 @@ jobs:
     name: SonarCloud
     needs: unit_and_integration_tests
     runs-on: ubuntu-latest
+
+    env:
+      PYTHON_VERSION: "3.13"
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -119,7 +123,7 @@ jobs:
       - name: Download coverage report
         uses: actions/download-artifact@v2
         with:
-          name: code-coverage-report
+            name: code-coverage-report-${{ env.PYTHON_VERSION }}
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
