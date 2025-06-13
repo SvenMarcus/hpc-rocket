@@ -2,8 +2,8 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7355862.svg)](https://doi.org/10.5281/zenodo.7355862)
 [![Python application](https://github.com/SvenMarcus/ssh-slurm-runner/actions/workflows/python-app.yml/badge.svg)](https://github.com/SvenMarcus/ssh-slurm-runner/actions/workflows/python-app.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SvenMarcus_ssh-slurm-runner&metric=alert_status)](https://sonarcloud.io/dashboard?id=SvenMarcus_ssh-slurm-runner)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=SvenMarcus_ssh-slurm-runner&metric=coverage)](https://sonarcloud.io/dashboard?id=SvenMarcus_ssh-slurm-runner)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SvenMarcus_hpc-rocket&metric=alert_status)](https://sonarcloud.io/dashboard?id=SvenMarcus_hpc-rocket)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=SvenMarcus_hpc-rocket&metric=coverage)](https://sonarcloud.io/project/overview?id=SvenMarcus_hpc-rocket)
 [![Python](docs/source/_static/pythonversions.svg)](https://python.org)
 
 

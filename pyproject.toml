@@ -1,6 +1,6 @@
 [project]
 name = "hpc-rocket"
-version = "0.6.2"
+version = "0.6.3"
 description = "A tool to run Slurm sbatch commands over SSH"
 authors = [{ name = "Sven Marcus", email = "s.marcus@outlook.de" }]
 dependencies = [
@@ -64,10 +64,10 @@ max-complexity = 10
 
 [dependency-groups]
 dev = [
-    "pytest>=6.2.3",
-    "pytest-cov>=2.11.1",
-    "pytest-timeout>=1.4.2",
-    "nox>=2025.5.1",
-    "testcontainers>=4.10.0",
-    "ruff>=0.11.13",
+  "pytest>=6.2.3",
+  "pytest-cov>=2.11.1",
+  "pytest-timeout>=1.4.2",
+  "nox>=2025.5.1",
+  "testcontainers>=4.10.0",
+  "ruff>=0.11.13",
 ]

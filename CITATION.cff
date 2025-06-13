@@ -8,7 +8,7 @@ authors:
     given-names: Sven
     orcid: https://orcid.org/0000-0003-3689-2162
 title: hpc-rocket
-version: 0.6.2
+version: 0.6.3
 url: https://github.com/SvenMarcus/hpc-rocket
 repository-code: https://github.com/SvenMarcus/hpc-rocket
 references:
@@ -47,7 +47,7 @@ references:
 
       - family-names: Gessinger
         given-names: Paul
-      
+
       - family-names: Kryński
         given-names: Mariusz
 
@@ -62,7 +62,7 @@ references:
 
       - family-names: Sutherland
         given-names: Danica J.
-      
+
       - family-names: Vandenberg
         given-names: John
     type: software
